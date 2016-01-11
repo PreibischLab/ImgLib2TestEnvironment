@@ -1,4 +1,4 @@
-package util;
+package varun;
 
 import ij.ImageJ;
 import ij.ImagePlus;
@@ -28,7 +28,7 @@ public static Img<FloatType> Copy32Bit(final Img< FloatType > img1)
 final Img< FloatType > img2;
 
 
-			img2 = factory.create( img1, new FloatType ());
+			img2 = img1.factory().create( img1, new FloatType ());
 
 
 final Cursor< FloatType > c1 = img1.localizingCursor();
