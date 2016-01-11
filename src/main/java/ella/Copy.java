@@ -22,11 +22,11 @@ public class Copy {
 	
 	
 
-	public static void copyImg(final Img< FloatType > img1, final Img< FloatType > img2 ) {
+	public static <T extends Type<T>> void copyImg(final Img<T> img1, final Img<T> img2 ) {
         
 		
-		final Cursor< FloatType > cursorImg1 = img1.localizingCursor();
-        final Cursor< FloatType > cursorImg2 = img2.localizingCursor();
+		final Cursor< T > cursorImg1 = img1.localizingCursor();
+        final Cursor< T > cursorImg2 = img2.localizingCursor();
         
         while ( cursorImg1.hasNext())
         {
