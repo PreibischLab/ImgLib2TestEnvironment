@@ -19,8 +19,6 @@ import java.util.ArrayList;
 
 public class Copy {
 	
-	
-	
 
 	public static <T extends Type<T>> void copyImg(final Img<T> img1, final Img<T> img2 ) {
         
