@@ -25,6 +25,8 @@ import java.util.ArrayList;
 
 public class Copy {
 	
+<<<<<<< HEAD
+=======
 	
 	
 	public static <T extends Type<T>> Img< T > copyImg(final Img<T> img1 )
@@ -33,6 +35,7 @@ public class Copy {
 		copyImg( img1, img2 );
 		return img2;
 	}
+>>>>>>> 888cce051aa3e004b6ff61531267bd522d2e5343
 
 	public static <T extends Type<T>> void copyImg(final IterableInterval<T> img1, final RandomAccessibleInterval<T> img2 )
 	{
