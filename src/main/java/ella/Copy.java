@@ -27,6 +27,12 @@ public class Copy {
 	
 	
 	
+	public static <T extends Type<T>> Img< T > copyImg(final Img<T> img1 )
+	{
+		final Img< T > img2 = img1.factory().create( img1, img1.firstElement() );
+		copyImg( img1, img2 );
+		return img2;
+	}
 
 	public static <T extends Type<T>> void copyImg(final IterableInterval<T> img1, final RandomAccessibleInterval<T> img2 )
 	{
@@ -76,5 +82,6 @@ public class Copy {
 				Views.zeroMin( Views.interval( img2, new long[]{ 330, 140 }, new long[]{ 400, 200 } ) ) );
 		
 		ImageJFunctions.show(img2);
+
 	}
 }
