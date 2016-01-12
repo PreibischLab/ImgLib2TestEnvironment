@@ -3,18 +3,21 @@ package david;
 import java.io.File;
 
 import net.imglib2.Cursor;
+import net.imglib2.IterableInterval;
 import net.imglib2.RandomAccess;
+import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.Img;
 import net.imglib2.img.cell.CellImg;
 import net.imglib2.img.cell.CellImgFactory;
 import net.imglib2.img.display.imagej.ImageJFunctions;
+import net.imglib2.type.Type;
 import net.imglib2.type.numeric.NumericType;
 import net.imglib2.type.numeric.real.FloatType;
 import util.ImgLib2Util;
 
 public class DavidTest {
 
-	public static <T extends NumericType<T>> Img<T> copyImage(Img<T> source){
+	public static <T extends Type<T>> Img<T> copyImage(Img<T> source){
 		
 		Img<T> dest = source.factory().create(source, source.firstElement());
 		Cursor<T> destC = dest.cursor();
@@ -31,7 +34,7 @@ public class DavidTest {
 		
 	}
 	
-	public static <T extends NumericType<T>> void copyImage(Img<T> source, Img<T> dest) {
+	public static <T extends Type<T>> void copyImage(RandomAccessibleInterval<T> source, IterableInterval<T> dest) {
 		Cursor<T> destC = dest.localizingCursor();
 		RandomAccess<T> srcRA = source.randomAccess();
 		
