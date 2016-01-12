@@ -9,6 +9,7 @@ import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.algorithm.region.hypersphere.HyperSphere;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
+import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.real.FloatType;
 
@@ -55,6 +56,7 @@ c.get().setReal(var);
 		
 		final Img<FloatType> img =ArrayImgs.floats(100,100);
 		drawSpheres(img);
+		ImageJFunctions.show( img );
 	}
 		
 }
