@@ -64,11 +64,11 @@ public class RealViewer2DExample< T extends NumericType< T > & NativeType< T > >
 		final int height = 600;
 
 		final Img< FloatType > img = ImgLib2Util.openAs32Bit( new File( "src/main/resources/bridge.png" ) );
-		final RandomAccessible< FloatType > ra = Views.extendMirrorSingle( img );
+		final RandomAccessible< FloatType > ra = Views.extendZero( img );
 		final RealRandomAccessible< FloatType > rra = Views.interpolate( ra, new NLinearInterpolatorFactory< FloatType >() );
 
 		final AffineTransform2D transform = new AffineTransform2D();
-		transform.scale( 200 );
+		transform.scale( 1 );
 		transform.translate( width / 2.0, height / 2.0 );
 
 		final RealARGBConverter< FloatType > converter = new RealARGBConverter< FloatType >( 0, 255 );
