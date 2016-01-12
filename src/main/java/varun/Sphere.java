@@ -3,6 +3,7 @@ package varun;
 import ij.ImageJ;
 import net.imglib2.Cursor;
 import net.imglib2.Point;
+import net.imglib2.RandomAccess;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.algorithm.region.hypersphere.HyperSphere;
 import net.imglib2.img.Img;
@@ -14,7 +15,47 @@ import net.imglib2.type.numeric.real.FloatType;
 public class Sphere
 {
 
-	public static < T extends RealType< T >> void drawSpheres(
+	public static < T extends RealType < T >> void drawMulti( 
+			final RandomAccessibleInterval < T > img, Point newcenter, long newradius)
+	{
+		
+		
+		HyperSphere< T > bigSphere =
+                new HyperSphere< T >( img, newcenter, newradius );
+		 
+		  
+	    
+
+		Cursor< T > bigc = bigSphere.cursor();
+
+		// long smvar = 0;
+		
+		long newradiustwo = newradius/10;
+		while ( bigc.hasNext() )
+		{
+			
+			
+			bigc.fwd();
+			
+			
+			//smallc.get().setReal( smvar );
+			HyperSphere< T > smallSphere =
+	                new HyperSphere< T >( img, bigc, newradiustwo );
+			
+			//++smvar;
+			
+			
+			
+			
+
+}
+		
+	
+		
+		
+	}
+	
+	public static < T extends RealType< T >> void drawSphere(
 			final RandomAccessibleInterval< T > img )
 	{
 
@@ -50,8 +91,12 @@ public class Sphere
 		new ImageJ();
 
 		final Img< FloatType > img = ArrayImgs.floats( 100, 100 );
-		drawSpheres( img );
+		drawSphere( img );
 		ImageJFunctions.show( img );
+		
+		Point newcenter = new Point( 50 );
+		drawMulti(img, newcenter,2);
+		
 	}
 
 }
