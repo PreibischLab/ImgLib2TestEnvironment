@@ -22,8 +22,8 @@ public static <T extends Comparable<T>> RandomAccess<T> LocalMax(RandomAccessibl
 
 long startposx=0;
 long startposy=0;
-final long CellSizex=img.numDimensions()/10;
-final long CellSizey=img.numDimensions()/10;
+final long CellSizex=img.numDimensions()/2;
+final long CellSizey=img.numDimensions()/2;
 RandomAccess<T> localm = max(img);
 while(startposx<=img.numDimensions()-CellSizex && startposy<=img.numDimensions()-CellSizey)
 
@@ -37,6 +37,7 @@ startposx+=CellSizex;
 
 startposy+=CellSizey;
 
+return localm;
 
 
 }
@@ -87,6 +88,8 @@ localm.localize(pos);
 		
 		System.out.println(Util.printCoordinates(pos));
 		System.out.print(localval);
+		
+		System.out.print("Hi"+img.numDimensions());
 
 	}
 
