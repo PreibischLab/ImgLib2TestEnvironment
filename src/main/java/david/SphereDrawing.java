@@ -8,10 +8,12 @@ import net.imglib2.RealPoint;
 import net.imglib2.algorithm.region.hypersphere.HyperSphere;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
+import net.imglib2.img.cell.CellImgFactory;
 import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.type.numeric.NumericType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.real.FloatType;
+import net.imglib2.view.Views;
 
 public class SphereDrawing {
 	
@@ -20,7 +22,7 @@ public class SphereDrawing {
 		for (int i = 0; i < img.numDimensions(); i++){
 			center.setPosition(img.dimension(i)/2, i);
 		}
-		HyperSphere<T> hs = new HyperSphere<T>(img, center, size);
+		HyperSphere<T> hs = new HyperSphere<T>(Views.extendZero(img), center, size);
 		Cursor<T> c = hs.cursor();
 		
 		
@@ -39,7 +41,7 @@ public class SphereDrawing {
 	}
 	
 	public static void main(String[] args) {
-		Img<FloatType> img = ArrayImgs.floats(100, 100, 100);
+		Img<FloatType> img = ArrayImgs.floats(100, 30);
 		new ImageJ();
 		drawSphereCenter(img, 20);
 		ImageJFunctions.show(img);
