@@ -24,24 +24,24 @@ long startposx=0;
 long startposy=0;
 final long CellSizex=img.numDimensions()/10;
 final long CellSizey=img.numDimensions()/10;
-
+RandomAccess<T> localm = max(img);
 while(startposx<=img.numDimensions()-CellSizex && startposy<=img.numDimensions()-CellSizey)
 
 {
 
 RandomAccessibleInterval< T > viewSource = Views.offsetInterval( img, new long[] { startposx, startposy }, new long[]{ startposx+CellSizex, startposy+CellSizey } );
 
-RandomAccess<T> m = max(viewSource);
+localm = max(viewSource);
 
 startposx+=CellSizex;
 
 startposy+=CellSizey;
 
-return m;
+
 
 }
 
-
+return localm;
 
 }
 	
