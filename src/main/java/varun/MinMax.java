@@ -36,6 +36,9 @@ RandomAccess<T> m = max(viewSource);
 startposx+=CellSizex;
 
 startposy+=CellSizey;
+
+return m;
+
 }
 
 
