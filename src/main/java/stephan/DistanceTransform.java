@@ -22,17 +22,63 @@ import util.ImgLib2Util;
  */
 public class DistanceTransform
 {
-	public static double dist( final Localizable l1, final Localizable l2 )
+	public interface Distance
 	{
-		double dist = 0;
-
-		for ( int d = 0; d < l1.numDimensions(); ++d )
-			dist += Math.pow( l2.getDoublePosition( d ) - l1.getDoublePosition( d ), 2 );
-
-		return Math.sqrt( dist );
+		double dist( final Localizable l1, final Localizable l2 );
 	}
 
-	public static < T extends RealType< T > > void distanceTransform( final IterableInterval< BitType > in, final RandomAccessibleInterval< T > out )
+	/**
+	 * l1-norm
+	 */
+	public static class ManhattanDistance implements Distance
+	{
+		@Override
+		public double dist( Localizable l1, Localizable l2 )
+		{
+			double dist = 0;
+
+			for ( int d = 0; d < l1.numDimensions(); ++d )
+				dist += Math.abs( l2.getDoublePosition( d ) - l1.getDoublePosition( d ) );
+
+			return dist;
+		}
+	}
+
+	/**
+	 * l2-norm
+	 */
+	public static class EuclideanDistance implements Distance
+	{
+		@Override
+		public double dist( Localizable l1, Localizable l2 )
+		{
+			double dist = 0;
+
+			for ( int d = 0; d < l1.numDimensions(); ++d )
+				dist += Math.pow( l2.getDoublePosition( d ) - l1.getDoublePosition( d ), 2 );
+
+			return Math.sqrt( dist );
+		}
+	}
+
+	/**
+	 * l_infinite?-norm / max-distance
+	 */
+	public static class ChessboardDistance implements Distance
+	{
+		@Override
+		public double dist( Localizable l1, Localizable l2 )
+		{
+			double dist = Math.abs( l2.getDoublePosition( 0 ) - l1.getDoublePosition( 0 ) );
+
+			for ( int d = 1; d < l1.numDimensions(); ++d )
+				dist = Math.max( dist, Math.abs( l2.getDoublePosition( d ) - l1.getDoublePosition( d ) ) );
+
+			return dist;
+		}
+	}
+
+	public static < T extends RealType< T > > void distanceTransform( final IterableInterval< BitType > in, final RandomAccessibleInterval< T > out, final Distance distance )
 	{
 		final Cursor< BitType > cMain = in.localizingCursor();
 		final RandomAccess< T > r = out.randomAccess();
@@ -50,7 +96,7 @@ public class DistanceTransform
 
 				while( cLocal.hasNext() )
 					if ( cLocal.next().getInteger() == 1 )
-						minDist = Math.min( minDist, dist( cLocal, cMain ) );
+						minDist = Math.min( minDist, distance.dist( cLocal, cMain ) );
 	
 				r.get().setReal( minDist );
 			}
@@ -69,9 +115,15 @@ public class DistanceTransform
 		final Img< BitType > threshold = img.factory().imgFactory( new BitType() ).create( img, new BitType() );
 
 		Thresholding.threshold( img, threshold, new FloatType( 200 ) );
-		ImageJFunctions.show( threshold );
+		ImageJFunctions.show( threshold ).setTitle( "threshold" );
 
-		distanceTransform( threshold, img );
-		ImageJFunctions.show( img );
+		distanceTransform( threshold, img, new EuclideanDistance() );
+		ImageJFunctions.show( img ).setTitle( "euclidean distance" );
+
+		distanceTransform( threshold, img, new ManhattanDistance() );
+		ImageJFunctions.show( img ).setTitle( "manhattan distance" );
+
+		distanceTransform( threshold, img, new ChessboardDistance() );
+		ImageJFunctions.show( img ).setTitle( "chessboard distance" );
 	}
 }
