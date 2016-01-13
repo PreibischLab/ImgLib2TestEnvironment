@@ -43,9 +43,9 @@ public class Sphere {
 					smallc.fwd();
 					if (smvar > smallc.get().getRealDouble()) {
 
-						T value = smallc.get(); //Gives the value at that pixel
-						
-						value.setReal(smvar); // Sets the value
+//						T value = smallc.get(); //Gives the value at that pixel
+						smallc.get().setReal(smvar);
+	//					value.setReal(smvar); // Sets the value
 
 					}
 
