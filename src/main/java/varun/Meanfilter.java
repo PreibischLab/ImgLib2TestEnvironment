@@ -1,157 +1,116 @@
 package varun;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Random;
 
-import ij.ImageJ;
-import ij.ImagePlus;
-import ij.io.Opener;
-import ij.process.ImageProcessor;
+
+
 import net.imglib2.Cursor;
-import net.imglib2.Interval;
-import net.imglib2.IterableInterval;
-import net.imglib2.IterableRealInterval;
-import net.imglib2.Point;
-import net.imglib2.RandomAccess;
-import net.imglib2.RandomAccessibleInterval;
-import net.imglib2.Sampler;
-import net.imglib2.algorithm.neighborhood.*;
-import net.imglib2.algorithm.region.hypersphere.HyperSphere;
-import net.imglib2.img.Img;
-import net.imglib2.img.ImgFactory;
-import net.imglib2.img.array.ArrayImgFactory;
-import net.imglib2.img.array.ArrayImgs;
-import net.imglib2.img.display.imagej.ImageJFunctions;
-import net.imglib2.img.imageplus.ImagePlusImgFactory;
-import net.imglib2.type.numeric.RealType;
-import net.imglib2.type.numeric.real.FloatType;
-import net.imglib2.type.operators.SetZero;
-import net.imglib2.util.Intervals;
-import net.imglib2.view.Views;
-import net.imglib2.algorithm.region.localneighborhood.*;
-import net.imglib2.display.projector.sampler.IntervalSampler;
+import net.imglib2.FinalInterval;
 
+import net.imglib2.IterableInterval;
+
+import net.imglib2.RandomAccess;
+import net.imglib2.RandomAccessible;
+import net.imglib2.RandomAccessibleInterval;
+
+import net.imglib2.img.Img;
+
+import net.imglib2.img.display.imagej.ImageJFunctions;
+
+import net.imglib2.type.numeric.real.FloatType;
+
+
+import net.imglib2.view.Views;
 
 public class Meanfilter {
-	public static Img< FloatType > openAs32Bit( final File file )
-	{
-		return openAs32Bit( file, new ArrayImgFactory< FloatType >() );
-	}
-	public static Img< FloatType > openAs32Bit( final File file, final ImgFactory< FloatType > factory )
-	{
-		if ( !file.exists() )
-			throw new RuntimeException( "File '" + file.getAbsolutePath() + "' does not exisit." );
-
-		final ImagePlus imp = new Opener().openImage( file.getAbsolutePath() );
-
-		if ( imp == null )
-			throw new RuntimeException( "File '" + file.getAbsolutePath() + "' coult not be opened." );
-
-		final Img< FloatType > img;
-
-		if ( imp.getStack().getSize() == 1 )
-		{
-			// 2d
-			img = factory.create( new int[]{ imp.getWidth(), imp.getHeight() }, new FloatType() );
-			final ImageProcessor ip = imp.getProcessor();
-
-			final Cursor< FloatType > c = img.localizingCursor();
-			
-			while ( c.hasNext() )
-			{
-				c.fwd();
-
-				final int x = c.getIntPosition( 0 );
-				final int y = c.getIntPosition( 1 );
-
-				c.get().set( ip.getf( x, y ) );
-			}
-
-		}
-		else
-		{
-			// >2d
-			img = factory.create( new int[]{ imp.getWidth(), imp.getHeight(), imp.getStack().getSize() }, new FloatType() );
-
-			final Cursor< FloatType > c = img.localizingCursor();
-
-			// for efficiency reasons
-			final ArrayList< ImageProcessor > ips = new ArrayList< ImageProcessor >();
-
-			for ( int z = 0; z < imp.getStack().getSize(); ++z )
-				ips.add( imp.getStack().getProcessor( z + 1 ) );
-
-			while ( c.hasNext() )
-			{
-				c.fwd();
-
-				final int x = c.getIntPosition( 0 );
-				final int y = c.getIntPosition( 1 );
-				final int z = c.getIntPosition( 2 );
-
-				c.get().set( ips.get( z ).getf( x, y ) );
-			}
-		}
-
-		return img;
-	}
-
 	
-	public static  void mean ( RandomAccessibleInterval<FloatType> img, RandomAccessibleInterval<FloatType> imgout){
-	
-	//	final RandomAccessibleInterval <FloatType> imgout;
+
+	public static void meanImage(RandomAccessibleInterval<FloatType> img, RandomAccessibleInterval< FloatType > imgout) {
+
 		
 		
-		Interval interval = Intervals.expand( img, -100 );
+		final RandomAccessible<FloatType> infinite = Views.extendZero(img);
+
 		
-		 img=Views.interval(img, interval);
-		 
+		final FloatType ini=Views.iterable(img).firstElement().createVariable();
 		
-			
-		 imgout=Views.interval(imgout, interval);
-		 
-		 final Cursor < FloatType > bound = Views.iterable(img).cursor();
-		 
-		 final Cursor < FloatType > outbound = Views.iterable(imgout).cursor();
 		
-		// FloatType mean=((IterableRealInterval<FloatType>) img).firstElement();
-		 FloatType mean= new FloatType();
-		 
-		 mean.setZero();
-		 
-		 
 		
-	
-		 
-		// value.setReal(ini);
-		 
-		 while(bound.hasNext()){
+		
+		final int n = img.numDimensions();
+		long min[] = new long[n];
+		long max[] = new long[n];
+
+		long nearmin[]= new long [n];
+		long nearmax[]=new long[n];
+		
+		for(int d=0; d<n; ++d){
 			 
-		  
-		  bound.fwd();
-		  outbound.fwd();
-		  
-		  mean.add(bound.get());
-         
-		 }
-		 
-		 outbound.get().set(mean);
+			nearmin[d]=-3;
+			
+			nearmax[d]=3;
+			
+		}
 		
-		
-		
+		final FinalInterval neighbours= new FinalInterval(nearmin,nearmax); // Determines the nearest neighbors.
+		final Cursor<FloatType> bound = Views.iterable(img).localizingCursor();
+		final RandomAccess< FloatType > outbound=imgout.randomAccess();
 	
+		
+		
+		
+		while(bound.hasNext()){
+		
+			bound.fwd();
+			
+		for (int d = 0; d < n; ++d) {
+			min[d] = bound.getLongPosition(d)-neighbours.dimension(d)/2;
+			max[d] = bound.getLongPosition(d)+neighbours.dimension(d)/2;
+
+		}
+
+		
+
+		FinalInterval interval = new FinalInterval(min, max);
+		
+	final IterableInterval<FloatType>	imgav = Views.interval(infinite, interval);
+	
+	
+	//final HyperSphere< FloatType > imgav= new HyperSphere<FloatType>(infinite, bound, 3);
+
+	for (FloatType pxval:imgav){
+		
+		ini.add(pxval);
+		
 	}
-	
-	
-	public static void main (String[]args){
+		ini.mul(1.0/imgav.size());
+
+		outbound.setPosition(bound);
+		outbound.get().set(ini);
 		
-		final Img< FloatType > img = openAs32Bit( new File( "src/main/resources/bridge.png" ) );
-	final Img < FloatType > imgout=img.copy();
 		
-		mean(img,imgout);
+		}
+		
+	
+		
+		
+	}
+
+	
+
+	public static void main(String[] args) {
+
+		final Img<FloatType> img = ImgLib2Util.openAs32Bit(new File("src/main/resources/bridge.png"));
+		RandomAccessibleInterval<FloatType> imgout=img.copy();
+
+		meanImage(img,imgout);
 		ImageJFunctions.show(img);
 		ImageJFunctions.show(imgout);
+
+		
+
+		//computeNeighbourhood(img, imgout);
+
 	}
 
 }
