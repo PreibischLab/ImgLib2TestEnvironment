@@ -44,7 +44,7 @@ public class SphereDrawing {
 			if (rng.nextDouble() < Math.pow(10, (float) - img.numDimensions())){
 				T value = Views.iterable(img).firstElement().createVariable();
 				value.setOne();
-				value.mul(rng.nextDouble());				
+				value.mul(rng.nextDouble());	
 				drawSphere(img, (long) (Math.ceil(rng.nextGaussian() * smallRadius)), c, value);
 			}
 			
@@ -76,7 +76,7 @@ public class SphereDrawing {
 	public static void main(String[] args) {
 		Img<FloatType> img = ArrayImgs.floats(500, 500, 200);
 		new ImageJ();
-		drawSpheresCenter(img, 200, 8);
+		drawSpheresCenter(img, 200, 6);
 		ImageJFunctions.show(img);
 	}
 
