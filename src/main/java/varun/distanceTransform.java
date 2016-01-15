@@ -3,9 +3,10 @@ package varun;
 import java.io.File;
 
 import net.imglib2.Cursor;
+import net.imglib2.Localizable;
 import net.imglib2.RandomAccess;
 import net.imglib2.RandomAccessibleInterval;
-
+import net.imglib2.algorithm.neighborhood.DiamondTipsNeighborhood.LocalCursor;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgFactory;
 
@@ -45,6 +46,25 @@ public class distanceTransform {
 		}
 	}
 
+	
+	public static double getdistance(Localizable cursor1, Localizable cursor2){
+		
+		double distance=0;
+		
+		for (int d=0; d<cursor2.numDimensions(); ++d){
+			
+			distance += Math.pow((cursor2.getDoublePosition(d) - cursor1.getDoublePosition(d)), 2);
+		}
+		
+		
+		
+		return Math.sqrt(distance);
+		
+		
+		
+		
+	}
+	
 	public static <T extends RealType<T>> void computeDistance(RandomAccessibleInterval<BitType> img,
 			RandomAccessibleInterval<T> imgout) {
 
@@ -59,25 +79,25 @@ public class distanceTransform {
 		
 			if (bound.get().getInteger() == 0) {
 				final Cursor<BitType> second = Views.iterable(img).cursor();
-				double mindistance = 1.0E300;
+				double mindistance = Double.MAX_VALUE;
 				
 
 				double distance = 0;
-				while (second.hasNext())
-					if (second.next().getInteger() == 1)
+				while (second.hasNext()) {
+					if (second.next().getInteger() == 1) {
 
-						for (int d = 0; d < second.numDimensions(); ++d) {
+						distance=getdistance(bound,second);
 
-							distance += Math.pow((second.getDoublePosition(d) - bound.getDoublePosition(d)), 2);
-
-						}
-
-				mindistance = Math.min(mindistance, Math.sqrt(distance));
+				mindistance = Math.min(mindistance, distance);
 				
-				System.out.println(mindistance);
+					}
+				}
+				//System.out.println(mindistance);
 
 				outbound.get().setReal(mindistance);
-			}
+			
+				
+				}
 
 			else {
 				outbound.get().setReal(0);
