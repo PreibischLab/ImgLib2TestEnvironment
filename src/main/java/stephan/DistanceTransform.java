@@ -4,12 +4,16 @@ import java.io.File;
 
 import net.imglib2.Cursor;
 import net.imglib2.IterableInterval;
+import net.imglib2.KDTree;
 import net.imglib2.Localizable;
 import net.imglib2.RandomAccess;
 import net.imglib2.RandomAccessibleInterval;
+import net.imglib2.RealPoint;
+import net.imglib2.RealPointSampleList;
 import net.imglib2.exception.IncompatibleTypeException;
 import net.imglib2.img.Img;
 import net.imglib2.img.display.imagej.ImageJFunctions;
+import net.imglib2.neighborsearch.NearestNeighborSearchOnKDTree;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.real.FloatType;
@@ -107,9 +111,42 @@ public class DistanceTransform
 		}
 	}
 
+	public static < T extends RealType< T > > void distanceTransformKD( final IterableInterval< BitType > in, final RandomAccessibleInterval< T > out, final Distance distance )
+	{
+		final RealPointSampleList< BitType > list = new RealPointSampleList< BitType >( in.numDimensions() );
+		
+		final Cursor< BitType > cMain = in.localizingCursor();
+
+		while ( cMain.hasNext() )
+			if ( cMain.next().getInteger() == 1 )
+				list.add( new RealPoint( cMain ), cMain.get() );
+
+		final KDTree< BitType > tree = new KDTree< BitType >( list );
+		final NearestNeighborSearchOnKDTree< BitType > search = new NearestNeighborSearchOnKDTree< BitType >( tree );
+
+		final RandomAccess< T > r = out.randomAccess();
+		cMain.reset();
+
+		while ( cMain.hasNext() )
+		{
+			cMain.fwd();
+			r.setPosition( cMain );
+
+			if ( cMain.get().getInteger() == 0 )
+			{
+				search.search( cMain );
+				r.get().setReal( search.getDistance() );
+			}
+			else
+			{
+				r.get().setZero();
+			}
+		}
+	}
+
 	public static void main( String[] args ) throws IncompatibleTypeException
 	{
-		final Img< FloatType > img = ImgLib2Util.openAs32Bit( new File( "src/main/resources/dt.png" ) );
+		final Img< FloatType > img = ImgLib2Util.openAs32Bit( new File( "src/main/resources/bridge.png" ) );
 
 		// take the imgfactory of the img which is of FloatType and transform it into a BitType factory
 		final Img< BitType > threshold = img.factory().imgFactory( new BitType() ).create( img, new BitType() );
@@ -117,13 +154,24 @@ public class DistanceTransform
 		Thresholding.threshold( img, threshold, new FloatType( 200 ) );
 		ImageJFunctions.show( threshold ).setTitle( "threshold" );
 
+		long t;
+
+		t = System.currentTimeMillis();
+		distanceTransformKD( threshold, img, new EuclideanDistance() );
+		System.out.println( "O(n logn): " + (System.currentTimeMillis() - t) + " ms." );
+		ImageJFunctions.show( img ).setTitle( "kd-euclidean distance" );
+
+		t = System.currentTimeMillis();
 		distanceTransform( threshold, img, new EuclideanDistance() );
+		System.out.println( "O(n^2): " + (System.currentTimeMillis() - t) + " ms." );
 		ImageJFunctions.show( img ).setTitle( "euclidean distance" );
 
+
+		/*
 		distanceTransform( threshold, img, new ManhattanDistance() );
 		ImageJFunctions.show( img ).setTitle( "manhattan distance" );
 
 		distanceTransform( threshold, img, new ChessboardDistance() );
-		ImageJFunctions.show( img ).setTitle( "chessboard distance" );
+		ImageJFunctions.show( img ).setTitle( "chessboard distance" );*/
 	}
 }
