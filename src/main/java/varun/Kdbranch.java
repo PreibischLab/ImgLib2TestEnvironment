@@ -64,7 +64,7 @@ public class Kdbranch {
 	
 	// Constructor for creating tree from a PointSampleList.
 	 public  <T extends RealType<T>>   Kdbranch(PointSampleList<T> list) {
-	        super();
+	        
 	        defaultNode = createNode(list,k);
 	    }
 	 
