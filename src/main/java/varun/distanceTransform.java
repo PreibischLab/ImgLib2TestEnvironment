@@ -47,7 +47,17 @@ public class distanceTransform {
 	}
 
 	
-	public static double getdistance(Localizable cursor1, Localizable cursor2){
+	public interface Distance{
+		
+		
+		double getdistance(Localizable cursor1, Localizable cursor2);
+		
+		
+	}
+	
+	public static class EucledianDistance implements Distance
+	{
+	public  double getdistance(Localizable cursor1, Localizable cursor2){
 		
 		double distance=0;
 		
@@ -65,8 +75,34 @@ public class distanceTransform {
 		
 	}
 	
+	}
+	
+	
+	public static class MannhattanDistance implements Distance
+	{
+	public  double getdistance(Localizable cursor1, Localizable cursor2){
+		
+		double distance=0;
+		
+		for (int d=0; d<cursor2.numDimensions(); ++d){
+			
+			distance += Math.abs(cursor2.getDoublePosition(d) - cursor1.getDoublePosition(d));
+		}
+		
+		
+		
+		return distance;
+		
+		
+		
+		
+	}
+	
+	}
+	
+	
 	public static <T extends RealType<T>> void computeDistance(RandomAccessibleInterval<BitType> img,
-			RandomAccessibleInterval<T> imgout) {
+			RandomAccessibleInterval<T> imgout, final Distance dist) {
 
 		final Cursor<BitType> bound = Views.iterable(img).cursor();
 
@@ -86,7 +122,7 @@ public class distanceTransform {
 				while (second.hasNext()) {
 					if (second.next().getInteger() == 1) {
 
-						distance=getdistance(bound,second);
+						distance=dist.getdistance(bound,second);
 
 				mindistance = Math.min(mindistance, distance);
 				
@@ -121,13 +157,24 @@ public class distanceTransform {
 
 		createBitimage(img, imgout, val);
 
-		computeDistance(imgout, img);
+		computeDistance(imgout, img, new EucledianDistance());
 
-		ImageJFunctions.show(img).setTitle("FloatType_output");
+		ImageJFunctions.show(img).setTitle("Eucledian_FloatType_output");
 
-		computeDistance(imgout, bitimgout);
+		computeDistance(imgout, bitimgout, new EucledianDistance());
 
-		ImageJFunctions.show(bitimgout).setTitle("BitType_output");
+		ImageJFunctions.show(bitimgout).setTitle("Eucledian_BitType_output");
+		
+		
+		computeDistance(imgout, img, new MannhattanDistance());
+
+		ImageJFunctions.show(img).setTitle("Mannhattan_FloatType_output");
+		
+		computeDistance(imgout, bitimgout, new MannhattanDistance());
+
+		ImageJFunctions.show(bitimgout).setTitle("Mannhattan_BitType_output");
+		
+		
 
 	}
 

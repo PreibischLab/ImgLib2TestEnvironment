@@ -53,7 +53,7 @@ for( int d=0; d<n; ++d) {
 	final RandomAccessibleInterval<FloatType>	imgout=Views.interval(infinite, interval);
 	
 	
-	final RandomAccessible<FloatType> tmpimg=Views.extendPeriodic(imgout);
+	final RandomAccessible<FloatType> tmpimg=Views.extendZero(imgout);
 	
 	final RandomAccessibleInterval<FloatType> imgzoom= Views.interval(tmpimg, fullinterval);
 	
