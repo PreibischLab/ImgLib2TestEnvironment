@@ -41,12 +41,12 @@ public class Kdbranch {
 		
 		private final int direction;
 		
-		public <T extends RealType<T>> Kdnode(Point p){
+		public  Kdnode(Point p){
 			this.p=p;
 			this.direction=0;
 			}
 		
-		public <T extends RealType<T>> Kdnode(Point p, int direction){
+		public  Kdnode(Point p, int direction){
 			this.p=p;
 			this.direction=direction;
 			}
@@ -86,7 +86,7 @@ PointSampleList<T> childB= new PointSampleList<T>((int) listSize);
 		
 		Point meanList= new Point(meanIndex);
 		
-		node=new Kdnode(meanList, direction);
+		node=new Kdnode(meanList, direction); // Create a node at the mean value
 		
 
 		 if ((meanIndex - 1) >= 0 && childA.size() > 0) {
