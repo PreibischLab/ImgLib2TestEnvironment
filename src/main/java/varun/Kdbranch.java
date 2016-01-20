@@ -2,8 +2,10 @@ package varun;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import net.imglib2.PointSampleList;
 import net.imglib2.RealPointSampleList;
@@ -26,88 +28,107 @@ import net.imglib2.view.Views;
 
 public class Kdbranch {
 	
-	
-	private Kdnode defaultNode = null;
-	
-	private int k=0;
-	
-	
-	
-	
-	
-	public static class Kdnode{
-		
-		private final Point p;
-		
-		private final int direction;
-		
-		public  Kdnode(Point p){
-			this.p=p;
-			this.direction=0;
-			}
-		
-		public  Kdnode(Point p, int direction){
-			this.p=p;
-			this.direction=direction;
-			}
-		
-		
-		
-		
-	}
-	
-	
-	// Default Constructor
-	public Kdbranch(){
-		
-	}
-	
-	// Constructor for creating tree from a PointSampleList.
-	 public  <T extends RealType<T>>   Kdbranch(PointSampleList<T> list) {
-	        
-	        defaultNode = createNode(list,k);
-	    }
-	 
-	// To Create node from a list of points IterableInterval<T> or I would probably change this to PointSampleList<T>
-	public static <T extends RealType<T>> Kdnode createNode(IterableInterval<T> list, int direction) {
-		
-		long listSize=list.size();
-		
-		
-PointSampleList<T> childA= new PointSampleList<T>((int) listSize);
 
-PointSampleList<T> childB= new PointSampleList<T>((int) listSize);
+	// To Create node from a List
+	public static <T extends RealType<T>> Point createNode(PointSampleList<T> list, int direction) {
 
-		Kdnode node=null;
-		
-		
+		// number of dimensions
+		int n = list.cursor().numDimensions();
 
-		int meanIndex = (int) list.size() / 2;
-		
-		Point meanList= new Point(meanIndex);
-		
-		node=new Kdnode(meanList, direction); // Create a node at the mean value
-		
+		int meanIndex;
 
-		 if ((meanIndex - 1) >= 0 && childA.size() > 0) {
+		Point node = new Point(n);
 
-		 createNode(childA,direction+1);
+		meanIndex = (int) list.dimension(direction) / 2;
+
+		node.setPosition(meanIndex, direction);
+
+		return node;
 
 	}
 
-	 if ((meanIndex + 1) <= (list.size() - 1) && childB.size() > 0) {
-	 createNode(childB,direction + 1);
-	 }
+	
+	// Input a List and get two sublists split at the median
+	public static <T extends RealType<T>> void getsubList(PointSampleList<T> list, int direction) {
 
-	 
-	 return node;
-	 
-	 }
+		if (direction==list.numDimensions())
+	     direction =0;
+		int n = list.cursor().numDimensions();
 
-	// How to create a pixel value list from an IterableInterval<T>?
+		int meanIndex, endIndex;
 
-	public static <T extends RealType<T>> void getSortedImage(RandomAccessibleInterval<T> img,
-			RandomAccessibleInterval<T> imgout) {
+		Point node = new Point(n);
+
+		Point endpoint = new Point(n);
+
+		meanIndex = (int) list.dimension(direction) / 2;
+		endIndex = (int) list.dimension(direction);
+
+		node.setPosition(meanIndex, direction);
+		endpoint.setPosition(endIndex, direction);
+
+		System.out.println("Initial Split point in this direction: " + node);
+		System.out.println("Size of list in this direction: " + list.dimension(direction));
+
+		PointSampleList<T> childA = new PointSampleList<T>(n);
+
+		PointSampleList<T> childB = new PointSampleList<T>(n);
+
+		final Cursor<T> listCursorA = list.localizingCursor();
+		final Cursor<T> listCursorB = list.localizingCursor();
+
+		while (listCursorA.hasNext()) {
+			listCursorA.fwd();
+			Point cord = new Point(n);
+
+			cord.setPosition(listCursorA);
+			if (listCursorA.getLongPosition(direction) < node.getDoublePosition(direction))
+				childA.add(cord, listCursorA.get().copy());
+		}
+		
+		if((meanIndex-1)>0 && childA.size()>2){	
+			
+			
+			
+			getsubList(childA, direction+1);
+			
+}
+
+
+		while (listCursorB.hasNext()) {
+			listCursorB.fwd();
+			Point cordtwo = new Point(n);
+
+			cordtwo.setPosition(listCursorB);
+			if (listCursorB.getLongPosition(direction) >= node.getDoublePosition(direction))
+				childB.add(cordtwo, listCursorB.get().copy());
+		}
+		
+		if ((meanIndex + 1) < (list.size() - 1) && childB.size() > 2){		
+		getsubList(childB, direction+1);
+		
+}
+		
+
+		/*
+		 * for (int d = 0; d < n; ++d) {
+		 * 
+		 * meanIndex = (int) list.dimension(d) / 2; if ((meanIndex - 1) >= 0 &&
+		 * childA.size() > 0) {
+		 * 
+		 * createNode(childA, direction + 1);
+		 * 
+		 * }
+		 * 
+		 * if ((meanIndex + 1) <= (list.size() - 1) && childB.size() > 0) {
+		 * createNode(childB, direction + 1); }
+		 * 
+		 * }
+		 */
+
+	}
+
+	public static <T extends RealType<T>> PointSampleList<T> getList(RandomAccessibleInterval<T> img) {
 
 		final RandomAccessible<T> infinite = Views.extendZero(img);
 
@@ -126,55 +147,38 @@ PointSampleList<T> childB= new PointSampleList<T>((int) listSize);
 
 		final IterableInterval<T> imgav = Views.interval(infinite, interval);
 
-		
 		final Cursor<T> first = imgav.cursor();
-		
-		
-		
-		final RandomAccess<T> outbound = imgout.randomAccess();
 
-		first.fwd();
-		
-		
-		
-		
-		
-		outbound.setPosition(first);
+		// A point sample list with coordinates declared and initialized.
+		PointSampleList<T> parent = new PointSampleList<T>(n);
 
 		while (first.hasNext()) {
 			first.fwd();
-			
-		
-			
-			
-			
-				
-			
-			if (outbound.get().compareTo(first.get()) >= 0)
-				
-				outbound.setPosition(first);
-		
+			Point cord = new Point(n);
 
-			outbound.get().set(first.get());
-			
-			
-		
+			cord.setPosition(first);
+
+			parent.add(cord, first.get().copy());
+
 		}
-		
+
+		return parent;
+
 	}
 
 	public static void main(String[] args) {
-		
-		
-		final Img<FloatType> img = ImgLib2Util.openAs32Bit(new File("src/main/resources/bud.jpg"));
 
-		Img<FloatType> imgout = new CellImgFactory<FloatType>().create(img, new FloatType());
+		final Img<FloatType> img = ImgLib2Util.openAs32Bit(new File("src/main/resources/bridge.png"));
 
-		ImageJFunctions.show(img).setTitle("Original_Image");
+		PointSampleList<FloatType> list = new PointSampleList<FloatType>(img.numDimensions());
 
-		getSortedImage(img, imgout);
+		list = getList(img);
 
-		ImageJFunctions.show(imgout).setTitle("Permuted_Image");
+		getsubList(list, 0);
+
+		// ImageJFunctions.show(img).setTitle("Original_Image");
+
+		// ImageJFunctions.show(imgout).setTitle("Permuted_Image");
 
 	}
 
