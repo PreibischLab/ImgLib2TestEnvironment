@@ -52,8 +52,8 @@ public class Kdbranch {
 		int meanIndex;
 		
 
-		final Cursor<T> listCursorA = list.localizingCursor().copyCursor();
-		final Cursor<T> listCursorB = list.localizingCursor().copyCursor();
+		final Cursor<T> listCursor = list.localizingCursor().copyCursor();
+		
 		
 		
 
@@ -61,81 +61,66 @@ public class Kdbranch {
 
 		PointSampleList<T> childB = new PointSampleList<T>(n);
 
-		meanIndex = (int) ((list.max(direction) - list.min(direction)) / 2);
+		meanIndex =(int)  (list.min(direction)+((list.max(direction)-list.min(direction))/2));
 		
-		//System.out.println("meanIndex: "+meanIndex);
 		
-		// In this loop I create the splitPlane at mean value in one direction, this is for childA which always has the point 0,0...
 		
-		while (listCursorA.hasNext()) {
+		// In this loop I create the splitPlane at mean value in one direction
+		
+		while (listCursor.hasNext()) {
 
-			listCursorA.fwd();
+			listCursor.fwd();
 			
 			Point splitPoint = new Point(n);
 
-			long splitPlane = listCursorA.getLongPosition(otherdirection);
+			long splitPlane = listCursor.getLongPosition(otherdirection);
 
 			splitPoint.setPosition(meanIndex, direction);
 			splitPoint.setPosition(splitPlane, otherdirection);
 			
 			Point cord = new Point(n);
 
-			cord.setPosition(listCursorA);
-			if (listCursorA.getLongPosition(direction) <= splitPoint.getDoublePosition(direction))
-				childA.add(cord, listCursorA.get().copy());
+			cord.setPosition(listCursor);
+			if (listCursor.getLongPosition(direction) <= splitPoint.getDoublePosition(direction))
+				
+				childA.add(cord, listCursor.get().copy());
 			
+			else
+				
+				
+				childB.add(cord, listCursor.get().copy());
 			
-		}
 		
-		
-		// For sake of clarity I create a separate loop to make the childB which does-not have the point 0,0...
-		
-		
-		while (listCursorB.hasNext()) {
-
-			listCursorB.fwd();
-			
-			Point splitPoint = new Point(n);
-
-			long splitPlane = listCursorB.getLongPosition(otherdirection);
-
-			splitPoint.setPosition(meanIndex, direction);
-			splitPoint.setPosition(splitPlane, otherdirection);
-			
-			Point cord = new Point(n);
-
-			cord.setPosition(listCursorB);
-			
-			if (listCursorB.getLongPosition(direction) > splitPoint.getDoublePosition(direction))
-				childB.add(cord, listCursorB.get().copy());
-			
-			
-		}
-		
-		//This is the partition having the point 0,0.. This recursion works fine
-		if ((meanIndex - 1) > 0 && childA.size() > 0) {
-			System.out.print("Number of pixels in current direction: "+list.dimension(direction));
-			
-			System.out.println("    meanIndex: "+meanIndex);
-			
-			getsubList(childA, otherdirection);
 			
 		}
 		
 		
-	/***** Problem part, Can not create right side of the tree which does not have the point 0,0.. ******/  
 		
-		// This is the partition not having the point 0,0... and I think for this reason the space is not further partitioned.
-		
-		
-		/*
-		if ((meanIndex + 1) <= (list.dimension(direction) - 1) && childB.size() > 0) {
-			 getsubList(childB, otherdirection); 
-			 
+		if ((meanIndex - 1) >= 0 && childA.dimension(direction) > 1 && childB.dimension(direction) > 1) {
+			
+			
+			System.out.println("    pixels in running direction of childA: "+childA.size());
+			System.out.println("    pixels in running direction of childB: "+childB.size());
+			
+		//	getsubList(childA, otherdirection);
+			getsubList(childB, otherdirection);
 		}
-*/
+		
+	
+		
+		
 		
 	}
+	
+	
+	
+			
+			
+			
+			
+			
+			
+	
 
 	public static <T extends RealType<T>> PointSampleList<T> getList(RandomAccessibleInterval<T> img) {
 
