@@ -217,13 +217,15 @@ public class Kdbranch {
 		
 		test.fwd();
 		testiter.fwd();
-		test.next();
+		
 		while(test.hasNext()){
 		testiter.next();
 		
 		if(test.get().compareTo(testiter.get())>0 )
 			
 			System.out.println("False");
+		
+		
 		
 		test=testiter;
 		}
