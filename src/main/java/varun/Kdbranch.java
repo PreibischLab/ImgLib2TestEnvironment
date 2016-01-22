@@ -127,7 +127,7 @@ public class Kdbranch {
 
 				cursorA.fwd();
 				cursorB.fwd();
-				if (cursorA.get().compareTo(cursorB.get()) >= 0) {
+				if (cursorA.get().compareTo(cursorB.get()) > 0) {
 
 					cursorA.get().set(cursorB.get().copy());
 
@@ -143,8 +143,14 @@ public class Kdbranch {
 					
 
 				}
+				
+				
 			}
 		}
+		
+		
+		
+	
 
 		return mergedList;
 
@@ -195,11 +201,39 @@ public class Kdbranch {
 		PointSampleList<FloatType> list = new PointSampleList<FloatType>(img.numDimensions());
 
 		PointSampleList<FloatType> sortedlist = new PointSampleList<FloatType>(img.numDimensions());
+		
+		
+		
 
 		list = getList(img);
 
 		sortedlist = getsubList(list, 0);
 
+		
+		
+		
+	Cursor<FloatType> test= sortedlist.cursor();
+	Cursor<FloatType> testiter= sortedlist.cursor();
+		
+		test.fwd();
+		testiter.fwd();
+		test.next();
+		while(test.hasNext()){
+		testiter.next();
+		
+		if(test.get().compareTo(testiter.get())>0 )
+			
+			System.out.println("False");
+		
+		test=testiter;
+		}
+			
+			
+			
+				
+				
+		
+		
 		System.out.println(list.size());
 		System.out.println(sortedlist.size());
 
