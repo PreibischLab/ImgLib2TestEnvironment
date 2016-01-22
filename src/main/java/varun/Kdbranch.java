@@ -29,98 +29,126 @@ import net.imglib2.view.Views;
 
 public class Kdbranch {
 
-	
-
 	// Input a List and get two sublists split at the median
-	public static <T extends RealType<T>> void getsubList(PointSampleList<T> list, int direction) {
+	public static <T extends RealType<T>> PointSampleList<T> getsubList(PointSampleList<T> list, int direction) {
 
-		
-		/****  To ward against running over the dimensionality, creating some local restrictions on the global variable direction   ****/
+		/****
+		 * To ward against running over the dimensionality, creating some local
+		 * restrictions on the global variable direction
+		 ****/
 		if (direction == list.numDimensions())
 			direction = 0;
-		
+
 		int otherdirection;
-		
+
 		otherdirection = direction + 1;
 		if (direction == list.numDimensions() - 1)
 			otherdirection = 0;
 		if (direction >= 0 && direction < list.numDimensions() - 1)
 			otherdirection = direction + 1;
-		
+
 		int n = list.numDimensions();
 
 		int meanIndex;
-		
 
 		final Cursor<T> listCursor = list.localizingCursor().copyCursor();
-		
-		
-		
 
 		PointSampleList<T> childA = new PointSampleList<T>(n);
 
 		PointSampleList<T> childB = new PointSampleList<T>(n);
 
-		meanIndex =(int)  (list.min(direction)+((list.max(direction)-list.min(direction))/2));
-		
-		
-		
+		PointSampleList<T> sortedList = new PointSampleList<T>(n);
+
+		meanIndex = (int) (list.min(direction) + ((list.max(direction) - list.min(direction)) / 2));
+
 		// In this loop I create the splitPlane at mean value in one direction
-		
+
 		while (listCursor.hasNext()) {
 
 			listCursor.fwd();
-			
+
 			Point splitPoint = new Point(n);
 
 			long splitPlane = listCursor.getLongPosition(otherdirection);
 
 			splitPoint.setPosition(meanIndex, direction);
 			splitPoint.setPosition(splitPlane, otherdirection);
-			
+
 			Point cord = new Point(n);
 
 			cord.setPosition(listCursor);
 			if (listCursor.getLongPosition(direction) <= splitPoint.getDoublePosition(direction))
-				
+
 				childA.add(cord, listCursor.get().copy());
-			
+
 			else
-				
-				
+
 				childB.add(cord, listCursor.get().copy());
-			
-		
-			
+
 		}
-		
-		
-		
-		if ((meanIndex - 1) >= 0 && childA.dimension(direction) > 1 && childB.dimension(direction) > 1) {
-			
-			
-			System.out.println("   Size of list childA: "+childA.size());
-			System.out.println("   Size of list childB: "+childB.size());
-			
-		//	getsubList(childA, otherdirection);
+
+		if ((meanIndex) >= 0 && childA.size() > 0 && childB.size() > 0) {
+
+			// System.out.println(" Size of list childA: "+childA.size());
+			// System.out.println(" Size of list childB: "+childB.size());
+
+			getsubList(childA, otherdirection);
 			getsubList(childB, otherdirection);
+
+			sortedList = mergeList(childA, childB);
 		}
-		
-	
-		
-		
-		
+
+		return sortedList;
+
 	}
-	
-	
-	
-			
-			
-			
-			
-			
-			
-	
+
+	public static <T extends RealType<T>> PointSampleList<T> mergeList(PointSampleList<T> listA,
+			PointSampleList<T> listB) {
+
+		int n = listA.numDimensions();
+		int m = listB.numDimensions();
+
+		PointSampleList<T> mergedList = new PointSampleList<T>(n);
+
+		Cursor<T> cursorA = listA.cursor();
+
+		Cursor<T> cursorB = listB.cursor();
+
+		cursorA.fwd();
+		cursorB.fwd();
+
+		if (n == m) {
+
+			while (cursorA.hasNext()) {
+
+				Point cord = new Point(n);
+
+				cord.setPosition(cursorA);
+
+				cursorA.fwd();
+				cursorB.fwd();
+				if (cursorA.get().compareTo(cursorB.get()) >= 0) {
+
+					cursorA.get().set(cursorB.get().copy());
+
+					mergedList.add(cord, cursorA.get().copy());
+					mergedList.add(cord, cursorB.get().copy());
+					
+				} else {
+
+					cursorA.get().copy();
+
+					mergedList.add(cord, cursorA.get().copy());
+					mergedList.add(cord, cursorB.get().copy());
+					
+
+				}
+			}
+		}
+
+		return mergedList;
+
+	}
 
 	public static <T extends RealType<T>> PointSampleList<T> getList(RandomAccessibleInterval<T> img) {
 
@@ -166,9 +194,14 @@ public class Kdbranch {
 
 		PointSampleList<FloatType> list = new PointSampleList<FloatType>(img.numDimensions());
 
+		PointSampleList<FloatType> sortedlist = new PointSampleList<FloatType>(img.numDimensions());
+
 		list = getList(img);
 
-		getsubList(list, 0);
+		sortedlist = getsubList(list, 0);
+
+		System.out.println(list.size());
+		System.out.println(sortedlist.size());
 
 		// ImageJFunctions.show(img).setTitle("Original_Image");
 
