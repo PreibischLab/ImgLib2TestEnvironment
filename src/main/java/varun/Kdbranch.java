@@ -99,8 +99,8 @@ public class Kdbranch {
 		if ((meanIndex - 1) >= 0 && childA.dimension(direction) > 1 && childB.dimension(direction) > 1) {
 			
 			
-			System.out.println("    pixels in running direction of childA: "+childA.size());
-			System.out.println("    pixels in running direction of childB: "+childB.size());
+			System.out.println("   Size of list childA: "+childA.size());
+			System.out.println("   Size of list childB: "+childB.size());
 			
 		//	getsubList(childA, otherdirection);
 			getsubList(childB, otherdirection);
