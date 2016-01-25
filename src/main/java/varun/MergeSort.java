@@ -12,25 +12,22 @@ public class MergeSort {
 
 	public static int[] sort(int[] list) {
 
-		int[] sortedlist = new int[list.length];
-		int[] tmplist = new int[list.length];
+		
+		int tmp;
 
-		int j = 0;
-		for (int i = 0; i < list.length; ++i) {
-			if (list[i] <= list[j]){
-				tmplist[j] = list[i];
-			 sortedlist[i]=tmplist[j];
+		for (int i = 0; i < list.length; ++i){
+		for (int j = i+1; j < list.length; ++j) {
+			if (list[i] >= list[j]){
+				tmp = list[i];
+				list[i]=list[j];
+			 list[j]=tmp;
 		}
 
-			else{
-				tmplist[j] = list[j];
-				
-				sortedlist[i]=tmplist[j];
-			}
-			++j;
+			
+		}
 		}
 
-		return sortedlist;
+		return list;
 	}
 
 	public static int[] merge(int[] listA, int[] listB) {
@@ -83,7 +80,7 @@ public class MergeSort {
 		
 		Pair<int[], int[]> pair;
 
-		//if (list.length > 1) {
+		if (list.length > 1) {
 
 			int[] listA = new int[list.length/2];
 			int[] listB = new int[list.length/2+list.length%2];
@@ -99,7 +96,7 @@ public class MergeSort {
 			
 			finallist=sort(sortedlist);
 
-		//}
+		}
 
 		return finallist;
 
