@@ -125,9 +125,7 @@ public class Kdbranch {
 		while (cursorA.hasNext() && cursorB.hasNext()) {
 
 			
-			listcursor.fwd();
-			cursorA.fwd();
-			cursorB.fwd();
+			
 
 			if (cursorA.get().compareTo(cursorB.get()) < 0) {
 				Point cord = new Point(n);
