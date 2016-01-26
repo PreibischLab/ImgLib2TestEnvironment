@@ -140,14 +140,14 @@ public class SortList {
 
 			split(childB, direction);
 
-			mergeList(list, childA, childB,direction);
+			mergeList(list, childA, childB);
 			 
 		}
 
 	}
 
 	public static <T extends RealType<T>> void mergeList(PointSampleList<T> list, PointSampleList<T> listA,
-			PointSampleList<T> listB, int direction) {
+			PointSampleList<T> listB) {
 
 		
 		int n= list.numDimensions();
@@ -255,20 +255,31 @@ public class SortList {
 	public static void main(String[] args) {
 
 		final Img<FloatType> img = ImgLib2Util.openAs32Bit(new File("src/main/resources/bridge.png"));
+		
 		Img<FloatType> imgout = new CellImgFactory<FloatType>().create(img, img.firstElement());
+
 		PointSampleList<FloatType> list = new PointSampleList<FloatType>(img.numDimensions());
-		int numPoints = 3;
-		Random rnd = new Random(System.currentTimeMillis());
-		FinalInterval interval = new FinalInterval(new long[] { 0, 20 });
-		for (int i = 0; i < numPoints; ++i) {
-			Point point = new Point(2);
+		
+		
+		 IterableInterval< FloatType > view =
+	                Views.interval( img, new long[] { 0, 0 }, new long[]{ 0, 10 } );
+		 
+		 final Cursor<FloatType> first = view.cursor();
 
-			for (int d = 0; d < 2; ++d) {
-				point.setPosition((int) (rnd.nextInt() * (interval.max(d) - interval.min(d)) + interval.min(d)), d);
+			
+			
 
-				list.add(point, new FloatType(Math.abs(rnd.nextInt())));
+			while (first.hasNext()) {
+				first.fwd();
+				Point cord = new Point(img.numDimensions());
+
+				cord.setPosition(first);
+
+				list.add(cord, first.get().copy());
+
 			}
-		}
+		 
+		
 
 		final ArrayList<FloatType> testList = new ArrayList<FloatType>();
 
@@ -289,7 +300,7 @@ public class SortList {
 		// list = getList(img);
 
 		split(list, 0);
-	//	split(list, 1);
+		split(list, 1);
 
 		final ArrayList<FloatType> testListtwo = new ArrayList<FloatType>();
 
