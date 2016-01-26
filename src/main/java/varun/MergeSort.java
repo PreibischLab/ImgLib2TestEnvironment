@@ -10,49 +10,58 @@ public class MergeSort {
 
 	}
 
-	public static int[] sort(int[] list) {
+	public static void sortMerge(int[] list, int[] listA, int[] listB) {
 
+		int i=0, j=0, k=0;
 		
-		int tmp;
-
-		for (int i = 0; i < list.length; ++i){
-		for (int j = i+1; j < list.length; ++j) {
-			if (list[i] >= list[j]){
-				tmp = list[i];
-				list[i]=list[j];
-			 list[j]=tmp;
-		}
-
+		while(i<listA.length && j<listB.length){
+			
+			if(listA[i]<listB[j]){
+				
+				list[k]=listA[i];
+				++i;
+				++k;
+			}
+			
+			
+			else{
+				
+				list[k]=listB[j];
+				++j;
+				++k;
+				
+				
+			}
+			
 			
 		}
+		
+		while(i<listA.length){
+			list[k]=listA[i];
+			++i;
+			++k;
+			
 		}
-
-		return list;
-	}
-
-	public static int[] merge(int[] listA, int[] listB) {
-
-		int [] list= new int[listA.length+listB.length];
-		int j = 0;
-		for (int i = 0; i < listA.length; ++i) {
-
-			list[j] = listA[i];
+		
+		while(j<listB.length){
+			list[k]=listB[j];
 			++j;
+			++k;
+			
 		}
-
-		for (int i = 0; i < listB.length; ++i) {
-
-			list[j] = listB[i];
-++j;
-		}
-
-		return list;
-
+		
+		
+		
 	}
 
-	public static Pair<int[], int[]> split(int[] list) {
+	
+
+	public static void split(int[] list) {
+
 		if (list.length <= 1)
-			return null;
+			return;
+		else
+		{
 
 		int[] out1 = new int[list.length / 2];
 		int[] out2 = new int[list.length / 2 + list.length % 2];
@@ -68,45 +77,33 @@ public class MergeSort {
 			++j;
 		}
 
-		Pair<int[], int[]> pair = new ValuePair<int[], int[]>(out1, out2);
+	//	Pair<int[], int[]> pair = new ValuePair<int[], int[]>(out1, out2);
 
-		return pair;
-
-	}
-
-	public static int[] mergeSort(int[] list) {
-
-		int[] finallist = new int[list.length];
 		
-		Pair<int[], int[]> pair;
-
-		if (list.length > 1) {
-
-			int[] listA = new int[list.length/2];
-			int[] listB = new int[list.length/2+list.length%2];
-			int[] sortedlist = new int[list.length];
-
-			pair = split(list);
-			listA = sort(pair.getA());
-			listB = sort(pair.getB());
-
 			
-
-			sortedlist = merge(listA,listB);
 			
-			finallist=sort(sortedlist);
-
+			split(out1);
+			
+			
+			split(out2);
+			
+			sortMerge(list,out1,out2);
+			
+			
+			
 		}
+		
+		}
+		
+	
 
-		return finallist;
 
-	}
 
 	public static void main(String[] args) {
 
-		int[] list = new int[8];
-		int[] sortedlist = new int[8];
-
+		int[] list = new int[]{5,2,4,7,1,3,2,6};
+		
+/*
 		list[0] = 5;
 		list[1] = 2;
 		list[2] = 4;
@@ -115,12 +112,12 @@ public class MergeSort {
 		list[5] = 3;
 		list[6] = 2;
 		list[7] = 6;
-
-		sortedlist=mergeSort(list);
+*/
+		split(list);
 		
 		for (int i=0; i<list.length; ++i){
 			
-			System.out.print(sortedlist[i]);
+			System.out.print(list[i]);
 		}
 		
 

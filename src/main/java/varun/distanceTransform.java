@@ -30,7 +30,7 @@ public class distanceTransform {
 			bound.fwd();
 
 			outbound.setPosition(bound);
-
+		
 			if (bound.get().compareTo(ThresholdValue) > 0) {
 
 				outbound.get().setOne();
