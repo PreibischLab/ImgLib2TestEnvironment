@@ -18,6 +18,7 @@ import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.real.FloatType;
 import net.imglib2.view.Views;
+import util.ImgLib2Util;
 
 public class SortList {
 
@@ -139,40 +140,31 @@ public class SortList {
 
 			split(childB, direction);
 
-			mergeList(list, childA, childB);
+			mergeList(list, childA, childB,direction);
 			 
 		}
 
 	}
 
 	public static <T extends RealType<T>> void mergeList(PointSampleList<T> list, PointSampleList<T> listA,
-			PointSampleList<T> listB) {
+			PointSampleList<T> listB, int direction) {
 
 		
 		int n= list.numDimensions();
-		PointSampleList<T> tmplist = new PointSampleList<T>(n);
+	
 		
 		
 		
 
 		
-		Cursor<T> cursorA = listA.cursor();
+		Cursor<T> cursorA = listA.localizingCursor().copyCursor();
 
-		Cursor<T> cursorB = listB.cursor();
+		Cursor<T> cursorB = listB.localizingCursor().copyCursor();
 		
-		Cursor<T> listcursor = tmplist.cursor();
+		Cursor<T> listcursor = list.localizingCursor().copyCursor();
 		
-		Cursor<T> copycursor = list.cursor();
-		copycursor.fwd();
-		while (copycursor.hasNext()) {
-			copycursor.fwd();
-			Point cord = new Point(n);
-
-			cord.setPosition(copycursor);
-
-			tmplist.add(cord, copycursor.get().copy());
-
-		}
+		
+		
 
 		
 		
@@ -187,22 +179,28 @@ public class SortList {
 			
 			Point cord = new Point(n);
 			cord.setPosition(listcursor);
+			
 
 			if (cursorA.get().compareTo(cursorB.get()) < 0) {
 				
-				listcursor.get().set(cursorA.get().copy());
+				listcursor.get().set(cursorA.get());
+				
+				
+				
 				listcursor.fwd();
 				cursorA.fwd();
-				tmplist.add(cord, listcursor.get().copy());
+				System.out.println("I am hereA");
 				
 
 			} else {
 				
-				listcursor.get().set(cursorB.get().copy());
+				listcursor.get().set(cursorB.get());
+				
+				
 				listcursor.fwd();
 				cursorB.fwd();
+				System.out.println("I am hereB");
 				
-				tmplist.add(cord, listcursor.get().copy());
 
 			}
 			
@@ -211,13 +209,14 @@ public class SortList {
 		while (cursorA.hasNext() ) {
 				
 				
-				listcursor.get().set(cursorA.get().copy());
+				listcursor.get().set(cursorA.get());
+				
 				listcursor.fwd();
 				cursorA.fwd();
 
+				System.out.println("I am hereC");
 				
-				
-	tmplist.add(cord, listcursor.get().copy());
+	
 				
 				
 
@@ -225,34 +224,20 @@ public class SortList {
 			
 			while (cursorB.hasNext() ) {
 				
+				listcursor.get().set(cursorB.get());
 				
-
 				
-				listcursor.get().set(cursorB.get().copy());
+			
 				listcursor.fwd();
 				cursorB.fwd();
-				tmplist.add(cord, listcursor.get().copy());
+				System.out.println("I am hereD");
 				
 			}	
 			
 			
 
 		}
-		/*
-		while(listcursor.hasNext()){
 		
-			listcursor.fwd();
-			
-			Point newpoint = new Point(n);
-			newpoint.setPosition(listcursor);
-			list.add(newpoint, listcursor.get());
-		
-		
-		}*/
-	
-			
-		//	System.out.println(list.size());
-			
 			
 		
 
@@ -281,7 +266,7 @@ public class SortList {
 			for (int d = 0; d < 2; ++d) {
 				point.setPosition((int) (rnd.nextInt() * (interval.max(d) - interval.min(d)) + interval.min(d)), d);
 
-				list.add(point, new FloatType(rnd.nextInt()));
+				list.add(point, new FloatType(Math.abs(rnd.nextInt())));
 			}
 		}
 
@@ -304,7 +289,7 @@ public class SortList {
 		// list = getList(img);
 
 		split(list, 0);
-		split(list, 1);
+	//	split(list, 1);
 
 		final ArrayList<FloatType> testListtwo = new ArrayList<FloatType>();
 
