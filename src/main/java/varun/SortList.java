@@ -87,13 +87,9 @@ public class SortList {
 			if (direction == list.numDimensions())
 				direction = 0;
 
-			int otherdirection;
+			
 
-			otherdirection = direction + 1;
-			if (direction == list.numDimensions() - 1)
-				otherdirection = 0;
-			if (direction >= 0 && direction < list.numDimensions() - 1)
-				otherdirection = direction + 1;
+			
 
 			int meanIndex;
 
@@ -115,10 +111,10 @@ public class SortList {
 
 				Point splitPoint = new Point(n);
 
-				long splitPlane = listCursor.getLongPosition(otherdirection);
+				
 
 				splitPoint.setPosition(meanIndex, direction);
-				splitPoint.setPosition(splitPlane, otherdirection);
+				
 
 				Point cord = new Point(n);
 
