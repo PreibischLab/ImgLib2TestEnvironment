@@ -80,8 +80,8 @@ public class SortList {
 	public static <T extends RealType<T>> void split(PointSampleList<T> list, int direction) {
 
 		int n = list.numDimensions();
-		
-		if (list.dimension(direction) <= 2)
+
+		if (list.dimension(direction) < 2)
 			return;
 
 		else {
@@ -89,14 +89,15 @@ public class SortList {
 			int meanIndex;
 
 			final Cursor<T> listCursor = list.localizingCursor().copyCursor();
-			
 
 			PointSampleList<T> childA = new PointSampleList<T>(n);
 
 			PointSampleList<T> childB = new PointSampleList<T>(n);
 
-			meanIndex = (int) (list.min(direction) + ((list.max(direction) - list.min(direction)) / 2)
-					+ list.dimension(direction) % 2);
+			// meanIndex = (int) (list.min(direction)+ ((list.max(direction) -
+			// list.min(direction)) / 2)+ list.dimension(direction) % 2 ) ;
+
+			meanIndex = (int) (list.min(direction) + ((list.dimension(direction) ) / 2)+ list.dimension(direction) % 2);
 
 			// Here I split the list along the median in one direction
 
@@ -111,23 +112,27 @@ public class SortList {
 				Point cord = new Point(n);
 
 				cord.setPosition(listCursor);
-				if (listCursor.getLongPosition(direction) < splitPoint.getDoublePosition(direction)) {
+				if (listCursor.getLongPosition(direction) < splitPoint.getLongPosition(direction)) {
 
 					childA.add(cord, listCursor.get().copy());
 
-				} else {
+				//	 System.out.println("childA: "+listCursor.get());
+
+				} else
+
+				{
 
 					childB.add(cord, listCursor.get().copy());
-
+				//	 System.out.println("childB: "+listCursor.get());
 				}
+				
+				
 			}
-			
-			 split(childA, direction);
 
-			 split(childB, direction);
+			split(childA, direction);
 
-			 
-			 
+			split(childB, direction);
+
 			mergeList(list, childA, childB);
 
 		}
@@ -137,57 +142,53 @@ public class SortList {
 	public static <T extends RealType<T>> void mergeList(PointSampleList<T> list, PointSampleList<T> listA,
 			PointSampleList<T> listB) {
 
-		
-
 		Cursor<T> cursorA = listA.localizingCursor().copyCursor();
 
 		Cursor<T> cursorB = listB.localizingCursor().copyCursor();
 
-		Cursor<T> listcursor = list.localizingCursor().copyCursor();
+		Cursor<T> cursor = list.localizingCursor().copyCursor();
 
-		
+		cursor.fwd();
 		cursorA.fwd();
 		cursorB.fwd();
 
-		while (cursorA.hasNext() && cursorB.hasNext()) {
+		
+		
+		
+		while ( cursorA.hasNext() && cursorB.hasNext()) {
 
 			if (cursorA.get().compareTo(cursorB.get()) < 0) {
 
-				listcursor.fwd();
-
-				listcursor.get().set(cursorA.get());
+				cursor.get().set(cursorA.get().copy());
 
 				cursorA.fwd();
+				cursor.fwd();
 
 			} else {
 
-				listcursor.fwd();
-
-				listcursor.get().set(cursorB.get());
+				cursor.get().set(cursorB.get().copy());
 
 				cursorB.fwd();
-
+				cursor.fwd();
 			}
 
-			while (cursorA.hasNext()) {
+		}
 
-				listcursor.fwd();
-				listcursor.get().set(cursorA.get());
+		if (cursorA.hasNext()) {
 
-				cursorA.fwd();
+			cursor.get().set(cursorA.get().copy());
 
-			}
+			cursorA.fwd();
+			cursor.fwd();
 
-			while (cursorB.hasNext()) {
+		}
 
-				listcursor.fwd();
+		while (cursorB.hasNext()) {
 
-				listcursor.get().set(cursorB.get());
+			cursor.get().set(cursorB.get().copy());
 
-				cursorB.fwd();
-
-			}
-
+			cursorB.fwd();
+			cursor.fwd();
 		}
 
 	}
@@ -200,7 +201,7 @@ public class SortList {
 
 		PointSampleList<FloatType> list = new PointSampleList<FloatType>(img.numDimensions());
 
-		IterableInterval<FloatType> view = Views.interval(img, new long[] { 0, 0 }, new long[] { 2, 2 });
+		IterableInterval<FloatType> view = Views.interval(img, new long[] { 0, 0 }, new long[] { 1, 1 });
 
 		final Cursor<FloatType> first = view.cursor();
 
@@ -209,44 +210,36 @@ public class SortList {
 			Point cord = new Point(img.numDimensions());
 
 			cord.setPosition(first);
-			
-		
 
 			list.add(cord, first.get().copy());
-	        //    System.out.println("Set of x co-ordinates: "+cord.getDoublePosition(0));
-			//	System.out.println("Set of y co-ordinates: "+cord.getDoublePosition(1));
-			//	System.out.println(first.get());
+			 System.out.println("Set of x co-ordinates Initial List : " +
+			 cord.getDoublePosition(0));
+			 System.out.println("Set of y co-ordinates Initial List : " +
+			 cord.getDoublePosition(1));
+			System.out.println("Values Initial list : " + first.get());
 
 		}
 
-		
-
 		// list = getList(img);
 
-		split(list, 0);
-		//split(list, 1);
-
-		
+	split(list, 0);
+		// split(list, 1);
 
 		Cursor<FloatType> testtwo = list.cursor();
-		
+
 		while (testtwo.hasNext()) {
 			testtwo.fwd();
 			Point newpoint = new Point(img.numDimensions());
 
 			newpoint.setPosition(testtwo);
-			
-			 System.out.println("Set of x co-ordinates: "+newpoint.getDoublePosition(0));
-				System.out.println("Set of y co-ordinates: "+newpoint.getDoublePosition(1));
-				System.out.println(testtwo.get());
-			
+
+			 System.out.println("Set of x co-ordinates sorted List : " +
+			 newpoint.getDoublePosition(0));
+			 System.out.println("Set of y co-ordinates sorted List : " +
+			 newpoint.getDoublePosition(1));
+			System.out.println("Values sorted list : " + testtwo.get());
 
 		}
-
-		
-		// listtoImage(list, imgout);
-
-		// ImageJFunctions.show(imgout).setTitle("split along x and y");;
 
 	}
 }
