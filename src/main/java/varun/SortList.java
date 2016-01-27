@@ -174,7 +174,7 @@ public class SortList {
 
 		}
 
-		if (cursorA.hasNext()) {
+		while (cursorA.hasNext()) {
 
 			cursor.get().set(cursorA.get().copy());
 
