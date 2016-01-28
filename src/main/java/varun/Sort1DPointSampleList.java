@@ -66,11 +66,11 @@ public class Sort1DPointSampleList {
 	
 	
 	
-	public static <T extends RealType<T>> void split(PointSampleList<T> list, int direction, int loc) {
+	public static <T extends RealType<T>> void split(PointSampleList<T> list, int direction ) {
 
 		int n = list.numDimensions();
 
-		if (list.dimension(direction) < 2)
+		if (list.dimension(direction) <= 1)
 			return;
 
 		else {
@@ -82,80 +82,47 @@ public class Sort1DPointSampleList {
 			if (direction == list.numDimensions())
 				direction = 0;
 
-			int otherdirection;
+			// the first element belonging to the right list childB
+			final int splitIndex = (int)list.dimension(direction) / 2;
 
-			otherdirection = direction + 1;
-			if (direction == list.numDimensions() - 1)
-				otherdirection = 0;
-			if (direction >= 0 && direction < list.numDimensions() - 1)
-				otherdirection = direction + 1;
-
-			int meanIndex;
-
-			final Cursor<T> listCursor = list.localizingCursor().copyCursor();
-
-			PointSampleList<T> childA = new PointSampleList<T>(n);
-
-			PointSampleList<T> childB = new PointSampleList<T>(n);
-
+			System.out.println( splitIndex );
 			
-			// parameter loc ensures the meanIndex is set correctly for every list 
-			
-			if (list.dimension(direction) % 2 == 0)
+			final PointSampleList<T> childA = new PointSampleList<T>(n);
+			final PointSampleList<T> childB = new PointSampleList<T>(n);
 
-				meanIndex = (int) (loc + list.dimension(direction) / 2);
+			final Cursor<T> listCursor = list.localizingCursor();
 
-			else
-
-				meanIndex = (int) (loc + (list.dimension(direction) + list.dimension(direction) % 2) / 2);
-
-			// Here I split the list along the median in one direction
-
+			int i = 0;
 			while (listCursor.hasNext()) {
 
 				listCursor.fwd();
 
-				Point splitPoint = new Point(n);
-
-				splitPoint.setPosition(meanIndex, direction);
-
 				Point cord = new Point(n);
-
 				cord.setPosition(listCursor);
-				if (listCursor.getLongPosition(direction) < splitPoint.getLongPosition(direction)) {
+
+				if ( i < splitIndex )
+				{
 
 					childA.add(cord, listCursor.get().copy());
 
-					// System.out.println("childA: "+listCursor.get());
+					System.out.println("childA: "+listCursor.get());
 
 				} else
 
 				{
 
 					childB.add(cord, listCursor.get().copy());
-					// System.out.println("childB: "+listCursor.get());
+					System.out.println("childB: "+listCursor.get());
 				}
-
+				i++;
 			}
 
-			Localizable firstlocA = firstLocation(childA);
-
-			int locA = firstlocA.getIntPosition(direction);
-
-			Localizable firstlocB = firstLocation(childB);
-
-			int locB = firstlocB.getIntPosition(direction);
-
-			firstlocB.getIntPosition(direction);
-
-			split(childA, direction, locA);
-
-			split(childB, direction, locB);
-
-			mergeList(list, childA, childB);////DO not know why the list returned is not sorted!!!!!!!
-
 			
+			split(childA, direction);
 
+			split(childB, direction);
+
+			mergeList(list, childA, childB);
 		}
 
 	}
@@ -171,32 +138,49 @@ public class Sort1DPointSampleList {
 	
 	
 	
-	///*****       Is this the problem part? Should return a sorted 1D list but does-not!!!!!!!!! *********////
+	///*****       Returns a sorted list *********////
 	public static <T extends RealType<T>> void mergeList(PointSampleList<T> list, PointSampleList<T> listA,
 			PointSampleList<T> listB) {
 
-		final Cursor<T> cursorA = listA.localizingCursor().copyCursor();
+		final Cursor<T> cursorA = listA.localizingCursor();
+		final Cursor<T> cursorB = listB.localizingCursor();
+		final Cursor<T> cursor = list.localizingCursor();
 
-		final Cursor<T> cursorB = listB.localizingCursor().copyCursor();
-
-		final Cursor<T> cursor = list.localizingCursor().copyCursor();
-
-		cursor.fwd();
 		cursorA.fwd();
 		cursorB.fwd();
 
 	//	System.out.println("listA : " + cursorA.get());
 	//	System.out.println("listB : " + cursorB.get());
 
-		while (cursorA.hasNext() && cursorB.hasNext()) {
-
+		boolean cannotMoveOn = false;
+		
+		do
+		{
+			// here is where you decide what you sort after
 			if (cursorA.get().compareTo(cursorB.get()) < 0) {
 
-				cursor.get().set(cursorA.get().copy());
-
-				cursorA.fwd();
-
 				cursor.fwd();
+				cursor.get().set( cursorA.get() );
+				if ( cursorA.hasNext() )
+					cursorA.fwd();
+				else
+				{
+					cannotMoveOn = true;
+					
+					// move cursorB until the end
+					boolean stopped = false;
+					do
+					{
+						cursor.fwd();
+						cursor.get().set( cursorB.get() );
+						if ( cursorB.hasNext() )
+							cursorB.fwd();
+						else
+							stopped = true;					
+					}
+					while ( stopped == false );
+				}
+				
 		//		System.out.println("In here");
 			}
 
@@ -204,35 +188,32 @@ public class Sort1DPointSampleList {
 
 			{
 
-				cursor.get().set(cursorB.get().copy());
-
-				cursorB.fwd();
-
 				cursor.fwd();
-
+				cursor.get().set( cursorB.get() );
+				if ( cursorB.hasNext() )
+					cursorB.fwd();
+				else
+				{
+					cannotMoveOn = true;
+					
+					// move cursorA until the end
+					boolean stopped = false;
+					do
+					{
+						cursor.fwd();
+						cursor.get().set( cursorA.get() );
+						if ( cursorA.hasNext() )
+							cursorA.fwd();
+						else
+							stopped = true;					
+					}
+					while ( stopped == false );
+				}
 		//		System.out.println("Out here");
 			}
 
 		}
-
-		while (cursorA.hasNext()) {
-
-			cursor.get().set(cursorA.get().copy());
-
-			cursorA.fwd();
-			cursor.fwd();
-		//	System.out.println("In here Alone");
-		}
-
-		while (cursorB.hasNext()) {
-
-			cursor.get().set(cursorB.get().copy());
-
-			cursorB.fwd();
-			cursor.fwd();
-	//		System.out.println("Out here Alone");
-		}
-
+		while ( cannotMoveOn == false );
 	}
 	
 	
@@ -248,7 +229,7 @@ public class Sort1DPointSampleList {
 		
 		//Make a 1D list along the X direction by setting an appropriate interval on the image. 
 
-		IterableInterval<FloatType> view = Views.interval(img, new long[] { 0, 0 }, new long[] { 3, 0 });
+		IterableInterval<FloatType> view = Views.interval(img, new long[] { 0, 0 }, new long[] { 7, 0 });
 
 		final Cursor<FloatType> first = view.cursor();
 
@@ -259,17 +240,17 @@ public class Sort1DPointSampleList {
 			cord.setPosition(first);
 
 			list.add(cord, first.get().copy());
-			// System.out.println("Set of x co-ordinates Initial List : " +
-			// cord.getDoublePosition(0));
-			// System.out.println("Set of y co-ordinates Initial List : " +
-			// cord.getDoublePosition(1));
+			 //System.out.println("Set of x co-ordinates Initial List : " +
+			 //cord.getDoublePosition(0));
+			 //System.out.println("Set of y co-ordinates Initial List : " +
+			 //cord.getDoublePosition(1));
 			System.out.println("Values Initial list : " + first.get());
 
 		}
 
 		
 
-		split(list, 0, 0); // Split list along X direction
+		split(list, 0); // Split list along X direction
 		
 
 		Cursor<FloatType> testtwo = list.cursor();
@@ -280,9 +261,9 @@ public class Sort1DPointSampleList {
 
 			newpoint.setPosition(testtwo);
 
-			// System.out.println("Set of x co-ordinates sorted List : " +
-			// newpoint.getDoublePosition(0));
-			// System.out.println("Set of y co-ordinates sorted List : " +
+			 //System.out.println("Set of x co-ordinates sorted List : " +
+			 //newpoint.getDoublePosition(0));
+			 //System.out.println("Set of y co-ordinates sorted List : " +
 			// newpoint.getDoublePosition(1));
 			System.out.println("Values sorted list : " + testtwo.get());
 
