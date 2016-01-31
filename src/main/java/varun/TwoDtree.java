@@ -64,36 +64,28 @@ public class TwoDtree {
 		return parent;
 
 	}
-	
-	
-	// Sorts the co-ordinates in a given direction, the central element is then always the pivot for the kDTree.
-	public static <T extends RealType<T>> ArrayList<Long> sortedCoordinates(PointSampleList<T> list,int direction){
-		
-		
-		
+
+	// Sorts the co-ordinates in a given direction, the central element is then
+	// always the pivot for the kDTree.
+	public static <T extends RealType<T>> ArrayList<Long> sortedCoordinates(PointSampleList<T> list, int direction) {
+
 		final Cursor<T> listCursor = list.localizingCursor();
-		
+
 		final ArrayList<Long> values = new ArrayList<Long>((int) list.dimension(direction));
-		
-		
-		
+
 		while (listCursor.hasNext()) {
 			listCursor.next();
 			values.add(listCursor.getLongPosition(direction));
 		}
-		
-		split(values,direction);
-		
-		
-		
-		return values;
-		
-		
-	}
-	
-	
 
-	public static <T extends RealType<T>> void splitbyCoordinate(PointSampleList<T> list, int direction) {
+		split(values, direction);
+
+		return values;
+
+	}
+
+	public static <T extends RealType<T>> void splitbyCoordinate(PointSampleList<T> list,
+			ArrayList<Long> sortedcoordinateList,int startindex, int lastindex, int direction) {
 
 		int n = list.numDimensions();
 		/****
@@ -121,18 +113,27 @@ public class TwoDtree {
 
 			final Cursor<T> listCursor = list.localizingCursor();
 
-			
 			double pivot;
 			
-			pivot=0.0;
-			
-		//	pivot= ithpivotElement(ArrayList<Long> sortedcoordinateList, int direction, int startindex, int lastindex, int ithindex)
 			
 
+
+
+			int startindexA= 0;
+			int lastindexA=(int) (list.dimension(direction)/2-1+list.dimension(direction)%2);
 			
+			int startindexB=(int) (list.dimension(direction)/2+list.dimension(direction)%2);
+			int lastindexB=(int) list.dimension(direction)-1;
+
+			
+
+			 pivot= pivotElement(sortedcoordinateList,
+			 direction,startindex,lastindex);
+
 			while (listCursor.hasNext()) {
 
 				listCursor.fwd();
+				
 
 				Point cord = new Point(listCursor);
 
@@ -149,42 +150,39 @@ public class TwoDtree {
 					childB.add(cord, listCursor.get().copy());
 					// System.out.println("childB: "+listCursor.get());
 				}
-				
+
 			}
 
-			//splitbyCoordinate(childA, direction+1);
+			// splitbyCoordinate(childA,startindexA,lastindexA, direction+1);
 
-			// splitbyCoordinate(childB, direction+1);
+			// splitbyCoordinate(childB,startindexB, lastindexB, direction+1);
 
-			
 		}
 
 	}
-
-	public static <T extends RealType<T>> double ithpivotElement(ArrayList<Long> sortedcoordinateList, int direction, int startindex, int lastindex, int ithindex) {
-
-		
 	
-			
+	
+	public static <T extends RealType<T>> Localizable firstLocation(final IterableInterval<T> interval) {
+		Cursor<T> c = interval.localizingCursor();
+		c.fwd();
 		
-		
-		double Element;
-		
-		
-		
-		int pivotIndex= ithindex+(lastindex-startindex)/2;
-		
-		Element = sortedcoordinateList.get (pivotIndex);
-		
-		
-		
-			
-		
-		
-	// System.out.println(Element);
+		return c;
+	}
+	
 
-		return  Element;
-		
+	public static <T extends RealType<T>> double pivotElement(ArrayList<Long> sortedcoordinateList, int direction,
+			int startindex, int lastindex) {
+
+		double Element;
+
+		int pivotIndex = startindex + (lastindex - startindex) / 2;
+
+		Element = sortedcoordinateList.get(pivotIndex);
+
+		// System.out.println(Element);
+
+		return Element;
+
 	}
 
 	public static <T extends RealType<T>> void split(ArrayList<Long> coordinateList, int direction) {
@@ -209,23 +207,23 @@ public class TwoDtree {
 			while (iterator.hasNext()) {
 				iterator.next();
 				if (xindex < splitIndex) {
-					childA.add(xindex,coordinateList.get(xindex));
+					childA.add(xindex, coordinateList.get(xindex));
 
 				} else
 
-					childB.add(xindex,coordinateList.get(xindex));
+					childB.add(xindex, coordinateList.get(xindex));
 
 				xindex++;
 
 			}
 
-			//System.out.println("childA : " + childA.size());
+			// System.out.println("childA : " + childA.size());
 
-		//	System.out.println("childB : " + childB.size());
+			// System.out.println("childB : " + childB.size());
 
-			 split(childA, direction);
+			split(childA, direction);
 
-			 split(childB, direction);
+			split(childB, direction);
 
 			mergeListValue(coordinateList, childA, childB);
 
@@ -237,16 +235,13 @@ public class TwoDtree {
 	public static <T extends RealType<T>> void mergeListValue(ArrayList<Long> sortedlist, ArrayList<Long> listA,
 			ArrayList<Long> listB) {
 
-		
 		int i = 0, j = 0, k = 0;
 
 		while (i < listA.size() && j < listB.size()) {
 
 			if (listA.get(i) < listB.get(j)) {
 
-				 sortedlist.set(k, listA.get(i));
-
-				
+				sortedlist.set(k, listA.get(i));
 
 				++i;
 				++k;
@@ -254,9 +249,7 @@ public class TwoDtree {
 
 			else {
 
-				
-				 sortedlist.set(k, listB.get(j));
-				
+				sortedlist.set(k, listB.get(j));
 
 				++j;
 				++k;
@@ -273,7 +266,7 @@ public class TwoDtree {
 		}
 
 		while (j < listB.size()) {
-			 sortedlist.set(k, listB.get(j));
+			sortedlist.set(k, listB.get(j));
 			++j;
 			++k;
 
@@ -281,17 +274,14 @@ public class TwoDtree {
 
 	}
 
-	
-
 	public static void main(String[] args) {
 
 		final Img<FloatType> img = ImgLib2Util.openAs32Bit(new File("src/main/resources/bridge.png"));
 
 		PointSampleList<FloatType> list = new PointSampleList<FloatType>(img.numDimensions());
-		
-		ArrayList< Long > XcoordinatesSort = new ArrayList<Long>((int)list.dimension(0));
-		ArrayList< Long > YcoordinatesSort = new ArrayList<Long>((int)list.dimension(1));
-		
+
+		ArrayList<Long> XcoordinatesSort = new ArrayList<Long>((int) list.dimension(0));
+		ArrayList<Long> YcoordinatesSort = new ArrayList<Long>((int) list.dimension(1));
 
 		// Make a 1D list along the X direction by setting an appropriate
 		// interval on the image.
@@ -315,12 +305,10 @@ public class TwoDtree {
 
 		}
 
-		XcoordinatesSort=sortedCoordinates(list, 0);
-		YcoordinatesSort=sortedCoordinates(list, 1);
-		splitbyCoordinate(list, 0); // Split list along X direction
-		
-		
-		
+		XcoordinatesSort = sortedCoordinates(list, 0);
+		YcoordinatesSort = sortedCoordinates(list, 1);
+		splitbyCoordinate(list,XcoordinatesSort,0,(int)list.dimension(0), 0); // Split list along X direction
+		splitbyCoordinate(list,YcoordinatesSort,0,(int)list.dimension(1), 1); // Split list along Y direction
 
 		Cursor<FloatType> testtwo = list.cursor();
 
