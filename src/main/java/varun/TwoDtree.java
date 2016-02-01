@@ -16,6 +16,7 @@ import net.imglib2.RandomAccess;
 import net.imglib2.RandomAccessible;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.RealCursor;
+
 import net.imglib2.img.Img;
 import net.imglib2.img.cell.CellImgFactory;
 import net.imglib2.img.display.imagej.ImageJFunctions;
@@ -73,19 +74,26 @@ public class TwoDtree {
 
 		final ArrayList<Long> values = new ArrayList<Long>((int) list.dimension(direction));
 
+		
+		
 		while (listCursor.hasNext()) {
-			listCursor.next();
+			listCursor.fwd();
+			
+		
 			values.add(listCursor.getLongPosition(direction));
+		
+		
 		}
-
+		System.out.println(values);
 		split(values, direction);
-
+		System.out.println(values);
 		return values;
+		
 
 	}
 
 	public static <T extends RealType<T>> void splitbyCoordinate(PointSampleList<T> list,
-			ArrayList<Long> sortedcoordinateList,int startindex, int lastindex, int direction) {
+			ArrayList<Long> sortedcoordinateList,ArrayList<Long>sortedcoordinateListsecond,int startindex, int lastindex, int direction) {
 
 		int n = list.numDimensions();
 		/****
@@ -94,8 +102,8 @@ public class TwoDtree {
 		 ****/
 		if (direction == list.numDimensions())
 			direction = 0;
-		if (list.dimension(direction) <= 1)
-			return;
+		if (list.dimension(direction) <= 2)
+			return ;
 
 		else {
 
@@ -107,28 +115,36 @@ public class TwoDtree {
 				direction = 0;
 
 			// the first element belonging to the right list childB
-
 			final PointSampleList<T> childA = new PointSampleList<T>(n);
 			final PointSampleList<T> childB = new PointSampleList<T>(n);
+			
+			final PointSampleList<T> leftTree = new PointSampleList<T>(n);
+			final PointSampleList<T> rightTree = new PointSampleList<T>(n);
+			
+			
 
 			final Cursor<T> listCursor = list.localizingCursor();
 
 			double pivot;
 			
 			
+//Median index of the coordinate list is at startindex+(lastindex-startindex+1)/2 if size (lastindex-startindex) is odd, is 0.5*(size/2+ size/2+1)+startindex if size is even.
 
 
-
-			int startindexA= 0;
-			int lastindexA=(int) (list.dimension(direction)/2-1+list.dimension(direction)%2);
+			int medianindex=startindex+(lastindex-startindex)/2;
 			
-			int startindexB=(int) (list.dimension(direction)/2+list.dimension(direction)%2);
-			int lastindexB=(int) list.dimension(direction)-1;
+			int startindexleft= startindex;
+			int lastindexleft=medianindex-1;
+			
+			int startindexright=medianindex+1;
+			int lastindexright=lastindex;
 
 			
-
+			//final ValueNode< T > right = makeNode( first, last, dChild, values, permutation );
 			 pivot= pivotElement(sortedcoordinateList,
 			 direction,startindex,lastindex);
+			 
+			 System.out.println(pivot);
 
 			while (listCursor.hasNext()) {
 
@@ -153,9 +169,13 @@ public class TwoDtree {
 
 			}
 
-			// splitbyCoordinate(childA,startindexA,lastindexA, direction+1);
-
-			// splitbyCoordinate(childB,startindexB, lastindexB, direction+1);
+			
+			
+			
+	//	splitbyCoordinate(childA, sortedcoordinateListsecond,sortedcoordinateList, startindex, lastindex, direction+1);
+		//	splitbyCoordinate(childB, sortedcoordinateListsecond,sortedcoordinateList, startindex, lastindex, direction+1);
+		//splitbyCoordinate(childA, sortedcoordinateList,sortedcoordinateListsecond, startindexA, lastindexA, direction);
+			//splitbyCoordinate(childB, sortedcoordinateList,sortedcoordinateListsecond, startindexB, lastindexB, direction);
 
 		}
 
@@ -206,12 +226,13 @@ public class TwoDtree {
 
 			while (iterator.hasNext()) {
 				iterator.next();
-				if (xindex < splitIndex) {
-					childA.add(xindex, coordinateList.get(xindex));
+				
+				if (xindex < splitIndex) 
+					childA.add(coordinateList.get(xindex));
 
-				} else
+				 else
 
-					childB.add(xindex, coordinateList.get(xindex));
+					childB.add(coordinateList.get(xindex));
 
 				xindex++;
 
@@ -228,7 +249,7 @@ public class TwoDtree {
 			mergeListValue(coordinateList, childA, childB);
 
 		}
-		System.out.println("Sorted List : " + coordinateList);
+	//	System.out.println("Sorted List : " + coordinateList);
 	}
 
 	/// ***** Returns a sorted list *********////
@@ -286,7 +307,7 @@ public class TwoDtree {
 		// Make a 1D list along the X direction by setting an appropriate
 		// interval on the image.
 
-		IterableInterval<FloatType> view = Views.interval(img, new long[] { 0, 0 }, new long[] { 5, 1 });
+		IterableInterval<FloatType> view = Views.interval(img, new long[] { 0, 0 }, new long[] { 12, 2 });
 
 		final Cursor<FloatType> first = view.cursor();
 
@@ -307,8 +328,8 @@ public class TwoDtree {
 
 		XcoordinatesSort = sortedCoordinates(list, 0);
 		YcoordinatesSort = sortedCoordinates(list, 1);
-		splitbyCoordinate(list,XcoordinatesSort,0,(int)list.dimension(0), 0); // Split list along X direction
-		splitbyCoordinate(list,YcoordinatesSort,0,(int)list.dimension(1), 1); // Split list along Y direction
+		splitbyCoordinate(list,XcoordinatesSort,YcoordinatesSort,0,(int)list.size()-1, 0); // Start making the tree
+		
 
 		Cursor<FloatType> testtwo = list.cursor();
 
