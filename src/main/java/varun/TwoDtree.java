@@ -91,6 +91,66 @@ public class TwoDtree {
 		
 
 	}
+	
+	public static <T extends RealType<T>> ArrayList<Double> medianValueLeft(PointSampleList<T> list,
+			ArrayList<Long> sortedcoordinateList,int startindex, int lastindex, int direction) {
+int medianIndex= startindex+(lastindex-startindex)/2;
+ArrayList<Double> leftmedians= new ArrayList<Double>();
+
+while(lastindex>startindex && lastindex!=startindex){
+	
+
+	int startindexleft= startindex;
+	int lastindexleft=medianIndex-1;
+int medianIndexleft=startindexleft+(lastindexleft-startindexleft)/2;
+
+double medianElement= sortedcoordinateList.get(medianIndexleft);
+
+lastindex=lastindexleft;
+medianIndex=medianIndexleft;
+	
+	
+	leftmedians.add(medianElement);
+
+
+	
+	
+	
+}
+		return leftmedians;
+		
+	}
+	
+	
+	
+	public static <T extends RealType<T>> ArrayList<Double> medianValueRight(PointSampleList<T> list,
+			ArrayList<Long> sortedcoordinateList,int startindex, int lastindex, int direction) {
+int medianIndex= startindex+(lastindex-startindex)/2;
+ArrayList<Double> rightmedians= new ArrayList<Double>();
+
+while(lastindex>startindex && lastindex!=startindex){
+	
+
+	int startindexright= medianIndex+1;
+	int lastindexright=lastindex;
+int medianIndexright=startindexright+(lastindexright-startindexright)/2;
+
+double medianElement= sortedcoordinateList.get(medianIndexright);
+
+startindex=startindexright;
+medianIndex=medianIndexright;
+	
+	
+	rightmedians.add(medianElement);
+
+
+	
+	
+	
+}
+		return rightmedians;
+		
+	}
 
 	public static <T extends RealType<T>> void splitbyCoordinate(PointSampleList<T> list,
 			ArrayList<Long> sortedcoordinateList,ArrayList<Long>sortedcoordinateListsecond,int startindex, int lastindex, int direction) {
@@ -304,6 +364,14 @@ public class TwoDtree {
 		ArrayList<Long> XcoordinatesSort = new ArrayList<Long>((int) list.dimension(0));
 		ArrayList<Long> YcoordinatesSort = new ArrayList<Long>((int) list.dimension(1));
 
+		ArrayList<Double>MedianLeftX= new ArrayList<Double>();
+		
+		ArrayList<Double>MedianRightX= new ArrayList<Double>();
+		
+		ArrayList<Double>MedianLeftY= new ArrayList<Double>();
+		
+		ArrayList<Double>MedianRightY= new ArrayList<Double>();
+		
 		// Make a 1D list along the X direction by setting an appropriate
 		// interval on the image.
 
@@ -329,8 +397,14 @@ public class TwoDtree {
 		XcoordinatesSort = sortedCoordinates(list, 0);
 		YcoordinatesSort = sortedCoordinates(list, 1);
 		splitbyCoordinate(list,XcoordinatesSort,YcoordinatesSort,0,(int)list.size()-1, 0); // Start making the tree
+		MedianLeftX=medianValueLeft(list,
+				XcoordinatesSort, 0, XcoordinatesSort.size()-1, 0);
 		
-
+		MedianRightX=medianValueRight(list,
+				XcoordinatesSort, 0, XcoordinatesSort.size()-1, 0);
+		
+		System.out.println(MedianLeftX);
+		System.out.println(MedianRightX);
 		Cursor<FloatType> testtwo = list.cursor();
 
 		while (testtwo.hasNext()) {
