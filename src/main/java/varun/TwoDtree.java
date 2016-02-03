@@ -6,8 +6,6 @@ import java.util.Iterator;
 import java.util.ListIterator;
 import java.util.Random;
 
-
-
 import net.imglib2.Cursor;
 import net.imglib2.FinalInterval;
 import net.imglib2.IterableInterval;
@@ -184,20 +182,18 @@ public class TwoDtree {
 	public static <T extends RealType<T>> ArrayList<Double> medianValueLeft(ArrayList<Long> sortedcoordinateList,
 			int startindex, int lastindex, int direction) {
 
-		//Size of a list is lastindex-startindex+1.
-		
-		
-		
+		// Size of a list is lastindex-startindex+1.
+
 		int medianIndexA, medianIndexB;
-		if((lastindex-startindex+1)%2==1){
-				 medianIndexA = startindex + (lastindex - startindex+1+(lastindex-startindex+1)%2) / 2 ;
-				 medianIndexB = medianIndexA;
+		if ((lastindex - startindex + 1) % 2 == 1) {
+			medianIndexA = startindex + (lastindex - startindex + 1 + (lastindex - startindex + 1) % 2) / 2;
+			medianIndexB = medianIndexA;
 		}
 
-		else{
-			
-			 medianIndexA = startindex + (lastindex - startindex+1+(lastindex-startindex+1)%2) / 2-1 ;
-			  medianIndexB = medianIndexA+1;
+		else {
+
+			medianIndexA = startindex + (lastindex - startindex + 1 + (lastindex - startindex + 1) % 2) / 2 - 1;
+			medianIndexB = medianIndexA + 1;
 		}
 		double medianElement;
 		ArrayList<Double> leftmedians = new ArrayList<Double>();
@@ -209,24 +205,24 @@ public class TwoDtree {
 
 			int startindexleft = startindex;
 			int lastindexleft = medianIndexA - 1;
-			int medianIndexleftA,medianIndexleftB;
-			
-			if (lastindexleft- startindexleft+1<=2)
+			int medianIndexleftA, medianIndexleftB;
+
+			if (lastindexleft - startindexleft + 1 <= 2)
 				break;
-			
-			
-			if((lastindexleft-startindexleft+1)%2==1){
-			 medianIndexleftA = startindexleft + (lastindexleft - startindexleft+1+(lastindexleft-startindexleft+1)%2) / 2 ;
-			 medianIndexleftB = medianIndexleftA;
+
+			if ((lastindexleft - startindexleft + 1) % 2 == 1) {
+				medianIndexleftA = startindexleft
+						+ (lastindexleft - startindexleft + 1 + (lastindexleft - startindexleft + 1) % 2) / 2;
+				medianIndexleftB = medianIndexleftA;
 			}
-			
-			else{
-				
-				medianIndexleftA = startindexleft + (lastindexleft - startindexleft+1+(lastindexleft-startindexleft+1)%2) / 2-1 ;
-				  medianIndexleftB = medianIndexleftA+1;	
-				
+
+			else {
+
+				medianIndexleftA = startindexleft
+						+ (lastindexleft - startindexleft + 1 + (lastindexleft - startindexleft + 1) % 2) / 2 - 1;
+				medianIndexleftB = medianIndexleftA + 1;
+
 			}
-			
 
 			medianElement = 0.5
 					* (sortedcoordinateList.get(medianIndexleftA) + sortedcoordinateList.get(medianIndexleftB));
@@ -234,11 +230,10 @@ public class TwoDtree {
 			lastindex = lastindexleft;
 			medianIndexA = medianIndexleftA;
 
-			
-
 			leftmedians.add(medianElement);
 
 		}
+
 		return leftmedians;
 
 	}
@@ -246,21 +241,18 @@ public class TwoDtree {
 	public static <T extends RealType<T>> ArrayList<Double> medianValueRight(ArrayList<Long> sortedcoordinateList,
 			int startindex, int lastindex, int direction) {
 
-	int medianIndexA, medianIndexB;
-if((lastindex-startindex+1)%2==1){
-		 medianIndexA = startindex + (lastindex - startindex+1+(lastindex-startindex+1)%2) / 2 ;
-		 medianIndexB = medianIndexA;
-}
+		int medianIndexA, medianIndexB;
+		if ((lastindex - startindex + 1) % 2 == 1) {
+			medianIndexA = startindex + (lastindex - startindex + 1 + (lastindex - startindex + 1) % 2) / 2;
+			medianIndexB = medianIndexA;
+		}
 
-else{
-	
-	 medianIndexA = startindex + (lastindex - startindex+1+(lastindex-startindex+1)%2) / 2-1 ;
-	  medianIndexB = medianIndexA+1;
-}
-	
-	
+		else {
 
-		
+			medianIndexA = startindex + (lastindex - startindex + 1 + (lastindex - startindex + 1) % 2) / 2 - 1;
+			medianIndexB = medianIndexA + 1;
+		}
+
 		double medianElement;
 		ArrayList<Double> rightmedians = new ArrayList<Double>();
 
@@ -271,31 +263,30 @@ else{
 
 			int startindexright = medianIndexB + 1;
 			int lastindexright = lastindex;
-			int medianIndexrightA,medianIndexrightB;
-			
-			if (lastindexright - startindexright+1<=2)
+			int medianIndexrightA, medianIndexrightB;
+
+			if (lastindexright - startindexright + 1 <= 2)
 				break;
-			
-			if((lastindexright-startindexright+1)%2==1){
-			 medianIndexrightA = startindexright
-					+ (lastindexright - startindexright +1+(lastindexright-startindexright+1)%2 ) / 2;
-			 medianIndexrightB = medianIndexrightA;
+
+			if ((lastindexright - startindexright + 1) % 2 == 1) {
+				medianIndexrightA = startindexright
+						+ (lastindexright - startindexright + 1 + (lastindexright - startindexright + 1) % 2) / 2;
+				medianIndexrightB = medianIndexrightA;
 			}
-			
-			else{
-				medianIndexrightA = startindexright + (lastindexright - startindexright+1+(lastindexright-startindexright+1)%2) / 2-1 ;
-				  medianIndexrightB = medianIndexrightA+1;
-				
-				
+
+			else {
+				medianIndexrightA = startindexright
+						+ (lastindexright - startindexright + 1 + (lastindexright - startindexright + 1) % 2) / 2 - 1;
+				medianIndexrightB = medianIndexrightA + 1;
+
 			}
-				
-			
+
 			medianElement = 0.5
 					* (sortedcoordinateList.get(medianIndexrightA) + sortedcoordinateList.get(medianIndexrightB));
 
 			startindex = startindexright;
 			medianIndexB = medianIndexrightB;
-			
+
 			rightmedians.add(medianElement);
 
 		}
@@ -344,6 +335,7 @@ else{
 		}
 
 	}
+
 	public static <T extends RealType<T>> PointSampleList<T> getRightTree(PointSampleList<T> list,
 			ArrayList<Double> medianElements, int direction) {
 		int n = list.numDimensions();
@@ -386,9 +378,9 @@ else{
 
 	}
 
-	public static <T extends RealType<T>> Pair<PointSampleList<T>, PointSampleList<T>> getsubTrees(PointSampleList<T> LeftorRightTree,
-			ArrayList<Double> medianElements,int medianindex, int direction) {
-		
+	public static <T extends RealType<T>> Pair<PointSampleList<T>, PointSampleList<T>> getsubTrees(
+			PointSampleList<T> LeftorRightTree, ArrayList<Double> medianElements, int medianindex, int direction) {
+
 		/****
 		 * To ward against running over the dimensionality, creating some local
 		 * restrictions on the global variable direction
@@ -401,48 +393,40 @@ else{
 		else {
 			int n = LeftorRightTree.numDimensions();
 			double pivotElement;
-			 final PointSampleList<T> childA = new PointSampleList<T>(n);
-			 final PointSampleList<T> childB = new PointSampleList<T>(n);
-
-			
+			final PointSampleList<T> childA = new PointSampleList<T>(n);
+			final PointSampleList<T> childB = new PointSampleList<T>(n);
 
 			final Cursor<T> listCursor = LeftorRightTree.localizingCursor();
 
-		
-			
-				pivotElement = medianElements.get(medianindex);
+			pivotElement = medianElements.get(medianindex);
 
-				while (listCursor.hasNext()) {
+			while (listCursor.hasNext()) {
 
-					listCursor.fwd();
+				listCursor.fwd();
 
-					 Point newpoint = new Point(n);
-					 newpoint.setPosition(listCursor);
+				Point newpoint = new Point(n);
+				newpoint.setPosition(listCursor);
 
-					if (listCursor.getDoublePosition(direction) < pivotElement) {
+				if (listCursor.getDoublePosition(direction) < pivotElement) {
 
-						 childA.add(newpoint, listCursor.get().copy());
-					
+					childA.add(newpoint, listCursor.get().copy());
 
-					
-					} else
+				} else
 
-					{
+				{
 
-						 childB.add(newpoint, listCursor.get().copy());
-
-						
-
-					}
+					childB.add(newpoint, listCursor.get().copy());
 
 				}
-			
-				Pair<PointSampleList<T>, PointSampleList<T>> pair = new ValuePair<PointSampleList<T>, PointSampleList<T>>(childA, childB);
-				
-				return pair;
-				
 
-			
+			}
+
+			System.out.println(pivotElement);
+
+			Pair<PointSampleList<T>, PointSampleList<T>> pair = new ValuePair<PointSampleList<T>, PointSampleList<T>>(
+					childA, childB);
+
+			return pair;
 
 		}
 
@@ -479,33 +463,34 @@ else{
 			cord.setPosition(first);
 
 			list.add(cord, first.get().copy());
-			 //System.out.println("Set of x co-ordinates Initial List : " +
-			 //cord.getDoublePosition(0));
-			 //System.out.println("Set of y co-ordinates Initial List : " +
-			 //cord.getDoublePosition(1));
-			//System.out.println("Values Initial list : " + first.get());
+			// System.out.println("Set of x co-ordinates Initial List : " +
+			// cord.getDoublePosition(0));
+			// System.out.println("Set of y co-ordinates Initial List : " +
+			// cord.getDoublePosition(1));
+			// System.out.println("Values Initial list : " + first.get());
 
 		}
-		
-/**********    Here I split an IterableInterval along X direction at the median X-coordinate values      **********/
+
+		/**********
+		 * Here I split an IterableInterval along X direction at the median
+		 * X-coordinate values
+		 **********/
 		int n = list.numDimensions();
 		PointSampleList<FloatType> LeftTreeX = new PointSampleList<FloatType>(n);
 		PointSampleList<FloatType> RightTreeX = new PointSampleList<FloatType>(n);
-		
+
 		PointSampleList<FloatType> LeftsubTreeLeftX = new PointSampleList<FloatType>(n);
 		PointSampleList<FloatType> LeftsubTreeRightX = new PointSampleList<FloatType>(n);
-		
+
 		PointSampleList<FloatType> RightsubTreeLeftX = new PointSampleList<FloatType>(n);
 		PointSampleList<FloatType> RightsubTreeRightX = new PointSampleList<FloatType>(n);
-		
-		
-Pair<PointSampleList<FloatType>,PointSampleList<FloatType>> LefttreePairX= new ValuePair<PointSampleList<FloatType>, PointSampleList<FloatType>>(LeftsubTreeLeftX, LeftsubTreeRightX);
-Pair<PointSampleList<FloatType>,PointSampleList<FloatType>> RighttreePairX= new ValuePair<PointSampleList<FloatType>, PointSampleList<FloatType>>(RightsubTreeLeftX, RightsubTreeRightX);
 
-
+		Pair<PointSampleList<FloatType>, PointSampleList<FloatType>> LefttreePairX = new ValuePair<PointSampleList<FloatType>, PointSampleList<FloatType>>(
+				LeftsubTreeLeftX, LeftsubTreeRightX);
+		Pair<PointSampleList<FloatType>, PointSampleList<FloatType>> RighttreePairX = new ValuePair<PointSampleList<FloatType>, PointSampleList<FloatType>>(
+				RightsubTreeLeftX, RightsubTreeRightX);
 
 		XcoordinatesSort = sortedCoordinates(list, 0);
-		
 
 		MedianLeftX = medianValueLeft(XcoordinatesSort, 0, XcoordinatesSort.size() - 1, 0);
 
@@ -513,36 +498,38 @@ Pair<PointSampleList<FloatType>,PointSampleList<FloatType>> RighttreePairX= new 
 
 		LeftTreeX = getLeftTree(list, MedianLeftX, 0);
 		RightTreeX = getRightTree(list, MedianRightX, 0);
+
+		for (int medianindex = 1; medianindex < MedianLeftX.size() - 1; ++medianindex)
+			LefttreePairX = getsubTrees(LeftTreeX, MedianLeftX, medianindex, 0);
+
+		for (int medianindex = 1; medianindex < MedianRightX.size() - 1; ++medianindex)
+			RighttreePairX = getsubTrees(RightTreeX, MedianRightX, medianindex, 0);
 		
-		for (int medianindex=1; medianindex<MedianLeftX.size()-1;++medianindex)
-	LefttreePairX=	getsubTrees(LeftTreeX,
-				MedianLeftX, medianindex, 0);
-		
-		for (int medianindex=1; medianindex<MedianRightX.size()-1;++medianindex)
-			RighttreePairX=	getsubTrees(RightTreeX,
-					MedianRightX, medianindex, 0);
-		System.out.println(MedianLeftX);
-/*****    The primary partition (along X direction) is stored in LeftTreeX and RightTreeX and partitioned space after that (also in X-direction) are stored in LefttreePairX and RighttreePairX              *******/		
-		
-		
-/**********    Here I repeat the above process along Y direction taking the original list for partitioning the space along Y direction      **********/
-		
+		/*****
+		 * The primary partition (along X direction) is stored in LeftTreeX and
+		 * RightTreeX and partitioned space after that (also in X-direction) are
+		 * stored in LefttreePairX and RighttreePairX
+		 *******/
+
+		/**********
+		 * Here I repeat the above process along Y direction taking the original
+		 * list for partitioning the space along Y direction
+		 **********/
+
 		PointSampleList<FloatType> LeftTreeY = new PointSampleList<FloatType>(n);
 		PointSampleList<FloatType> RightTreeY = new PointSampleList<FloatType>(n);
-		
+
 		PointSampleList<FloatType> LeftsubTreeLeftY = new PointSampleList<FloatType>(n);
 		PointSampleList<FloatType> LeftsubTreeRightY = new PointSampleList<FloatType>(n);
-		
+
 		PointSampleList<FloatType> RightsubTreeLeftY = new PointSampleList<FloatType>(n);
 		PointSampleList<FloatType> RightsubTreeRightY = new PointSampleList<FloatType>(n);
-		
-		
-Pair<PointSampleList<FloatType>,PointSampleList<FloatType>> LefttreePairY= new ValuePair<PointSampleList<FloatType>, PointSampleList<FloatType>>(LeftsubTreeLeftY, LeftsubTreeRightY);
-Pair<PointSampleList<FloatType>,PointSampleList<FloatType>> RighttreePairY= new ValuePair<PointSampleList<FloatType>, PointSampleList<FloatType>>(RightsubTreeLeftY, RightsubTreeRightY);
 
+		Pair<PointSampleList<FloatType>, PointSampleList<FloatType>> LefttreePairY = new ValuePair<PointSampleList<FloatType>, PointSampleList<FloatType>>(
+				LeftsubTreeLeftY, LeftsubTreeRightY);
+		Pair<PointSampleList<FloatType>, PointSampleList<FloatType>> RighttreePairY = new ValuePair<PointSampleList<FloatType>, PointSampleList<FloatType>>(
+				RightsubTreeLeftY, RightsubTreeRightY);
 
-
-		
 		YcoordinatesSort = sortedCoordinates(list, 1);
 
 		MedianLeftY = medianValueLeft(YcoordinatesSort, 0, YcoordinatesSort.size() - 1, 1);
@@ -551,24 +538,19 @@ Pair<PointSampleList<FloatType>,PointSampleList<FloatType>> RighttreePairY= new 
 
 		LeftTreeY = getLeftTree(list, MedianLeftY, 1);
 		RightTreeY = getRightTree(list, MedianRightY, 1);
-		
-		for (int medianindex=1; medianindex<MedianLeftY.size()-1;++medianindex)
-	LefttreePairY=	getsubTrees(LeftTreeY,
-				MedianLeftY, medianindex, 1);
-		
-		for (int medianindex=1; medianindex<MedianRightY.size()-1;++medianindex)
-			RighttreePairY=	getsubTrees(RightTreeY,
-					MedianRightY, medianindex, 1);
-		
-/*****    The primary partition (along Y direction) is stored in LeftTreeY and RightTreeY and partitioned space after that (also in Y-direction) are stored in LefttreePairY and RighttreePairY              *******/		
-		
-		
-		
-		
-		
-		
-		
-		
+
+	//	for (int medianindex = 1; medianindex < MedianLeftY.size() - 1; ++medianindex)
+		//	LefttreePairY = getsubTrees(LeftTreeY, MedianLeftY, medianindex, 1);
+
+	//	for (int medianindex = 1; medianindex < MedianRightY.size() - 1; ++medianindex)
+		//	RighttreePairY = getsubTrees(RightTreeY, MedianRightY, medianindex, 1);
+
+		/*****
+		 * The primary partition (along Y direction) is stored in LeftTreeY and
+		 * RightTreeY and partitioned space after that (also in Y-direction) are
+		 * stored in LefttreePairY and RighttreePairY
+		 *******/
+
 		// System.out.println(MedianRightX);
 
 		Cursor<FloatType> testtwo = LefttreePairX.getA().cursor();
@@ -579,14 +561,14 @@ Pair<PointSampleList<FloatType>,PointSampleList<FloatType>> RighttreePairY= new 
 
 			newpoint.setPosition(testtwo);
 
-			 //System.out.println("Set of x co-ordinates sorted List : " +
-			 //newpoint.getDoublePosition(0));
-			 //System.out.println("Set of y co-ordinates sorted List : " +
-			 //newpoint.getDoublePosition(1));
-		//	System.out.println("LeftTreeleft : " + testtwo.get());
+			// System.out.println("Set of x co-ordinates sorted List : " +
+			// newpoint.getDoublePosition(0));
+			// System.out.println("Set of y co-ordinates sorted List : " +
+			// newpoint.getDoublePosition(1));
+			// System.out.println("LeftTreeleft : " + testtwo.get());
 
 		}
-		
+
 		Cursor<FloatType> testthree = LefttreePairX.getB().cursor();
 
 		while (testthree.hasNext()) {
@@ -595,14 +577,13 @@ Pair<PointSampleList<FloatType>,PointSampleList<FloatType>> RighttreePairY= new 
 
 			newpointsec.setPosition(testthree);
 
-			 System.out.println("Set of x co-ordinates sorted List : " +
-			 newpointsec.getDoublePosition(0));
-			 System.out.println("Set of y co-ordinates sorted List : " +
-			 newpointsec.getDoublePosition(1));
-			System.out.println("LeftTreeRight : " + testthree.get());
+			// System.out.println("Set of x co-ordinates sorted List : " +
+			// newpointsec.getDoublePosition(0));
+			// System.out.println("Set of y co-ordinates sorted List : " +
+			// newpointsec.getDoublePosition(1));
+			// System.out.println("LeftTreeRight : " + testthree.get());
 
 		}
-		
 
 	}
 
