@@ -207,6 +207,8 @@ public class TwoDtree {
 			int lastindexleft = medianIndexA - 1;
 			int medianIndexleftA, medianIndexleftB;
 
+			double firstElement;
+			firstElement = sortedcoordinateList.get(startindex);
 			if (lastindexleft - startindexleft + 1 <= 2)
 				break;
 
@@ -229,8 +231,10 @@ public class TwoDtree {
 
 			lastindex = lastindexleft;
 			medianIndexA = medianIndexleftA;
-
-			leftmedians.add(medianElement);
+			if (medianElement > firstElement)
+				leftmedians.add(medianElement);
+			else
+				break;
 
 		}
 
@@ -265,6 +269,8 @@ public class TwoDtree {
 			int lastindexright = lastindex;
 			int medianIndexrightA, medianIndexrightB;
 
+			double lastElement;
+			lastElement = sortedcoordinateList.get(lastindex);
 			if (lastindexright - startindexright + 1 <= 2)
 				break;
 
@@ -287,7 +293,11 @@ public class TwoDtree {
 			startindex = startindexright;
 			medianIndexB = medianIndexrightB;
 
-			rightmedians.add(medianElement);
+			if (lastElement > medianElement)
+				rightmedians.add(medianElement);
+
+			else
+				break;
 
 		}
 		return rightmedians;
@@ -411,17 +421,19 @@ public class TwoDtree {
 
 					childA.add(newpoint, listCursor.get().copy());
 
+					// System.out.println("Hi");
+
 				} else
 
 				{
 
 					childB.add(newpoint, listCursor.get().copy());
-
+					// System.out.println("Hello");
 				}
 
 			}
 
-			System.out.println(pivotElement);
+			// System.out.println(pivotElement);
 
 			Pair<PointSampleList<T>, PointSampleList<T>> pair = new ValuePair<PointSampleList<T>, PointSampleList<T>>(
 					childA, childB);
@@ -431,6 +443,80 @@ public class TwoDtree {
 		}
 
 	}
+
+
+
+	public static <T extends RealType<T>> double searchTree(ArrayList<Double> medianElementsLeft,ArrayList<Double> medianElementRight, double coordinate) {
+
+		
+		double pointLocation=0;
+		if (coordinate < medianElementsLeft.get(0)) {
+			System.out.println("The point is on the Left Tree");
+			// The point is on the Left Tree
+			for (int medianindex = 1; medianindex < medianElementsLeft.size(); ++medianindex) {
+
+				// Keep Searching till you find the value it is greater or equal
+				// to
+
+				if (coordinate >= medianElementsLeft.get(medianindex)) {
+					// Now you store the two index values
+
+					pointLocation = medianElementsLeft.get(medianindex);
+					
+					
+					break;
+				}
+				
+				else{
+					
+					pointLocation=medianElementsLeft.size()-1;
+					
+				}
+
+			}
+
+		}
+
+		else if (coordinate >= medianElementRight.get(0)) {
+			System.out.println("The point is on the Right Tree");
+			// The point is on the Right Tree
+			for (int medianindex = 1; medianindex < medianElementRight.size(); ++medianindex) {
+
+				// Keep Searching till you find the value it is greater or equal
+				// to
+
+				if (coordinate <= medianElementRight.get(medianindex) && coordinate>=medianElementRight.get(medianindex-1)) {
+					// Now you store the two index values
+
+					pointLocation = medianElementRight.get(medianindex);
+					
+					
+					break;
+				}
+				
+				else{
+					pointLocation = medianElementRight.get(medianElementRight.size()-1);
+					
+					
+				}
+				
+
+			}
+
+		}
+			
+		
+			
+			
+		
+		
+		
+		return pointLocation;
+	}
+	
+	
+	
+	
 
 	public static void main(String[] args) {
 
@@ -499,11 +585,19 @@ public class TwoDtree {
 		LeftTreeX = getLeftTree(list, MedianLeftX, 0);
 		RightTreeX = getRightTree(list, MedianRightX, 0);
 
-		for (int medianindex = 1; medianindex < MedianLeftX.size() - 1; ++medianindex)
+		for (int medianindex = 1; medianindex < MedianLeftX.size(); ++medianindex)
 			LefttreePairX = getsubTrees(LeftTreeX, MedianLeftX, medianindex, 0);
 
-		for (int medianindex = 1; medianindex < MedianRightX.size() - 1; ++medianindex)
+		for (int medianindex = 1; medianindex < MedianRightX.size(); ++medianindex)
 			RighttreePairX = getsubTrees(RightTreeX, MedianRightX, medianindex, 0);
+		
+		
+		double testlocation;
+		
+		testlocation= searchTree(MedianLeftX,MedianRightX, 2.8);
+		
+		
+		System.out.println(testlocation);
 		
 		/*****
 		 * The primary partition (along X direction) is stored in LeftTreeX and
@@ -539,11 +633,11 @@ public class TwoDtree {
 		LeftTreeY = getLeftTree(list, MedianLeftY, 1);
 		RightTreeY = getRightTree(list, MedianRightY, 1);
 
-	//	for (int medianindex = 1; medianindex < MedianLeftY.size() - 1; ++medianindex)
-		//	LefttreePairY = getsubTrees(LeftTreeY, MedianLeftY, medianindex, 1);
+		for (int medianindex = 1; medianindex < MedianLeftY.size(); ++medianindex)
+			LefttreePairY = getsubTrees(LeftTreeY, MedianLeftY, medianindex, 1);
 
-	//	for (int medianindex = 1; medianindex < MedianRightY.size() - 1; ++medianindex)
-		//	RighttreePairY = getsubTrees(RightTreeY, MedianRightY, medianindex, 1);
+		for (int medianindex = 1; medianindex < MedianRightY.size(); ++medianindex)
+			RighttreePairY = getsubTrees(RightTreeY, MedianRightY, medianindex, 1);
 
 		/*****
 		 * The primary partition (along Y direction) is stored in LeftTreeY and
@@ -551,8 +645,9 @@ public class TwoDtree {
 		 * stored in LefttreePairY and RighttreePairY
 		 *******/
 
-		// System.out.println(MedianRightX);
-
+		System.out.println(MedianLeftX);
+		System.out.println(MedianRightX);
+	//	System.out.println(LefttreePairX.getB().size());
 		Cursor<FloatType> testtwo = LefttreePairX.getA().cursor();
 
 		while (testtwo.hasNext()) {
@@ -561,11 +656,10 @@ public class TwoDtree {
 
 			newpoint.setPosition(testtwo);
 
-			// System.out.println("Set of x co-ordinates sorted List : " +
-			// newpoint.getDoublePosition(0));
+		//	System.out.println("Set of x co-ordinates sorted List : " + newpoint.getDoublePosition(0));
 			// System.out.println("Set of y co-ordinates sorted List : " +
 			// newpoint.getDoublePosition(1));
-			// System.out.println("LeftTreeleft : " + testtwo.get());
+		//	System.out.println("LeftTreeleft : " + testtwo.get());
 
 		}
 
@@ -577,11 +671,10 @@ public class TwoDtree {
 
 			newpointsec.setPosition(testthree);
 
-			// System.out.println("Set of x co-ordinates sorted List : " +
-			// newpointsec.getDoublePosition(0));
+		//	System.out.println("Set of x co-ordinates sorted List : " + newpointsec.getDoublePosition(0));
 			// System.out.println("Set of y co-ordinates sorted List : " +
 			// newpointsec.getDoublePosition(1));
-			// System.out.println("LeftTreeRight : " + testthree.get());
+		//	System.out.println("LeftTreeRight : " + testthree.get());
 
 		}
 
