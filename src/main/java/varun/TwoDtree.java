@@ -575,145 +575,94 @@ public class TwoDtree {
 	public static <T extends RealType<T>> PointSampleList<T> getNeighbourhood(PointSampleList<T> branchX,
 			PointSampleList<T> branchY, int direction, int otherdirection) {
 
-		int n= branchX.numDimensions();
-		
+		int n = branchX.numDimensions();
+
 		PointSampleList<T> localNeighbourhood = new PointSampleList<T>(n);
-		
+
 		PointSampleList<T> smalllist = new PointSampleList<T>(n);
-		
-		
+
 		PointSampleList<T> biglist = new PointSampleList<T>(n);
-		
-		
+
 		final Cursor<T> Xcursor = branchX.localizingCursor();
 		final Cursor<T> Ycursor = branchY.localizingCursor();
 		final Cursor<T> Ncursor = localNeighbourhood.localizingCursor();
-	
-		if (branchY.size()>branchX.size()){
-			
-			while(Xcursor.hasNext()){
-			Xcursor.fwd();
-			Point newpoint = new Point(n);
-			newpoint.setPosition(Xcursor);
-			smalllist.add(newpoint, Xcursor.get().copy());
-			}
-		}
-			
-			else{
-				while(Ycursor.hasNext()){
-					Ycursor.fwd();
-					Point newpoint = new Point(n);
-					newpoint.setPosition(Ycursor);
-					smalllist.add(newpoint, Ycursor.get().copy());
-					}
-				
-				
-			
-		}
-		
 
-		if (branchY.size()>branchX.size()){
-			
-			while(Ycursor.hasNext()){
-			Ycursor.fwd();
-			Point newpoint = new Point(n);
-			newpoint.setPosition(Ycursor);
-			biglist.add(newpoint, Ycursor.get().copy());
+		if (branchY.size() > branchX.size()) {
+
+			while (Xcursor.hasNext()) {
+				Xcursor.fwd();
+				Point newpoint = new Point(n);
+				newpoint.setPosition(Xcursor);
+				smalllist.add(newpoint, Xcursor.get().copy());
 			}
 		}
-			
-			else{
-				while(Xcursor.hasNext()){
-					Xcursor.fwd();
-					Point newpoint = new Point(n);
-					newpoint.setPosition(Xcursor);
-					biglist.add(newpoint, Xcursor.get().copy());
-					}
-				
-				
-			
+
+		else {
+			while (Ycursor.hasNext()) {
+				Ycursor.fwd();
+				Point newpoint = new Point(n);
+				newpoint.setPosition(Ycursor);
+				smalllist.add(newpoint, Ycursor.get().copy());
+			}
+
 		}
-		
-		
+
+		if (branchY.size() > branchX.size()) {
+
+			while (Ycursor.hasNext()) {
+				Ycursor.fwd();
+				Point newpoint = new Point(n);
+				newpoint.setPosition(Ycursor);
+				biglist.add(newpoint, Ycursor.get().copy());
+			}
+		}
+
+		else {
+			while (Xcursor.hasNext()) {
+				Xcursor.fwd();
+				Point newpoint = new Point(n);
+				newpoint.setPosition(Xcursor);
+				biglist.add(newpoint, Xcursor.get().copy());
+			}
+
+		}
+
 		final Cursor<T> smallcursor = smalllist.localizingCursor();
 		final Cursor<T> bigcursor = biglist.localizingCursor();
+bigcursor.fwd();
 		
-	smallcursor.fwd();
-	bigcursor.fwd();
-	
-	
-	do{
-	
-		
-		if (smallcursor.getDoublePosition(direction)==bigcursor.getDoublePosition(direction) && smallcursor.getDoublePosition(otherdirection)==bigcursor.getDoublePosition(otherdirection) ){
+while(bigcursor.hasNext()){
 			
-			Ncursor.fwd();
-			System.out.println(smallcursor.getDoublePosition(otherdirection));
 			
-			Ncursor.get().set(smallcursor.get());
+			if (smallcursor.hasNext()){
+				
+				smallcursor.fwd();
+			}
+			
+			else{
+				smallcursor.reset();
+				smallcursor.fwd();
+				if (bigcursor.hasNext())
+				bigcursor.fwd();
+				
+			}
+			if (bigcursor.getDoublePosition(direction) == smallcursor.getDoublePosition(direction) && 
+					bigcursor.getDoublePosition(otherdirection) == smallcursor.getDoublePosition(otherdirection) ){
+				
+				System.out.println(bigcursor.getDoublePosition(otherdirection));
+			
+			
 			
 			Point newpoint = new Point(n);
-			newpoint.setPosition(Ncursor);
-			
-			localNeighbourhood.add(newpoint, Ncursor.get().copy());
-		}
-			
-		
-		
-		else{
-			if(smallcursor.hasNext())
-			smallcursor.fwd();
-			bigcursor.fwd();
-		}
+			newpoint.setPosition(bigcursor);
 
-		
-	}while(bigcursor.hasNext());
-	
-	
-		
-		/*
-		
-		boolean stopped = false;
-		
-		do{
-			
-			
-		
-		
-		if ( bigcursor.hasNext() )
-			bigcursor.fwd();
-		else
-			stopped = true;	
-		
-		
-		
-		}while(stopped==false);
-		}
-		
-	}while(cannotMoveon==false);
-	
-	
-		
-		
-		*/
-		
-			
-			 
-			 
-			 
-		 
-			
-			
-			
-
-			
-			
-		
-		
-		
+			localNeighbourhood.add(newpoint, bigcursor.get().copy());
+			}
+						
+}
 		
 
-	return localNeighbourhood;
+		return localNeighbourhood;
 
 	}
 
@@ -875,12 +824,11 @@ public class TwoDtree {
 
 			newpointsec.setPosition(testthree);
 
-			// System.out.println("Set of x co-ordinates sorted List : " +
-			// newpointsec.getDoublePosition(0));
-			// System.out.println("Set of y co-ordinates sorted List : " +
+//			 System.out.println("Set of x co-ordinates sorted List : " +
+	//		 newpointsec.getDoublePosition(0));
+		//	 System.out.println("Set of y co-ordinates sorted List : " +
 			// newpointsec.getDoublePosition(1));
-			// System.out.println("Branch having the Y-coordinate of the point :
-			// " + testthree.get());
+			// System.out.println("Branch having the Y-coordinate of the point :" + testthree.get());
 
 		}
 
@@ -895,9 +843,9 @@ public class TwoDtree {
 			newpointthird.setPosition(testfour);
 
 			// System.out.println("Set of x co-ordinates sorted List : " +
-			// newpointsec.getDoublePosition(0));
+			// newpointthird.getDoublePosition(0));
 			// System.out.println("Set of y co-ordinates sorted List : " +
-			// newpointsec.getDoublePosition(1));
+			 //newpointthird.getDoublePosition(1));
 			System.out.println("Neighbourhood having the point : " + testfour.get());
 
 		}
