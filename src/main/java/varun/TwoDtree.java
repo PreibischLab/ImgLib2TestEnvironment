@@ -185,13 +185,13 @@ public class TwoDtree {
 
 		int medianIndexA, medianIndexB;
 		if ((lastindex - startindex + 1) % 2 == 1) {
-			medianIndexA = startindex + (lastindex - startindex + 1 + (lastindex - startindex + 1) % 2) / 2;
+			medianIndexA = startindex + (lastindex - startindex + 1 - (lastindex - startindex + 1) % 2) / 2;
 			medianIndexB = medianIndexA;
 		}
 
 		else {
 
-			medianIndexA = startindex + (lastindex - startindex + 1 + (lastindex - startindex + 1) % 2) / 2 - 1;
+			medianIndexA = startindex + (lastindex - startindex + 1 ) / 2 - 1;
 			medianIndexB = medianIndexA + 1;
 		}
 		double medianElement;
@@ -208,12 +208,14 @@ public class TwoDtree {
 
 			double firstElement;
 			firstElement = sortedcoordinateList.get(startindex);
+			
+			
 			if (lastindexleft - startindexleft + 1 <= 2)
 				break;
 
 			if ((lastindexleft - startindexleft + 1) % 2 == 1) {
 				medianIndexleftA = startindexleft
-						+ (lastindexleft - startindexleft + 1 + (lastindexleft - startindexleft + 1) % 2) / 2;
+						+ (lastindexleft - startindexleft + 1 - (lastindexleft - startindexleft + 1) % 2) / 2;
 				medianIndexleftB = medianIndexleftA;
 			}
 
@@ -246,13 +248,13 @@ public class TwoDtree {
 
 		int medianIndexA, medianIndexB;
 		if ((lastindex - startindex + 1) % 2 == 1) {
-			medianIndexA = startindex + (lastindex - startindex + 1 + (lastindex - startindex + 1) % 2) / 2;
+			medianIndexA = startindex + (lastindex - startindex + 1 - (lastindex - startindex + 1) % 2) / 2;
 			medianIndexB = medianIndexA;
 		}
 
 		else {
 
-			medianIndexA = startindex + (lastindex - startindex + 1 + (lastindex - startindex + 1) % 2) / 2 - 1;
+			medianIndexA = startindex + (lastindex - startindex + 1 ) / 2 - 1;
 			medianIndexB = medianIndexA + 1;
 		}
 
@@ -275,13 +277,13 @@ public class TwoDtree {
 
 			if ((lastindexright - startindexright + 1) % 2 == 1) {
 				medianIndexrightA = startindexright
-						+ (lastindexright - startindexright + 1 + (lastindexright - startindexright + 1) % 2) / 2;
+						+ (lastindexright - startindexright + 1 - (lastindexright - startindexright + 1) % 2) / 2;
 				medianIndexrightB = medianIndexrightA;
 			}
 
 			else {
 				medianIndexrightA = startindexright
-						+ (lastindexright - startindexright + 1 + (lastindexright - startindexright + 1) % 2) / 2 - 1;
+						+ (lastindexright - startindexright + 1 ) / 2 - 1;
 				medianIndexrightB = medianIndexrightA + 1;
 
 			}
@@ -908,7 +910,7 @@ public class TwoDtree {
 		 * stored in LefttreePairY and RighttreePairY
 		 *******/
 
-		double[] testpoint = { 0.4, 0.4 };
+		double[] testpoint = { 0.4, 4 };
 
 		/*****
 		 * Do this if you want to return only the immediate neighborhood of the
