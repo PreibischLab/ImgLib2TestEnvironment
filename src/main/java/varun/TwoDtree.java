@@ -387,8 +387,6 @@ public class TwoDtree {
 
 	}
 
-	
-
 	public static <T extends RealType<T>> Pair<PointSampleList<T>, PointSampleList<T>> getLeftsubTrees(
 			PointSampleList<T> LeftorRightTree, ArrayList<Double> medianElements, int medianindex, int stopindex,
 			int direction) {
@@ -404,15 +402,15 @@ public class TwoDtree {
 
 		else {
 			int n = LeftorRightTree.numDimensions();
-			double pivotElement;
+			double pivotElement, previousElement;
 			final PointSampleList<T> childA = new PointSampleList<T>(n);
 			final PointSampleList<T> childB = new PointSampleList<T>(n);
 
 			final Cursor<T> listCursor = LeftorRightTree.localizingCursor();
 
 			pivotElement = medianElements.get(medianindex);
-			
 
+			previousElement= medianElements.get(medianindex-1);
 			while (listCursor.hasNext()) {
 
 				listCursor.fwd();
@@ -424,7 +422,7 @@ public class TwoDtree {
 
 					childA.add(newpoint, listCursor.get().copy());
 
-				} else
+				} else if (listCursor.getDoublePosition(direction) >= pivotElement && listCursor.getDoublePosition(direction) <= previousElement )
 
 				{
 
@@ -436,14 +434,13 @@ public class TwoDtree {
 
 			Pair<PointSampleList<T>, PointSampleList<T>> newpairA = new ValuePair<PointSampleList<T>, PointSampleList<T>>(
 					childA, childB);
-			
 
-			for (int index = medianindex; index < stopindex; ++index) {
+			for (int index = medianindex; index < stopindex - 1; ++index) {
 
 				newpairA = getLeftsubTrees(childA, medianElements, index, stopindex, direction);
 
 			}
-
+			
 			return newpairA;
 
 		}
@@ -465,15 +462,15 @@ public class TwoDtree {
 
 		else {
 			int n = LeftorRightTree.numDimensions();
-			double pivotElement;
+			double pivotElement, previousElement;
 			final PointSampleList<T> childA = new PointSampleList<T>(n);
 			final PointSampleList<T> childB = new PointSampleList<T>(n);
 
 			final Cursor<T> listCursor = LeftorRightTree.localizingCursor();
 
 			pivotElement = medianElements.get(medianindex);
-
 			
+			previousElement= medianElements.get(medianindex-1);
 
 			while (listCursor.hasNext()) {
 
@@ -482,7 +479,7 @@ public class TwoDtree {
 				Point newpoint = new Point(n);
 				newpoint.setPosition(listCursor);
 
-				if (listCursor.getDoublePosition(direction) < pivotElement) {
+				if (listCursor.getDoublePosition(direction) < pivotElement && listCursor.getDoublePosition(direction) >previousElement ) {
 
 					childA.add(newpoint, listCursor.get().copy());
 
@@ -498,13 +495,13 @@ public class TwoDtree {
 
 			Pair<PointSampleList<T>, PointSampleList<T>> newpairA = new ValuePair<PointSampleList<T>, PointSampleList<T>>(
 					childA, childB);
-			
 
-			for (int index = medianindex; index < stopindex; ++index) {
+			for (int index = medianindex; index < stopindex - 1; ++index) {
 
 				newpairA = getRightsubTrees(childB, medianElements, index, stopindex, direction);
 
 			}
+			
 
 			return newpairA;
 
@@ -522,52 +519,112 @@ public class TwoDtree {
 
 		PointSampleList<T> TreebranchA = new PointSampleList<T>(n);
 		PointSampleList<T> TreebranchB = new PointSampleList<T>(n);
-		Pair<PointSampleList<T>, PointSampleList<T>> Treepair = new ValuePair<PointSampleList<T>, PointSampleList<T>>(
-				TreebranchA, TreebranchB);
+		Pair<PointSampleList<T>, PointSampleList<T>> Treepair;
 
 		PointSampleList<T> Treebranch = new PointSampleList<T>(n);
 
+		
 		if (coordinate < medianElementsLeft.get(0)) {
-			
+
 			// The point is on the Left Tree
-			for (int medianindex = 1; medianindex < medianElementsLeft.size(); ++medianindex) {
-
+			
+			if (coordinate < medianElementsLeft.get(1)){
+				Treepair= getLeftsubTrees(LeftTree, medianElementsLeft, 1, 1, direction);
+			
+				Treebranch = combineTrees(Treepair);
+			
+			
+			}
+			
+			if (coordinate >= medianElementsLeft.get(1)){
+				Treepair= getRightsubTrees(LeftTree, medianElementsLeft, 1, 1, direction);
 				
+				
+				Treebranch = combineTrees(Treepair);
+			}
+			
+			for (int medianindex = 2; medianindex < medianElementsLeft.size(); ++medianindex) {
 
-				if (coordinate < medianElementsLeft.get(medianindex)) {
-					Treepair = getLeftsubTrees(LeftTree, medianElementsLeft, 1, medianindex, direction);
+						if (coordinate < medianElementsLeft.get(medianindex)
+						&& coordinate < medianElementsLeft.get(medianindex - 1)) {
+					Treepair = getLeftsubTrees(LeftTree, medianElementsLeft, 2, medianindex, direction);
+					
+					
 					Treebranch = combineTrees(Treepair);
+					
 
 				}
 
-				else {
-					Treepair = getRightsubTrees(LeftTree, medianElementsLeft, 1, medianindex, direction);
+				else if (coordinate >= medianElementsLeft.get(medianindex)
+						&& coordinate <= medianElementsLeft.get(medianindex - 1)) {
+					Treepair = getRightsubTrees(LeftTree, medianElementsLeft, 2, medianindex, direction);
+					
+					
+					Treebranch = combineTrees(Treepair);
+
+				} else if (coordinate >= medianElementsLeft.get(medianindex)
+						&& coordinate >= medianElementsLeft.get(medianindex - 1)) {
+					Treepair = getRightsubTrees(LeftTree, medianElementsLeft, 2, medianindex, direction);
+					
 					Treebranch = combineTrees(Treepair);
 
 				}
+				
+				else if (coordinate < medianElementsLeft.get(medianindex)
+						&& coordinate > medianElementsLeft.get(medianindex - 1)) {
+					Treepair = getLeftsubTrees(LeftTree, medianElementsLeft, 2, medianindex, direction);
+					
+					
+					Treebranch = combineTrees(Treepair);
+
+				}
+				
 
 			}
 
 		}
 
 		else if (coordinate >= medianElementsRight.get(0)) {
-			
+
 			// The point is on the Right Tree
-			for (int medianindex = 1; medianindex < medianElementsRight.size(); ++medianindex) {
+			if (coordinate < medianElementsRight.get(1)){
+				Treepair= getLeftsubTrees(LeftTree, medianElementsLeft, 1, 1, direction);
+			Treebranch = combineTrees(Treepair);
+			}
+			
+			if (coordinate >= medianElementsRight.get(1)){
+				Treepair= getRightsubTrees(LeftTree, medianElementsLeft, 1, 1, direction);
+			Treebranch = combineTrees(Treepair);
+			}
+			
+			
+			
+			for (int medianindex = 2; medianindex < medianElementsRight.size(); ++medianindex) {
 
+				if (coordinate >= medianElementsRight.get(medianindex) && coordinate >= medianElementsRight.get(medianindex-1) ) {
+					Treepair = getRightsubTrees(RightTree, medianElementsRight, 2, medianindex, direction);
+					Treebranch = combineTrees(Treepair);
+					
+				}
+
+				else if (coordinate < medianElementsRight.get(medianindex) && coordinate < medianElementsRight.get(medianindex-1) )  {
+					Treepair = getLeftsubTrees(RightTree, medianElementsRight, 2, medianindex, direction);
+					Treebranch = combineTrees(Treepair);
+					
+				}
+				else if (coordinate < medianElementsRight.get(medianindex) && coordinate > medianElementsRight.get(medianindex-1) )  {
+					Treepair = getLeftsubTrees(RightTree, medianElementsRight, 2, medianindex, direction);
+					Treebranch = combineTrees(Treepair);
+					
+				}
+				if (coordinate >= medianElementsRight.get(medianindex) && coordinate <= medianElementsRight.get(medianindex-1) ) {
+					Treepair = getRightsubTrees(RightTree, medianElementsRight, 2, medianindex, direction);
+					Treebranch = combineTrees(Treepair);
+					
+				}
 				
-
-				if (coordinate < medianElementsRight.get(medianindex)) {
-					Treepair = getLeftsubTrees(RightTree, medianElementsRight, 1, medianindex, direction);
-					Treebranch = combineTrees(Treepair);
-
-				}
-
-				else {
-					Treepair = getRightsubTrees(RightTree, medianElementsRight, 1, medianindex, direction);
-					Treebranch = combineTrees(Treepair);
-
-				}
+				
+				
 
 			}
 
@@ -789,7 +846,7 @@ public class TwoDtree {
 		// Make a list by setting an appropriate
 		// interval on the image.
 
-		IterableInterval<FloatType> view = Views.interval(imgout, new long[] { 0, 0 }, new long[] { 5, 5 });
+		IterableInterval<FloatType> view = Views.interval(imgout, new long[] { 0, 0 }, new long[] { 10, 10 });
 
 		final Cursor<FloatType> first = view.cursor();
 
@@ -800,11 +857,6 @@ public class TwoDtree {
 			cord.setPosition(first);
 
 			list.add(cord, first.get().copy());
-			// System.out.println("Set of x co-ordinates Initial List : " +
-			// cord.getDoublePosition(0));
-			// System.out.println("Set of y co-ordinates Initial List : " +
-			// cord.getDoublePosition(1));
-			// System.out.println("Values Initial list : " + first.get());
 
 		}
 
@@ -816,8 +868,6 @@ public class TwoDtree {
 		PointSampleList<FloatType> LeftTreeX = new PointSampleList<FloatType>(n);
 		PointSampleList<FloatType> RightTreeX = new PointSampleList<FloatType>(n);
 
-		
-
 		XcoordinatesSort = sortedCoordinates(list, 0);
 
 		MedianLeftX = medianValueLeft(XcoordinatesSort, 0, XcoordinatesSort.size() - 1, 0);
@@ -827,7 +877,7 @@ public class TwoDtree {
 		LeftTreeX = getLeftTree(list, MedianLeftX, 0);
 		RightTreeX = getRightTree(list, MedianRightX, 0);
 
-		
+		System.out.println(MedianLeftX);
 
 		/*****
 		 * The primary partition (along X direction) is stored in LeftTreeX and
@@ -843,7 +893,6 @@ public class TwoDtree {
 		PointSampleList<FloatType> LeftTreeY = new PointSampleList<FloatType>(n);
 		PointSampleList<FloatType> RightTreeY = new PointSampleList<FloatType>(n);
 
-		
 		YcoordinatesSort = sortedCoordinates(list, 1);
 
 		MedianLeftY = medianValueLeft(YcoordinatesSort, 0, YcoordinatesSort.size() - 1, 1);
@@ -853,15 +902,13 @@ public class TwoDtree {
 		LeftTreeY = getLeftTree(list, MedianLeftY, 1);
 		RightTreeY = getRightTree(list, MedianRightY, 1);
 
-		
-
 		/*****
 		 * The primary partition (along Y direction) is stored in LeftTreeY and
 		 * RightTreeY and partitioned space after that (also in Y-direction) are
 		 * stored in LefttreePairY and RighttreePairY
 		 *******/
 
-		double[] testpoint = { 2.8, 1.4 };
+		double[] testpoint = { 0.4, 0.4 };
 
 		/*****
 		 * Do this if you want to return only the immediate neighborhood of the
@@ -888,7 +935,7 @@ public class TwoDtree {
 
 		PointSampleList<FloatType> Neighbourhood = new PointSampleList<FloatType>(n);
 
-		Neighbourhood = getNeighbourhood(TreepairX, TreepairY, 0, 1); 
+		Neighbourhood = getNeighbourhood(TreepairX, TreepairY, 0, 1);
 
 		Cursor<FloatType> testfour = Neighbourhood.cursor();
 
@@ -898,9 +945,12 @@ public class TwoDtree {
 
 			newpointthird.setPosition(testfour);
 
-			System.out.println("Set of x co-ordinates sorted List : " + newpointthird.getDoublePosition(0));
-			System.out.println("Set of y co-ordinates sorted List : " + newpointthird.getDoublePosition(1));
-			System.out.println("Neighbourhood having the point : " + testfour.get());
+			 System.out.println("Set of x co-ordinates sorted List : " +
+			 newpointthird.getDoublePosition(0));
+			 System.out.println("Set of y co-ordinates sorted List : " +
+			 newpointthird.getDoublePosition(1));
+			// System.out.println("Neighbourhood having the point : " +
+			// testfour.get());
 
 		}
 
