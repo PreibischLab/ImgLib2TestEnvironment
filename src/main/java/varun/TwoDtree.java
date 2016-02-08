@@ -688,9 +688,9 @@ for (int medianindex= medianElementsRight.size()-2; medianindex>0; --medianindex
 		else {
 			while (Ycursor.hasNext()) {
 				Ycursor.fwd();
-				Point newpoint = new Point(n);
-				newpoint.setPosition(Ycursor);
-				smalllist.add(newpoint, Ycursor.get().copy());
+				Point newpointsec = new Point(n);
+				newpointsec.setPosition(Ycursor);
+				smalllist.add(newpointsec, Ycursor.get().copy());
 			}
 
 		}
@@ -708,9 +708,9 @@ for (int medianindex= medianElementsRight.size()-2; medianindex>0; --medianindex
 		else {
 			while (Xcursor.hasNext()) {
 				Xcursor.fwd();
-				Point newpoint = new Point(n);
-				newpoint.setPosition(Xcursor);
-				biglist.add(newpoint, Xcursor.get().copy());
+				Point newpointsec = new Point(n);
+				newpointsec.setPosition(Xcursor);
+				biglist.add(newpointsec, Xcursor.get().copy());
 			}
 
 		}
@@ -870,7 +870,7 @@ for (int medianindex= medianElementsRight.size()-2; medianindex>0; --medianindex
 		final RandomAccess<BitType> outbound = imgout.randomAccess();
 		
 		double distance;
-		double[] testpoint = new double[2];
+		
 
 		while (listcursor.hasNext()) {
 
@@ -879,11 +879,10 @@ for (int medianindex= medianElementsRight.size()-2; medianindex>0; --medianindex
 			outbound.setPosition(listcursor);
 
 			if (listcursor.get().getInteger() == 0) {
-				testpoint[0] = listcursor.getDoublePosition(direction);
-				testpoint[1] = listcursor.getDoublePosition(otherdirection);
+				
 
-				TreepairX = searchTree(LeftTreeX, RightTreeX, MedianLeftX, MedianRightX, testpoint[0], direction);
-				TreepairY = searchTree(LeftTreeY, RightTreeY, MedianLeftY, MedianRightY, testpoint[1], otherdirection);
+				TreepairX = searchTree(LeftTreeX, RightTreeX, MedianLeftX, MedianRightX,listcursor.getDoublePosition(direction) , direction);
+				TreepairY = searchTree(LeftTreeY, RightTreeY, MedianLeftY, MedianRightY, listcursor.getDoublePosition(otherdirection), otherdirection);
 				Neighbourhood = getNeighbourhood(TreepairX, TreepairY, 0, 1);
 
 				final Cursor<BitType> searchcursor = Neighbourhood.localizingCursor();
@@ -908,7 +907,7 @@ for (int medianindex= medianElementsRight.size()-2; medianindex>0; --medianindex
 
 	public static void main(String[] args) {
 
-		final Img<FloatType> img = ImgLib2Util.openAs32Bit(new File("src/main/resources/bridge.png"));
+		final Img<FloatType> img = ImgLib2Util.openAs32Bit(new File("src/main/resources/dt.png"));
 
 		final Img<BitType> imgout = new ArrayImgFactory<BitType>().create(img, new BitType());
 
@@ -1014,42 +1013,45 @@ for (int medianindex= medianElementsRight.size()-2; medianindex>0; --medianindex
 		 * of the point
 		 **************/
 
-		PointSampleList<BitType> TreepairX;
-		PointSampleList<BitType> TreepairY;
+	//	PointSampleList<BitType> TreepairX;
+	//	PointSampleList<BitType> TreepairY;
 
-		TreepairX = searchTree(LeftTreeX, RightTreeX, MedianLeftX, MedianRightX, testpoint[0], 0);
-		TreepairY = searchTree(LeftTreeY, RightTreeY, MedianLeftY, MedianRightY, testpoint[1], 1);
+	//	TreepairX = searchTree(LeftTreeX, RightTreeX, MedianLeftX, MedianRightX, testpoint[0], 0);
+	//	TreepairY = searchTree(LeftTreeY, RightTreeY, MedianLeftY, MedianRightY, testpoint[1], 1);
 
-		PointSampleList<BitType> Neighbourhood = new PointSampleList<BitType>(n);
+	//	PointSampleList<BitType> Neighbourhood = new PointSampleList<BitType>(n);
 
-		Neighbourhood = getNeighbourhood(TreepairX, TreepairY, 0, 1);
+	//	Neighbourhood = getNeighbourhood(TreepairX, TreepairY, 0, 1);
 
-		Cursor<BitType> testfour = Neighbourhood.cursor();
+		//Cursor<BitType> testfour = Neighbourhood.cursor();
 
 		
-final Img<BitType> bitimgout = new ArrayImgFactory<BitType>().create(img, new BitType());
+final Img<BitType> bitimgout = new ArrayImgFactory<BitType>().create(imgout, new BitType());
 		
-
+ computeDistance(list,
+		MedianLeftX, MedianRightX, MedianLeftY,
+		MedianRightY,bitimgout, 
+	0, 1, new EucledianDistance());
 
 
 		Cursor<BitType> test= bitimgout.cursor();
 		
-		while (testfour.hasNext()) {
-			testfour.fwd();
+		while (test.hasNext()) {
 			test.fwd();
+		
 			Point newpointthird = new Point(img.numDimensions());
 
-			newpointthird.setPosition(testfour);
-test.get().set(testfour.get());
+			newpointthird.setPosition(test);
+
 			System.out.println("Set of x co-ordinates sorted List : " + newpointthird.getDoublePosition(0));
 			System.out.println("Set of y co-ordinates sorted List : " + newpointthird.getDoublePosition(1));
 			 System.out.println("Neighbourhood having the point : " +
-			 testfour.get());
+			 test.get());
 
 		}
 
 		
-		
+		ImageJFunctions.show(bitimgout);
 		
 		
 		
