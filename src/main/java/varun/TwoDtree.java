@@ -424,7 +424,7 @@ public class TwoDtree {
 				Point newpoint = new Point(n);
 				newpoint.setPosition(listCursor);
 
-				if (listCursor.getDoublePosition(direction) < pivotElement && listCursor.getDoublePosition(direction) > nextElement) {
+				if (listCursor.getDoublePosition(direction) < pivotElement && listCursor.getDoublePosition(direction) >= nextElement) {
 
 					childA.add(newpoint, listCursor.get().copy());
 
@@ -520,7 +520,7 @@ public class TwoDtree {
 				newpoint.setPosition(listCursor);
 
 				if (listCursor.getDoublePosition(direction) < pivotElement
-						&& listCursor.getDoublePosition(direction) > previousElement) {
+						&& listCursor.getDoublePosition(direction) >= previousElement) {
 
 					childA.add(newpoint, listCursor.get().copy());
 
@@ -549,7 +549,7 @@ public class TwoDtree {
 					previousElement=medianElements.get(medianElements.size()-2);
 					
 				if (listCursor.getDoublePosition(direction) < pivotElement
-						&& listCursor.getDoublePosition(direction) > previousElement) {
+						&& listCursor.getDoublePosition(direction) >= previousElement) {
 
 					childA.add(newpoint, listCursor.get().copy());
 
@@ -609,7 +609,7 @@ public class TwoDtree {
 			
 			for (int medianindex= medianElementsLeft.size()-2; medianindex>0; --medianindex){
 				
-				if (coordinate <= medianElementsLeft.get(medianindex) && coordinate >= medianElementsLeft.get(medianindex-1)){
+				if (coordinate <= medianElementsLeft.get(medianindex) && coordinate >= medianElementsLeft.get(medianindex+1)){
 					
 					Treepair = getLeftsubTrees(LeftTree, medianElementsLeft, medianindex, direction);
 
@@ -932,10 +932,10 @@ for (int medianindex= medianElementsRight.size()-2; medianindex>0; --medianindex
 		// Make a list by setting an appropriate
 		// interval on the image.
 
-		IterableInterval<BitType> view = Views.interval(imgout, new long[] { 0, 0 }, new long[] { 200, 200 });
+		IterableInterval<BitType> view = Views.interval(imgout, new long[] { 0, 0 }, new long[] { 20, 20 });
 		
 
-		final Cursor<BitType> first = view.cursor();
+		final Cursor<BitType> first = imgout.cursor();
 
 		while (first.hasNext()) {
 			first.fwd();
@@ -995,7 +995,7 @@ for (int medianindex= medianElementsRight.size()-2; medianindex>0; --medianindex
 		 * stored in LefttreePairY and RighttreePairY
 		 *******/
 
-		double[] testpoint = { 20.0, 10.0 };
+		double[] testpoint = { 0.4, 0.44 };
 
 		/*****
 		 * Do this if you want to return only the immediate neighborhood of the
@@ -1022,13 +1022,16 @@ for (int medianindex= medianElementsRight.size()-2; medianindex>0; --medianindex
 
 		PointSampleList<BitType> Neighbourhood = new PointSampleList<BitType>(n);
 
-	//	Neighbourhood = getNeighbourhood(TreepairX, TreepairY, 0, 1);
+		Neighbourhood = getNeighbourhood(TreepairX, TreepairY, 0, 1);
 
-		Cursor<BitType> testfour = TreepairX.cursor();
+		Cursor<BitType> testfour = Neighbourhood.cursor();
 
 		
 final Img<BitType> bitimgout = new ArrayImgFactory<BitType>().create(img, new BitType());
 		
+
+
+
 		Cursor<BitType> test= bitimgout.cursor();
 		
 		while (testfour.hasNext()) {
