@@ -1,6 +1,5 @@
 package varun;
 
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -37,7 +36,6 @@ import varun.TwoDtree.Distance;
 import varun.TwoDtree.EucledianDistance;
 
 public class Kdbranch {
-
 
 	public static <T extends RealType<T>> PointSampleList<T> getList(RandomAccessibleInterval<T> img) {
 
@@ -184,12 +182,15 @@ public class Kdbranch {
 
 	}
 
-	public static <T extends RealType<T>> Double medianValue(ArrayList<Long> sortedcoordinateList,
-			int startindex, int lastindex, int direction) {
+	public static <T extends RealType<T>> Double medianValue(ArrayList<Long> sortedcoordinateList, int startindex,
+			int lastindex, int direction) {
 
 		// Size of a list is lastindex-startindex+1.
-
+		
+		double medianElement=0.0;
 		int medianIndexA, medianIndexB;
+
+		
 		if ((lastindex - startindex + 1) % 2 == 1) {
 			medianIndexA = startindex + (lastindex - startindex + 1 - (lastindex - startindex + 1) % 2) / 2;
 			medianIndexB = medianIndexA;
@@ -200,19 +201,16 @@ public class Kdbranch {
 			medianIndexA = startindex + (lastindex - startindex + 1) / 2 - 1;
 			medianIndexB = medianIndexA + 1;
 		}
-		double medianElement;
 		
 
 		medianElement = 0.5 * (sortedcoordinateList.get(medianIndexA) + sortedcoordinateList.get(medianIndexB));
-	
+
 		return medianElement;
 
 	}
 
-	
-
-	public static <T extends RealType<T>> PointSampleList<T> getTree(PointSampleList<T> list,ArrayList<Long> sortedcoordinateList,
-			 int startindex,int lastindex, int direction) {
+	public static <T extends RealType<T>> ArrayList<Double> getTree(PointSampleList<T> list,
+			ArrayList<Long> sortedcoordinateList, int startindex, int lastindex, int direction) {
 		int n = list.numDimensions();
 		/****
 		 * To ward against running over the dimensionality, creating some local
@@ -220,14 +218,16 @@ public class Kdbranch {
 		 ****/
 		if (direction == list.numDimensions())
 			direction = 0;
-		if (list.dimension(direction) <= 2)
+		if (list.size() <= 2)
 			return null;
 
 		else {
 			double pivotElement;
+ArrayList<Double> Pivots= new ArrayList();
 
-			pivotElement = medianValue(sortedcoordinateList,
-					startindex, lastindex, direction);
+			pivotElement = medianValue(sortedcoordinateList, startindex, lastindex, direction);
+
+			Pivots.add(pivotElement);
 			
 			int medianIndexA, medianIndexB;
 			if ((lastindex - startindex + 1) % 2 == 1) {
@@ -240,11 +240,11 @@ public class Kdbranch {
 				medianIndexA = startindex + (lastindex - startindex + 1) / 2 - 1;
 				medianIndexB = medianIndexA + 1;
 			}
-			
+
 			final PointSampleList<T> LeftTree = new PointSampleList<T>(n);
 			final PointSampleList<T> RightTree = new PointSampleList<T>(n);
-			ArrayList<Long> sortedcoordinateChildA= new ArrayList<Long>(sortedcoordinateList.size()/2);
-			ArrayList<Long> sortedcoordinateChildB= new ArrayList<Long>(sortedcoordinateList.size()/2);
+			ArrayList<Long> sortedcoordinateChildA = new ArrayList<Long>(sortedcoordinateList.size() / 2);
+			ArrayList<Long> sortedcoordinateChildB = new ArrayList<Long>(sortedcoordinateList.size() / 2);
 
 			final Cursor<T> listCursor = list.localizingCursor();
 
@@ -258,87 +258,39 @@ public class Kdbranch {
 
 				Point cord = new Point(listCursor);
 
-				if (listCursor.getDoublePosition(direction) < pivotElement){
+				if (listCursor.getDoublePosition(direction) < pivotElement) {
 
 					LeftTree.add(cord, listCursor.get().copy());
-					
-					for (int i= startindex; i<medianIndexA; ++i)
+
+					for (int i = startindex; i < medianIndexA; ++i)
 						sortedcoordinateChildA.add(sortedcoordinateList.get(i));
-					
-				}
-				else{
-					
-					
+
+				} else {
+
 					RightTree.add(cord, listCursor.get().copy());
-					
-					for (int i= medianIndexA; i<=lastindex; ++i)
+
+					for (int i = medianIndexA; i <= lastindex; ++i)
 						sortedcoordinateChildB.add(sortedcoordinateList.get(i));
-					
-					
-					
+
 				}
 			}
 
-			
-			
-			Pair<PointSampleList<T> , PointSampleList<T>> pair = new ValuePair<PointSampleList<T>, PointSampleList<T>>(LeftTree, RightTree);
-			
-			getTree(LeftTree, sortedcoordinateChildA, startindex, medianIndexA-1, direction);
-			getTree(RightTree, sortedcoordinateChildB, medianIndexB+1, lastindex, direction);
-			
-			return LeftTree;
+			Pair<PointSampleList<T>, PointSampleList<T>> pair = new ValuePair<PointSampleList<T>, PointSampleList<T>>(
+					LeftTree, RightTree);
+if (medianIndexA-1>startindex)
+			getTree(LeftTree, sortedcoordinateChildA, startindex, medianIndexA - 1, direction);
+if (lastindex>medianIndexB+1)	
+getTree(RightTree, sortedcoordinateChildB, medianIndexB + 1, lastindex, direction);
 
-		}
-
-	}
-
-	public static <T extends RealType<T>> PointSampleList<T> getRightTree(PointSampleList<T> list,
-			ArrayList<Double> medianElements, int direction) {
-		int n = list.numDimensions();
-		/****
-		 * To ward against running over the dimensionality, creating some local
-		 * restrictions on the global variable direction
-		 ****/
-		if (direction == list.numDimensions())
-			direction = 0;
-		if (list.dimension(direction) <= 2)
-			return null;
-
-		else {
-			double pivotElement;
-
-			pivotElement = medianElements.get(0);
-			final PointSampleList<T> RightTree = new PointSampleList<T>(n);
-
-			final Cursor<T> listCursor = list.localizingCursor();
-
-			// In the list of medianValues the starting index stores the root
-			// node in the direction, proceeded by medianValues on the left side
-			// of the tree.
-
-			while (listCursor.hasNext()) {
-
-				listCursor.fwd();
-
-				Point cord = new Point(listCursor);
-
-				if (listCursor.getDoublePosition(direction) >= pivotElement)
-
-					RightTree.add(cord, listCursor.get().copy());
-
-			}
-
-			return RightTree;
+			return Pivots;
 
 		}
 
 	}
 
 	public static <T extends RealType<T>> Pair<PointSampleList<T>, PointSampleList<T>> getLeftsubTrees(
-			PointSampleList<T> LeftorRightTree, ArrayList<Double> medianElements, int medianindex,
-			int direction) {
+			PointSampleList<T> LeftorRightTree, ArrayList<Double> medianElements, int medianindex, int direction) {
 
-				
 		/****
 		 * To ward against running over the dimensionality, creating some local
 		 * restrictions on the global variable direction
@@ -355,41 +307,22 @@ public class Kdbranch {
 			final PointSampleList<T> childB = new PointSampleList<T>(n);
 
 			final Cursor<T> listCursor = LeftorRightTree.localizingCursor();
-			
-			if (medianindex< medianElements.size()-1){
-				
-			pivotElement = medianElements.get(medianindex);
- 
-			previousElement= medianElements.get(medianindex-1);
-			nextElement = medianElements.get(medianindex+1);// stopindex is the index of the next element on the last node split up tree.
-			
-			
-			while (listCursor.hasNext()) {
 
-				listCursor.fwd();
+			if (medianindex < medianElements.size() - 1) {
 
-				Point newpoint = new Point(n);
-				newpoint.setPosition(listCursor);
+				pivotElement = medianElements.get(medianindex);
 
-				if (listCursor.getDoublePosition(direction) < pivotElement && listCursor.getDoublePosition(direction) >= nextElement) {
+				previousElement = medianElements.get(medianindex - 1);
+				nextElement = medianElements.get(medianindex + 1);// stopindex
+																	// is the
+																	// index of
+																	// the next
+																	// element
+																	// on the
+																	// last node
+																	// split up
+																	// tree.
 
-					childA.add(newpoint, listCursor.get().copy());
-
-				} else if (listCursor.getDoublePosition(direction) >= pivotElement
-						&& listCursor.getDoublePosition(direction) <= previousElement)
-
-				{
-
-					childB.add(newpoint, listCursor.get().copy());
-
-				}
-
-			}
-			}
-			
-			else{
-				pivotElement= medianElements.get(medianElements.size()-1);
-				previousElement=medianElements.get(medianElements.size()-2);
 				while (listCursor.hasNext()) {
 
 					listCursor.fwd();
@@ -397,7 +330,8 @@ public class Kdbranch {
 					Point newpoint = new Point(n);
 					newpoint.setPosition(listCursor);
 
-					if (listCursor.getDoublePosition(direction) < pivotElement ) {
+					if (listCursor.getDoublePosition(direction) < pivotElement
+							&& listCursor.getDoublePosition(direction) >= nextElement) {
 
 						childA.add(newpoint, listCursor.get().copy());
 
@@ -411,18 +345,37 @@ public class Kdbranch {
 					}
 
 				}
-				
-				
-				
-				
 			}
-			
+
+			else {
+				pivotElement = medianElements.get(medianElements.size() - 1);
+				previousElement = medianElements.get(medianElements.size() - 2);
+				while (listCursor.hasNext()) {
+
+					listCursor.fwd();
+
+					Point newpoint = new Point(n);
+					newpoint.setPosition(listCursor);
+
+					if (listCursor.getDoublePosition(direction) < pivotElement) {
+
+						childA.add(newpoint, listCursor.get().copy());
+
+					} else if (listCursor.getDoublePosition(direction) >= pivotElement
+							&& listCursor.getDoublePosition(direction) <= previousElement)
+
+					{
+
+						childB.add(newpoint, listCursor.get().copy());
+
+					}
+
+				}
+
+			}
+
 			Pair<PointSampleList<T>, PointSampleList<T>> newpairA = new ValuePair<PointSampleList<T>, PointSampleList<T>>(
 					childA, childB);
-
-			
-
-			
 
 			return newpairA;
 
@@ -431,8 +384,7 @@ public class Kdbranch {
 	}
 
 	public static <T extends RealType<T>> Pair<PointSampleList<T>, PointSampleList<T>> getRightsubTrees(
-			PointSampleList<T> LeftorRightTree, ArrayList<Double> medianElements, int medianindex, 
-			int direction) {
+			PointSampleList<T> LeftorRightTree, ArrayList<Double> medianElements, int medianindex, int direction) {
 
 		/****
 		 * To ward against running over the dimensionality, creating some local
@@ -451,74 +403,70 @@ public class Kdbranch {
 
 			final Cursor<T> listCursor = LeftorRightTree.localizingCursor();
 
-			if (medianindex< medianElements.size()-1){
-			
-			pivotElement = medianElements.get(medianindex);
+			if (medianindex < medianElements.size() - 1) {
 
-			previousElement = medianElements.get(medianindex-1);
-			
-			nextElement = medianElements.get(medianindex+1);
+				pivotElement = medianElements.get(medianindex);
 
-			while (listCursor.hasNext()) {
+				previousElement = medianElements.get(medianindex - 1);
 
-				listCursor.fwd();
+				nextElement = medianElements.get(medianindex + 1);
 
-				Point newpoint = new Point(n);
-				newpoint.setPosition(listCursor);
-
-				if (listCursor.getDoublePosition(direction) < pivotElement
-						&& listCursor.getDoublePosition(direction) >= previousElement) {
-
-					childA.add(newpoint, listCursor.get().copy());
-
-				} else if (listCursor.getDoublePosition(direction) >= pivotElement
-						&& listCursor.getDoublePosition(direction) <= nextElement)
-
-				{
-
-					childB.add(newpoint, listCursor.get().copy());
-
-				}
-
-			}
-			}
-			
-			else{
 				while (listCursor.hasNext()) {
 
 					listCursor.fwd();
 
 					Point newpoint = new Point(n);
 					newpoint.setPosition(listCursor);
-					
-					pivotElement=medianElements.get(medianElements.size()-1);
 
-					previousElement=medianElements.get(medianElements.size()-2);
-					
-				if (listCursor.getDoublePosition(direction) < pivotElement
-						&& listCursor.getDoublePosition(direction) >= previousElement) {
+					if (listCursor.getDoublePosition(direction) < pivotElement
+							&& listCursor.getDoublePosition(direction) >= previousElement) {
 
-					childA.add(newpoint, listCursor.get().copy());
+						childA.add(newpoint, listCursor.get().copy());
 
-				} else if (listCursor.getDoublePosition(direction) >= pivotElement)
+					} else if (listCursor.getDoublePosition(direction) >= pivotElement
+							&& listCursor.getDoublePosition(direction) <= nextElement)
 
-				{
+					{
 
-					childB.add(newpoint, listCursor.get().copy());
+						childB.add(newpoint, listCursor.get().copy());
+
+					}
 
 				}
-				
-				}
-				
-				
 			}
-			
-			
-			Pair<PointSampleList<T>, PointSampleList<T>> newpairB=new ValuePair<PointSampleList<T>, PointSampleList<T>>(
-					childA, childB); ;
 
-	
-		
+			else {
+				while (listCursor.hasNext()) {
+
+					listCursor.fwd();
+
+					Point newpoint = new Point(n);
+					newpoint.setPosition(listCursor);
+
+					pivotElement = medianElements.get(medianElements.size() - 1);
+
+					previousElement = medianElements.get(medianElements.size() - 2);
+
+					if (listCursor.getDoublePosition(direction) < pivotElement
+							&& listCursor.getDoublePosition(direction) >= previousElement) {
+
+						childA.add(newpoint, listCursor.get().copy());
+
+					} else if (listCursor.getDoublePosition(direction) >= pivotElement)
+
+					{
+
+						childB.add(newpoint, listCursor.get().copy());
+
+					}
+
+				}
+
+			}
+
+			Pair<PointSampleList<T>, PointSampleList<T>> newpairB = new ValuePair<PointSampleList<T>, PointSampleList<T>>(
+					childA, childB);
+			;
 
 			return newpairB;
 
@@ -540,70 +488,59 @@ public class Kdbranch {
 
 		PointSampleList<T> Treebranch = new PointSampleList<T>(n);
 
-		
 		if (coordinate < medianElementsLeft.get(0)) {
 
 			// The point is on the Left Tree
 
 			// Backward search
-			
-			if (coordinate <= medianElementsLeft.get(medianElementsLeft.size()-1)){
-				
-				Treepair = getLeftsubTrees(LeftTree, medianElementsLeft, medianElementsLeft.size()-1 , direction);
+
+			if (coordinate <= medianElementsLeft.get(medianElementsLeft.size() - 1)) {
+
+				Treepair = getLeftsubTrees(LeftTree, medianElementsLeft, medianElementsLeft.size() - 1, direction);
 
 				Treebranch = combineTrees(Treepair);
 			}
-			
-			for (int medianindex= medianElementsLeft.size()-2; medianindex>0; --medianindex){
-				
-				if (coordinate <= medianElementsLeft.get(medianindex) && coordinate >= medianElementsLeft.get(medianindex+1)){
-					
+
+			for (int medianindex = medianElementsLeft.size() - 2; medianindex > 0; --medianindex) {
+
+				if (coordinate <= medianElementsLeft.get(medianindex)
+						&& coordinate >= medianElementsLeft.get(medianindex + 1)) {
+
 					Treepair = getLeftsubTrees(LeftTree, medianElementsLeft, medianindex, direction);
 
 					Treebranch = combineTrees(Treepair);
-					
-					
-				}
-				
-				
-				
-			}
-			
-		}
-			
-			
 
-			
+				}
+
+			}
+
+		}
 
 		else if (coordinate >= medianElementsRight.get(0)) {
-			
-			if (coordinate >= medianElementsRight.get(medianElementsRight.size()-1)){
-				
-				Treepair = getRightsubTrees(RightTree, medianElementsRight, medianElementsRight.size()-1 , direction);
+
+			if (coordinate >= medianElementsRight.get(medianElementsRight.size() - 1)) {
+
+				Treepair = getRightsubTrees(RightTree, medianElementsRight, medianElementsRight.size() - 1, direction);
 				Treebranch = combineTrees(Treepair);
-				
+
 			}
-			
-for (int medianindex= medianElementsRight.size()-2; medianindex>0; --medianindex){
-				
-				if (coordinate <= medianElementsRight.get(medianindex) && coordinate >= medianElementsRight.get(medianindex-1)){
-					
+
+			for (int medianindex = medianElementsRight.size() - 2; medianindex > 0; --medianindex) {
+
+				if (coordinate <= medianElementsRight.get(medianindex)
+						&& coordinate >= medianElementsRight.get(medianindex - 1)) {
+
 					Treepair = getRightsubTrees(RightTree, medianElementsRight, medianindex, direction);
 
 					Treebranch = combineTrees(Treepair);
-					
-					
-				}
-				
-				
-				
-			}
-			
-		}
-			
-			
-		// End of back search
 
+				}
+
+			}
+
+		}
+
+		// End of back search
 
 		return Treebranch;
 	}
@@ -767,8 +704,7 @@ for (int medianindex= medianElementsRight.size()-2; medianindex>0; --medianindex
 
 	}
 
-	public static <T extends RealType<T>> void createBitimage(Img<T> img, Img<BitType> imgout,
-			T ThresholdValue) {
+	public static <T extends RealType<T>> void createBitimage(Img<T> img, Img<BitType> imgout, T ThresholdValue) {
 
 		final Cursor<T> bound = img.localizingCursor();
 
@@ -795,63 +731,6 @@ for (int medianindex= medianElementsRight.size()-2; medianindex>0; --medianindex
 		}
 	}
 
-	public static  void computeDistance(PointSampleList<BitType> list,
-			ArrayList<Double> MedianLeftX, ArrayList<Double> MedianRightX, ArrayList<Double> MedianLeftY,
-			ArrayList<Double> MedianRightY,RandomAccessibleInterval<BitType> imgout, int direction, int otherdirection, final Distance dist) {
-
-		PointSampleList<BitType> LeftTreeX;
-		PointSampleList<BitType> RightTreeX;
-		PointSampleList<BitType> LeftTreeY;
-		PointSampleList<BitType> RightTreeY;
-		PointSampleList<BitType> TreepairX;
-		PointSampleList<BitType> TreepairY;
-
-		LeftTreeX = getLeftTree(list, MedianLeftX, 0);
-		RightTreeX = getRightTree(list, MedianRightX, 0);
-		LeftTreeY = getLeftTree(list, MedianLeftY, 1);
-		RightTreeY = getRightTree(list, MedianRightY, 1);
-
-		PointSampleList<BitType> Neighbourhood;
-
-		final Cursor<BitType> listcursor = list.localizingCursor();
-		final RandomAccess<BitType> outbound = imgout.randomAccess();
-		
-		double distance;
-		
-
-		while (listcursor.hasNext()) {
-
-			listcursor.fwd();
-			
-			outbound.setPosition(listcursor);
-
-			if (listcursor.get().getInteger() == 0) {
-				
-
-				TreepairX = searchTree(LeftTreeX, RightTreeX, MedianLeftX, MedianRightX,listcursor.getDoublePosition(direction) , direction);
-				TreepairY = searchTree(LeftTreeY, RightTreeY, MedianLeftY, MedianRightY, listcursor.getDoublePosition(otherdirection), otherdirection);
-				Neighbourhood = getNeighbourhood(TreepairX, TreepairY, 0, 1);
-
-				final Cursor<BitType> searchcursor = Neighbourhood.localizingCursor();
-				double mindistance = Double.MAX_VALUE;
-				while (searchcursor.hasNext()) {
-
-					if (searchcursor.next().getInteger() == 1) {
-						distance = dist.getDistance(listcursor, searchcursor);
-
-						mindistance = Math.min(mindistance, distance);
-
-					}
-				}
-				outbound.get().setReal(mindistance);
-			}
-			else
-				outbound.get().setReal(0);
-		
-		}
-
-	}
-
 	public static void main(String[] args) {
 
 		final Img<FloatType> img = ImgLib2Util.openAs32Bit(new File("src/main/resources/dt.png"));
@@ -867,21 +746,19 @@ for (int medianindex= medianElementsRight.size()-2; medianindex>0; --medianindex
 		ArrayList<Long> XcoordinatesSort = new ArrayList<Long>((int) list.dimension(0));
 		ArrayList<Long> YcoordinatesSort = new ArrayList<Long>((int) list.dimension(1));
 
-		ArrayList<Double> MedianLeftX = new ArrayList<Double>();
+		ArrayList<Double> MedianElements = new ArrayList<Double>();
 
-		ArrayList<Double> MedianRightX = new ArrayList<Double>();
-
-		ArrayList<Double> MedianLeftY = new ArrayList<Double>();
-
-		ArrayList<Double> MedianRightY = new ArrayList<Double>();
+		
 
 		// Make a list by setting an appropriate
 		// interval on the image.
 
-		IterableInterval<BitType> view = Views.interval(imgout, new long[] { 0, 0 }, new long[] { 20, 20 });
+		IterableInterval<BitType> view = Views.interval(imgout, new long[] { 0, 0 }, new long[] { 50, 50 });
+
 		
 
-		final Cursor<BitType> first = imgout.cursor();
+		
+		final Cursor<BitType> first = view.cursor();
 
 		while (first.hasNext()) {
 			first.fwd();
@@ -892,6 +769,8 @@ for (int medianindex= medianElementsRight.size()-2; medianindex>0; --medianindex
 			list.add(cord, first.get().copy());
 
 		}
+		
+		
 
 		/**********
 		 * Here I split an IterableInterval along X direction at the median
@@ -902,16 +781,10 @@ for (int medianindex= medianElementsRight.size()-2; medianindex>0; --medianindex
 		PointSampleList<BitType> RightTreeX = new PointSampleList<BitType>(n);
 
 		XcoordinatesSort = sortedCoordinates(list, 0);
-
-		MedianLeftX = medianValueLeft(XcoordinatesSort, 0, XcoordinatesSort.size() - 1, 0);
-
-		MedianRightX = medianValueRight(XcoordinatesSort, 0, XcoordinatesSort.size() - 1, 0);
-
-		LeftTreeX = getLeftTree(list, MedianLeftX, 0);
-		RightTreeX = getRightTree(list, MedianRightX, 0);
-
-		System.out.println(MedianLeftX);
-
+		MedianElements=	getTree(list,
+				XcoordinatesSort, 0 , (int)list.size()-1, 0);
+		
+		System.out.println(MedianElements);
 		/*****
 		 * The primary partition (along X direction) is stored in LeftTreeX and
 		 * RightTreeX and partitioned space after that (also in X-direction) are
@@ -927,13 +800,6 @@ for (int medianindex= medianElementsRight.size()-2; medianindex>0; --medianindex
 		PointSampleList<BitType> RightTreeY = new PointSampleList<BitType>(n);
 
 		YcoordinatesSort = sortedCoordinates(list, 1);
-
-		MedianLeftY = medianValueLeft(YcoordinatesSort, 0, YcoordinatesSort.size() - 1, 1);
-
-		MedianRightY = medianValueRight(YcoordinatesSort, 0, YcoordinatesSort.size() - 1, 1);
-
-		LeftTreeY = getLeftTree(list, MedianLeftY, 1);
-		RightTreeY = getRightTree(list, MedianRightY, 1);
 
 		/*****
 		 * The primary partition (along Y direction) is stored in LeftTreeY and
@@ -960,50 +826,6 @@ for (int medianindex= medianElementsRight.size()-2; medianindex>0; --medianindex
 		 * of the point
 		 **************/
 
-	//	PointSampleList<BitType> TreepairX;
-	//	PointSampleList<BitType> TreepairY;
-
-	//	TreepairX = searchTree(LeftTreeX, RightTreeX, MedianLeftX, MedianRightX, testpoint[0], 0);
-	//	TreepairY = searchTree(LeftTreeY, RightTreeY, MedianLeftY, MedianRightY, testpoint[1], 1);
-
-	//	PointSampleList<BitType> Neighbourhood = new PointSampleList<BitType>(n);
-
-	//	Neighbourhood = getNeighbourhood(TreepairX, TreepairY, 0, 1);
-
-		//Cursor<BitType> testfour = Neighbourhood.cursor();
-
-		
-final Img<BitType> bitimgout = new ArrayImgFactory<BitType>().create(imgout, new BitType());
-		
- computeDistance(list,
-		MedianLeftX, MedianRightX, MedianLeftY,
-		MedianRightY,bitimgout, 
-	0, 1, new EucledianDistance());
-
-
-		Cursor<BitType> test= bitimgout.cursor();
-		
-		while (test.hasNext()) {
-			test.fwd();
-		
-			Point newpointthird = new Point(img.numDimensions());
-
-			newpointthird.setPosition(test);
-
-			System.out.println("Set of x co-ordinates sorted List : " + newpointthird.getDoublePosition(0));
-			System.out.println("Set of y co-ordinates sorted List : " + newpointthird.getDoublePosition(1));
-			 System.out.println("Neighbourhood having the point : " +
-			 test.get());
-
-		}
-
-		
-		ImageJFunctions.show(bitimgout);
-		
-		
-		
 	}
 
 }
-	
-
