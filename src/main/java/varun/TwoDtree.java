@@ -178,6 +178,9 @@ public class TwoDtree {
 
 	}
 
+	
+	
+	
 	public static <T extends RealType<T>> ArrayList<Double> medianValueLeft(ArrayList<Long> sortedcoordinateList,
 			int startindex, int lastindex, int direction) {
 
@@ -194,6 +197,10 @@ public class TwoDtree {
 			medianIndexA = startindex + (lastindex - startindex + 1) / 2 - 1;
 			medianIndexB = medianIndexA + 1;
 		}
+		
+		
+		int initialmedianIndex= medianIndexA-1;
+		
 		double medianElement;
 		ArrayList<Double> leftmedians = new ArrayList<Double>();
 
@@ -201,9 +208,13 @@ public class TwoDtree {
 		leftmedians.add(medianElement);
 
 		while (lastindex > startindex) {
-
+// Medians for left part of the tree
 			int startindexleft = startindex;
 			int lastindexleft = medianIndexA - 1;
+			 
+			
+			
+			
 			int medianIndexleftA, medianIndexleftB;
 
 			double firstElement;
@@ -229,14 +240,59 @@ public class TwoDtree {
 			medianElement = 0.5
 					* (sortedcoordinateList.get(medianIndexleftA) + sortedcoordinateList.get(medianIndexleftB));
 
-			lastindex = lastindexleft;
+			
 			medianIndexA = medianIndexleftA;
+			
 			if (medianElement > firstElement)
+				leftmedians.add(medianElement);
+			else 
+				break;
+			
+			int startindexright = medianIndexleftA + 1;
+			int lastindexright = initialmedianIndex;
+			int medianIndexrightA, medianIndexrightB;
+
+			double lastElement;
+			lastElement = sortedcoordinateList.get(initialmedianIndex);
+			if (lastindexright - startindexright + 1 <= 2)
+				break;
+
+			if ((lastindexright - startindexright + 1) % 2 == 1) {
+				medianIndexrightA = startindexright
+						+ (lastindexright - startindexright + 1 - (lastindexright - startindexright + 1) % 2) / 2;
+				medianIndexrightB = medianIndexrightA;
+			}
+
+			else {
+				medianIndexrightA = startindexright + (lastindexright - startindexright + 1) / 2 - 1;
+				medianIndexrightB = medianIndexrightA + 1;
+
+			}
+
+			medianElement = 0.5
+					* (sortedcoordinateList.get(medianIndexrightA) + sortedcoordinateList.get(medianIndexrightB));
+
+			
+			medianIndexB = medianIndexrightB;
+
+			if (lastElement > medianElement)
 				leftmedians.add(medianElement);
 			else
 				break;
-
+			
 		}
+		
+		
+		
+			
+			
+			
+			
+			
+			
+			
+
+		
 
 		return leftmedians;
 
@@ -289,7 +345,7 @@ public class TwoDtree {
 			medianElement = 0.5
 					* (sortedcoordinateList.get(medianIndexrightA) + sortedcoordinateList.get(medianIndexrightB));
 
-			startindex = startindexright;
+			
 			medianIndexB = medianIndexrightB;
 
 			if (lastElement > medianElement)
@@ -958,6 +1014,9 @@ for (int medianindex= medianElementsRight.size()-2; medianindex>0; --medianindex
 
 		MedianLeftX = medianValueLeft(XcoordinatesSort, 0, XcoordinatesSort.size() - 1, 0);
 
+		
+		System.out.println(MedianLeftX);
+		/*
 		MedianRightX = medianValueRight(XcoordinatesSort, 0, XcoordinatesSort.size() - 1, 0);
 
 		LeftTreeX = getLeftTree(list, MedianLeftX, 0);
@@ -975,26 +1034,27 @@ for (int medianindex= medianElementsRight.size()-2; medianindex>0; --medianindex
 		 * Here I repeat the above process along Y direction taking the original
 		 * list for partitioning the space along Y direction
 		 **********/
-
+  /*
 		PointSampleList<BitType> LeftTreeY = new PointSampleList<BitType>(n);
 		PointSampleList<BitType> RightTreeY = new PointSampleList<BitType>(n);
 
-		YcoordinatesSort = sortedCoordinates(list, 1);
+	//	YcoordinatesSort = sortedCoordinates(list, 1);
 
-		MedianLeftY = medianValueLeft(YcoordinatesSort, 0, YcoordinatesSort.size() - 1, 1);
+	//	MedianLeftY = medianValueLeft(YcoordinatesSort, 0, YcoordinatesSort.size() - 1, 1);
 
-		MedianRightY = medianValueRight(YcoordinatesSort, 0, YcoordinatesSort.size() - 1, 1);
+	//	MedianRightY = medianValueRight(YcoordinatesSort, 0, YcoordinatesSort.size() - 1, 1);
 
-		LeftTreeY = getLeftTree(list, MedianLeftY, 1);
-		RightTreeY = getRightTree(list, MedianRightY, 1);
+	//	LeftTreeY = getLeftTree(list, MedianLeftY, 1);
+	//	RightTreeY = getRightTree(list, MedianRightY, 1);
 
+		*/
 		/*****
 		 * The primary partition (along Y direction) is stored in LeftTreeY and
 		 * RightTreeY and partitioned space after that (also in Y-direction) are
 		 * stored in LefttreePairY and RighttreePairY
 		 *******/
 
-		double[] testpoint = { 0.4, 0.44 };
+	//	double[] testpoint = { 0.4, 0.44 };
 
 		/*****
 		 * Do this if you want to return only the immediate neighborhood of the
@@ -1026,32 +1086,32 @@ for (int medianindex= medianElementsRight.size()-2; medianindex>0; --medianindex
 		//Cursor<BitType> testfour = Neighbourhood.cursor();
 
 		
-final Img<BitType> bitimgout = new ArrayImgFactory<BitType>().create(imgout, new BitType());
+//final Img<BitType> bitimgout = new ArrayImgFactory<BitType>().create(imgout, new BitType());
 		
- computeDistance(list,
-		MedianLeftX, MedianRightX, MedianLeftY,
-		MedianRightY,bitimgout, 
-	0, 1, new EucledianDistance());
+ //computeDistance(list,
+//		MedianLeftX, MedianRightX, MedianLeftY,
+//		MedianRightY,bitimgout, 
+//	0, 1, new EucledianDistance());
 
 
-		Cursor<BitType> test= bitimgout.cursor();
+	//	Cursor<BitType> test= bitimgout.cursor();
 		
-		while (test.hasNext()) {
-			test.fwd();
+	//	while (test.hasNext()) {
+	//		test.fwd();
 		
-			Point newpointthird = new Point(img.numDimensions());
+		//	Point newpointthird = new Point(img.numDimensions());
 
-			newpointthird.setPosition(test);
+		//	newpointthird.setPosition(test);
 
-			System.out.println("Set of x co-ordinates sorted List : " + newpointthird.getDoublePosition(0));
-			System.out.println("Set of y co-ordinates sorted List : " + newpointthird.getDoublePosition(1));
-			 System.out.println("Neighbourhood having the point : " +
-			 test.get());
+		//	System.out.println("Set of x co-ordinates sorted List : " + newpointthird.getDoublePosition(0));
+		//	System.out.println("Set of y co-ordinates sorted List : " + newpointthird.getDoublePosition(1));
+		//	 System.out.println("Neighbourhood having the point : " +
+		//	 test.get());
 
-		}
+	//	}
 
 		
-		ImageJFunctions.show(bitimgout);
+	//	ImageJFunctions.show(bitimgout);
 		
 		
 		

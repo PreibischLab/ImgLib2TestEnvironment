@@ -57,6 +57,8 @@ public class Sort1DPointSampleList {
 			cord.setPosition(first);
 
 			parent.add(cord, first.get().copy());
+			
+			
 
 		}
 
@@ -85,7 +87,7 @@ public class Sort1DPointSampleList {
 			// the first element belonging to the right list childB
 			final int splitIndex = (int)list.dimension(direction) / 2;
 
-			System.out.println( splitIndex );
+			
 			
 			final PointSampleList<T> childA = new PointSampleList<T>(n);
 			final PointSampleList<T> childB = new PointSampleList<T>(n);
@@ -97,22 +99,22 @@ public class Sort1DPointSampleList {
 
 				listCursor.fwd();
 
-				Point cord = new Point(n);
-				cord.setPosition(listCursor);
+				Point cord = new Point(listCursor);
+
 
 				if ( i < splitIndex )
 				{
 
 					childA.add(cord, listCursor.get().copy());
 
-					System.out.println("childA: "+listCursor.get());
+				//	System.out.println("childA: "+listCursor.get());
 
 				} else
 
 				{
 
 					childB.add(cord, listCursor.get().copy());
-					System.out.println("childB: "+listCursor.get());
+				//	System.out.println("childB: "+listCursor.get());
 				}
 				i++;
 			}
@@ -146,6 +148,9 @@ public class Sort1DPointSampleList {
 		final Cursor<T> cursorB = listB.localizingCursor();
 		final Cursor<T> cursor = list.localizingCursor();
 
+		
+		
+		
 		cursorA.fwd();
 		cursorB.fwd();
 
@@ -229,7 +234,7 @@ public class Sort1DPointSampleList {
 		
 		//Make a 1D list along the X direction by setting an appropriate interval on the image. 
 
-		IterableInterval<FloatType> view = Views.interval(img, new long[] { 0, 0 }, new long[] { 7, 0 });
+		IterableInterval<FloatType> view = Views.interval(img, new long[] { 0, 0 }, new long[] { 100, 0 });
 
 		final Cursor<FloatType> first = view.cursor();
 
@@ -240,11 +245,11 @@ public class Sort1DPointSampleList {
 			cord.setPosition(first);
 
 			list.add(cord, first.get().copy());
-			 //System.out.println("Set of x co-ordinates Initial List : " +
+			// System.out.println("Set of x co-ordinates Initial List : " +
 			 //cord.getDoublePosition(0));
 			 //System.out.println("Set of y co-ordinates Initial List : " +
 			 //cord.getDoublePosition(1));
-			System.out.println("Values Initial list : " + first.get());
+		//	System.out.println("Values Initial list : " + first.get());
 
 		}
 
@@ -261,10 +266,10 @@ public class Sort1DPointSampleList {
 
 			newpoint.setPosition(testtwo);
 
-			 //System.out.println("Set of x co-ordinates sorted List : " +
+			// System.out.println("Set of x co-ordinates sorted List : " +
 			 //newpoint.getDoublePosition(0));
 			 //System.out.println("Set of y co-ordinates sorted List : " +
-			// newpoint.getDoublePosition(1));
+			 //newpoint.getDoublePosition(1));
 			System.out.println("Values sorted list : " + testtwo.get());
 
 		}

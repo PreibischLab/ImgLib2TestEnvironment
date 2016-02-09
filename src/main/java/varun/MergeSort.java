@@ -101,17 +101,10 @@ public class MergeSort {
 
 	public static void main(String[] args) {
 
-		int[] list = new int[8];
+		int[] list = new int[]{0,1,2,3,4,5,0,1,2,3,4,5};
 		
 
-		list[0] = 5;
-		list[1] = 2;
-		list[2] = 4;
-		list[3] = 7;
-		list[4] = 1;
-		list[5] = 3;
-		list[6] = 2;
-		list[7] = 6;
+		
 
 		split(list);
 		
