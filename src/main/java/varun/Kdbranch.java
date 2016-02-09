@@ -246,8 +246,7 @@ public class Kdbranch {
 
 	public static <T extends RealType<T>> Node<T> getTree(PointSampleList<T> list, ArrayList<Long> sortedcoordinateList,
 			int startindex, int lastindex, int direction) {
-		
-		//ArrayList<Node<T>> allnodes = new ArrayList<Node<T>>();
+	
 		int n = list.numDimensions();
 		/****
 		 * To ward against running over the dimensionality, creating some local
@@ -295,6 +294,17 @@ public class Kdbranch {
 
 				}
 
+			
+						 
+						
+						 
+							
+							
+					 
+				
+				
+		
+				
 				
 
 			
@@ -314,7 +324,7 @@ public class Kdbranch {
 
 	}
 	
-	  public static <T extends RealType<T>> Node<T> getsubTrees(Node<T> Root,
+	  public static <T extends RealType<T>> ArrayList<Node<T>> getsubTrees(Node<T> Root,
 	  ArrayList<Long> sortedcoordinateList, int startindex, int lastindex, int
 	  direction) {
 	 
@@ -325,21 +335,12 @@ public class Kdbranch {
 	  PointSampleList<T> childA = Root.LeftTree; 
 	  PointSampleList<T> childB =Root.RightTree; 
 	  
-	  int[] medianIndexA = new int[2];
-	  int[] medianIndexleftA = new int[2];
-	  double medianElement=0.0;
-	  double firstElement;
-		
-		firstElement = sortedcoordinateList.get(startindex);
-	  
-		medianIndexA = medianIndex(sortedcoordinateList, startindex, lastindex, direction);
-
-		 Node<T> newnodeLeft = new Node<T>(pivotElement, direction, childA, childB);
+	
 			// Medians for left part of the tree
 		 
-		 
+	  ArrayList<Node<T>> allnodes = new ArrayList<Node<T>>();
 		
-		 int  initialindex=medianIndexA[0] - 1;
+		
 		 
 		if (lastindex - startindex + 1 <= 2)
 			return null;
@@ -347,6 +348,21 @@ public class Kdbranch {
 		else
 			
 	{
+			
+			
+			  int[] medianIndexA = new int[2];
+			  int[] medianIndexleftA = new int[2];
+			  double medianElement=0.0;
+			  double firstElement;
+				
+				firstElement = sortedcoordinateList.get(startindex);
+			  
+				medianIndexA = medianIndex(sortedcoordinateList, startindex, lastindex, direction);
+
+				 Node<T> newnodeLeft;// = new Node<T>(pivotElement, direction, childA, childB);
+				 
+				 int  initialindex=medianIndexA[0] - 1;
+			
 			 for(int index = lastindex; index>startindex;--index){
 				 
 				 
@@ -372,7 +388,9 @@ public class Kdbranch {
 				 
 				 initialindex=medianIndexleftA[0] - 1;
 				 
-				
+				 
+allnodes.add(newnodeLeft);				 
+				 System.out.println(allnodes.get(0).LeftTree);
 				 
 					
 					
@@ -381,7 +399,7 @@ public class Kdbranch {
 			
 
 						 
-			return newnodeLeft;
+			return allnodes;
 						
 						
 	
@@ -627,7 +645,7 @@ public class Kdbranch {
 		XcoordinatesSort = sortedCoordinates(list, 0);
 
 		Node<FloatType>  testnode;
-
+ArrayList<Node<FloatType>> allnodes = new ArrayList<Node<FloatType>>() ;
 		
 		
 		
@@ -639,19 +657,19 @@ public class Kdbranch {
 		testnode = getTree(list, XcoordinatesSort, startindex, lastindex, 0);
 
 		
-		
+		allnodes=getsubTrees(testnode, XcoordinatesSort, startindex, lastindex, 0);
 		
 		
 
 	//	System.out.println(rootnode.LeftTree.size());
-		 System.out.println(testnode.LeftTree.size());
+		// System.out.println(testnode.LeftTree.size());
 
-		 Cursor<FloatType> test= testnode.LeftTree.cursor();
+		 Cursor<FloatType> test= allnodes.get(1).LeftTree.cursor();
 
 		 while(test.copyCursor().hasNext()){
 		 test.fwd();
 
-		 System.out.println("Testnode lefttree : " +
+		 System.out.println("allNodes index 1 lefttree : " +
 		 test.get());
 		 }
 
