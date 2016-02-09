@@ -246,6 +246,8 @@ public class Kdbranch {
 
 	public static <T extends RealType<T>> Node<T> getTree(PointSampleList<T> list, ArrayList<Long> sortedcoordinateList,
 			int startindex, int lastindex, int direction) {
+		
+		//ArrayList<Node<T>> allnodes = new ArrayList<Node<T>>();
 		int n = list.numDimensions();
 		/****
 		 * To ward against running over the dimensionality, creating some local
