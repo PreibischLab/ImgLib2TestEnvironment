@@ -40,6 +40,7 @@ import varun.TwoDtree.EucledianDistance;
 
 public class Kdbranch {
 
+	/********* For an input image returns a PointSampleList ********/
 	public static <T extends RealType<T>> PointSampleList<T> getList(RandomAccessibleInterval<T> img) {
 
 		final RandomAccessible<T> infinite = Views.extendZero(img);
@@ -78,8 +79,10 @@ public class Kdbranch {
 
 	}
 
-	// Sorts the co-ordinates in a given direction, the central element is then
-	// always the pivot for the kDTree.
+	/*********
+	 * Starting the methods which sort an Arraylist of co-ordinates using
+	 * Merge-Sort algorithm
+	 *********/
 	public static <T extends RealType<T>> ArrayList<Long> sortedCoordinates(PointSampleList<T> list, int direction) {
 
 		final Cursor<T> listCursor = list.localizingCursor();
@@ -184,7 +187,9 @@ public class Kdbranch {
 		}
 
 	}
+	/******** End of the Merge-Sort routine for Arraylist *********/
 
+	/******* Returns the medianElement at the inputed medianIndices *******/
 	public static <T extends RealType<T>> Double medianElement(ArrayList<Long> sortedcoordinateList,
 			int[] medianIndex) {
 
@@ -195,6 +200,10 @@ public class Kdbranch {
 		return medianElement;
 
 	}
+
+	/********
+	 * Returns the medianIndices for an ArrayList of co-ordinates
+	 ********/
 
 	public static <T extends RealType<T>> int[] medianIndex(ArrayList<Long> sortedcoordinateList, int startindex,
 			int lastindex, int direction) {
@@ -223,15 +232,19 @@ public class Kdbranch {
 
 	}
 
+	/********
+	 * Constructor for the object Node that contains the Value at which a list
+	 * is split up, the two split lists and the direction of the split
+	 *********/
 	private static class Node<T> {
 
-		protected final double medianValue;
+		public final double medianValue;
 
-		private final int direction;
+		public final int direction;
 
-		private final PointSampleList<T> LeftTree;
+		public final PointSampleList<T> LeftTree;
 
-		private final PointSampleList<T> RightTree;
+		public final PointSampleList<T> RightTree;
 
 		public Node(final double medianValue, final int direction, final PointSampleList<T> LeftTree,
 				final PointSampleList<T> RightTree) {
@@ -241,10 +254,12 @@ public class Kdbranch {
 			this.LeftTree = LeftTree;
 			this.RightTree = RightTree;
 		}
-public double getMedianValue(){
-	return medianValue;
-	
-}
+
+		public double getMedianValue() {
+			return medianValue;
+
+		}
+
 		public int getDirection() {
 			return direction;
 		}
@@ -259,6 +274,11 @@ public double getMedianValue(){
 
 	}
 
+	/*********
+	 * Returns an object of the type Node, containing the medianValue at which
+	 * the List is split up, the two sublists and the direction at which the
+	 * list is split up
+	 ********/
 	public static <T extends RealType<T>> Node<T> getTree(PointSampleList<T> list, ArrayList<Long> sortedcoordinateList,
 			int startindex, int lastindex, int direction) {
 
@@ -318,6 +338,13 @@ public double getMedianValue(){
 
 	}
 
+	/*******
+	 * Get the branches on the left side of the ROOT node by moving the
+	 * lastindex of a list to the medianindex of the list in an iteration loop,
+	 * at each step the list is replaced by the appropriate sublist (LeftTree) for further
+	 * iteration
+	 *******/
+
 	public static <T extends RealType<T>> ArrayList<Node<T>> getLeftsubTrees(PointSampleList<T> list,
 			ArrayList<Long> sortedcoordinateList, int startindex, int lastindex, int direction) {
 
@@ -333,46 +360,36 @@ public double getMedianValue(){
 		{
 
 			int[] medianIndexleftA = new int[2];
-			double medianElement = 0.0;
-			double firstElement;
 
-			firstElement = sortedcoordinateList.get(startindex);
-
-			Node<T> newnodeLeft;// = new Node<T>(pivotElement, direction,
-								// childA, childB);
+			Node<T> newnode;
 
 			int initialindex = lastindex;
 
-			for (int index = lastindex; index > startindex; --index) {
-
-				if (initialindex - startindex + 1 <= 2)
-					break;
-
+			for (int index = 0; index < list.dimension(direction); ++index) {
 				medianIndexleftA = medianIndex(sortedcoordinateList, startindex, initialindex, direction);
 
-				medianElement = medianElement(sortedcoordinateList, medianIndexleftA);
+				newnode = getTree(list, sortedcoordinateList, startindex, initialindex, direction);
 
-				if (medianElement == firstElement)
-					break;
-
-				newnodeLeft = getTree(list, sortedcoordinateList, startindex, initialindex, direction);
+				list = newnode.LeftTree;
 
 				initialindex = medianIndexleftA[0] - 1;
 
-				allnodes.add(newnodeLeft);
-
+				allnodes.add(newnode);
 			}
 
 			return allnodes;
 
 		}
 
-		// final Node<T> newnodeRight = getTree(childB, sortedcoordinateList,
-		// medianIndexA[0], lastindex, direction);
-
 	}
-	
-	
+
+	/*******
+	 * Get the branches on the right side of the ROOT node by moving the
+	 * startindex of a list to the medianindex of the list in an iteration loop,
+	 * at each step the list is replaced by the appropriate sublist (RightTree) for further
+	 * iteration
+	 *******/
+
 	public static <T extends RealType<T>> ArrayList<Node<T>> getRightsubTrees(PointSampleList<T> list,
 			ArrayList<Long> sortedcoordinateList, int startindex, int lastindex, int direction) {
 
@@ -388,33 +405,22 @@ public double getMedianValue(){
 		{
 
 			int[] medianIndexrightA = new int[2];
-			double medianElement = 0.0;
-			double lastElement;
 
-			lastElement = sortedcoordinateList.get(lastindex);
-
-			Node<T> newnodeRight;// = new Node<T>(pivotElement, direction,
-								// childA, childB);
+			Node<T> newnode;
 
 			int initialindex = startindex;
 
-			for (int index = startindex; index <= lastindex; ++index) {
-
-				if (lastindex - initialindex + 1 <= 2)
-					break;
+			for (int index = 0; index < list.dimension(direction); ++index) {
 
 				medianIndexrightA = medianIndex(sortedcoordinateList, initialindex, lastindex, direction);
 
-				medianElement = medianElement(sortedcoordinateList, medianIndexrightA);
+				newnode = getTree(list, sortedcoordinateList, initialindex, lastindex, direction);
 
-				if (medianElement == lastElement)
-					break;
-
-				newnodeRight = getTree(list, sortedcoordinateList, initialindex, lastindex, direction);
+				list = newnode.RightTree;
 
 				initialindex = medianIndexrightA[1] + 1;
 
-				allnodes.add(newnodeRight);
+				allnodes.add(newnode);
 
 			}
 
@@ -422,13 +428,14 @@ public double getMedianValue(){
 
 		}
 
-		// final Node<T> newnodeRight = getTree(childB, sortedcoordinateList,
-		// medianIndexA[0], lastindex, direction);
-
 	}
-	
-	
 
+	/*************
+	 * Implementation of analogous method for Lists called RetailAll() but done
+	 * here for PointSampleLists to return a PointSampleList having only the
+	 * common elements of two differently sized PointSampleLists, could be
+	 * useful (not used currently)
+	 *************/
 	public static <T extends RealType<T>> PointSampleList<T> getNeighbourhood(PointSampleList<T> branchX,
 			PointSampleList<T> branchY, int direction, int otherdirection) {
 
@@ -516,6 +523,8 @@ public double getMedianValue(){
 
 	}
 
+	/********  For a Pair of PointSampleLists, returns a single PointSampleList by combining the two pairs into one (not used currently)   ***********/
+	
 	public static <T extends RealType<T>> PointSampleList<T> combineTrees(
 			Pair<PointSampleList<T>, PointSampleList<T>> Treepair) {
 
@@ -550,6 +559,8 @@ public double getMedianValue(){
 
 	}
 
+	/********** Starting the distance transform routine (not used currently)  **********/
+	
 	public interface Distance {
 
 		double getDistance(Localizable cursor1, Localizable cursor2);
@@ -588,6 +599,8 @@ public double getMedianValue(){
 
 	}
 
+	/************  Creating a bitType image from an image of type T by doing thresholding (not used currently)  ************/
+	
 	public static <T extends RealType<T>> void createBitimage(Img<T> img, Img<BitType> imgout, T ThresholdValue) {
 
 		final Cursor<T> bound = img.localizingCursor();
@@ -635,7 +648,7 @@ public double getMedianValue(){
 		// Make a list by setting an appropriate
 		// interval on the image.
 
-		IterableInterval<FloatType> view = Views.interval(img, new long[] { 0, 0 }, new long[] { 10, 10 });
+		IterableInterval<FloatType> view = Views.interval(img, new long[] { 0, 0 }, new long[] { 100, 100 });
 
 		final Cursor<FloatType> first = view.cursor();
 
@@ -649,114 +662,56 @@ public double getMedianValue(){
 
 		}
 
-		/**********
-		 * Here I split an IterableInterval along X direction at the median
-		 * X-coordinate values
-		 **********/
-		int n = list.numDimensions();
 		
+		int n = list.numDimensions();
 
+		
+		/******** Sorting the co-ordinates along X and Y direction   ********/
+		
 		XcoordinatesSort = sortedCoordinates(list, 0);
 		YcoordinatesSort = sortedCoordinates(list, 1);
+
+		
+		/**********  Starting the KD-Tree creation    *********/
 		
 		ArrayList<Node<FloatType>> leftnodesX = new ArrayList<Node<FloatType>>();
 		ArrayList<Node<FloatType>> rightnodesX = new ArrayList<Node<FloatType>>();
 		ArrayList<Node<FloatType>> leftnodesY = new ArrayList<Node<FloatType>>();
 		ArrayList<Node<FloatType>> rightnodesY = new ArrayList<Node<FloatType>>();
 
-		int lastindex = (int) XcoordinatesSort.size() - 1;
-		int startindex = 0;
+		
+		
+		final int lastindexX = (int) XcoordinatesSort.size() - 1;
+		final int startindexX = 0;
 
 		// Make a KD-tree along the X direction
 
-		leftnodesX = getLeftsubTrees(list, XcoordinatesSort, startindex, lastindex, 0);
-		
-		rightnodesX = getRightsubTrees(list, XcoordinatesSort, startindex, lastindex, 0);
-		
-		for (int index=0; index< leftnodesX.size(); ++index)
-System.out.println("Index of left trees along X : "+leftnodesX.get(index).medianValue);
+		leftnodesX = getLeftsubTrees(list, XcoordinatesSort, startindexX, lastindexX, 0);
 
-		for (int index=0; index< rightnodesX.size(); ++index)
-			System.out.println("Index of right trees along X : "+rightnodesX.get(index).medianValue);
-		
+		rightnodesX = getRightsubTrees(list, XcoordinatesSort, startindexX, lastindexX, 0);
+
+		// Checks and Tests
+
+		for (int index = 0; index < leftnodesX.size(); ++index)
+			System.out.println("Left trees along LEFT : " + leftnodesX.get(index).medianValue);
+
+		for (int index = 0; index < leftnodesX.size(); ++index)
+			System.out.println("Right trees along LEFT : " + leftnodesX.get(index).medianValue);
+
+		for (int index = 0; index < leftnodesX.size(); ++index)
+			System.out.println("Left trees along RIGHT : " + rightnodesX.get(index).medianValue);
+
+		for (int index = 0; index < leftnodesX.size(); ++index)
+			System.out.println("Right trees along RIGHT : " + rightnodesX.get(index).medianValue);
+
 		// Make a KD-tree along the Y direction
 
-		
-		 lastindex = (int) YcoordinatesSort.size() - 1;
-		 startindex = 0;
-		
-		
-				leftnodesY = getLeftsubTrees(list, YcoordinatesSort, startindex, lastindex, 1);
-				
-				rightnodesY = getRightsubTrees(list, YcoordinatesSort, startindex, lastindex, 1);
-				
-				for (int index=0; index< leftnodesY.size(); ++index)
-		System.out.println("Index of left trees along Y : "+leftnodesY.get(index).medianValue);
+		final int lastindexY = (int) YcoordinatesSort.size() - 1;
+		final int startindexY = 0;
 
-				for (int index=0; index< rightnodesY.size(); ++index)
-					System.out.println("Index of right trees along Y : "+rightnodesY.get(index).medianValue);
-				
-		
-		
-		
-	//	Cursor<FloatType> testleft = leftnodes.get(leftnodes.size()-1).LeftTree.cursor();
+		leftnodesY = getLeftsubTrees(list, YcoordinatesSort, startindexY, lastindexY, 1);
 
-	//	while (testleft.copyCursor().hasNext()) {
-	//		testleft.fwd();
-
-	//		System.out.println("allNodes index last lefttree : " + testleft.get());
-	//	}
-		
-   	//	Cursor<FloatType> testright = rightnodes.get(rightnodes.size()-1).LeftTree.cursor();
-
-	//	while (testright.copyCursor().hasNext()) {
-	//		testright.fwd();
-
-	//		System.out.println("allNodes index last righttree : " + testright.get());
-	//	}
-		
-		
-
-		/*****
-		 * The primary partition (along X direction) is stored in LeftTreeX and
-		 * RightTreeX and partitioned space after that (also in X-direction) are
-		 * stored in LefttreePairX and RighttreePairX
-		 *******/
-
-		/**********
-		 * Here I repeat the above process along Y direction taking the original
-		 * list for partitioning the space along Y direction
-		 **********/
-
-		PointSampleList<BitType> LeftTreeY = new PointSampleList<BitType>(n);
-		PointSampleList<BitType> RightTreeY = new PointSampleList<BitType>(n);
-
-		YcoordinatesSort = sortedCoordinates(list, 1);
-
-		/*****
-		 * The primary partition (along Y direction) is stored in LeftTreeY and
-		 * RightTreeY and partitioned space after that (also in Y-direction) are
-		 * stored in LefttreePairY and RighttreePairY
-		 *******/
-
-		double[] testpoint = { 0.4, 0.44 };
-
-		/*****
-		 * Do this if you want to return only the immediate neighborhood of the
-		 * point: PointSampleList<FloatType> TreebranchX; PointSampleList
-		 * <FloatType> TreebranchY;
-		 * 
-		 * TreebranchX = searchTree(LeftTreeX, RightTreeX, MedianLeftX,
-		 * MedianRightX, testpoint[0], 0);
-		 * 
-		 * TreebranchY = searchTree(LeftTreeY, RightTreeY, MedianLeftY,
-		 * MedianRightY, testpoint[1], 1);
-		 *****/
-
-		/**********
-		 * Do this if you want to return also one level up of the neighborhood
-		 * of the point
-		 **************/
+		rightnodesY = getRightsubTrees(list, YcoordinatesSort, startindexY, lastindexY, 1);
 
 	}
 
