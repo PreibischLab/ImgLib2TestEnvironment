@@ -227,11 +227,11 @@ public class Kdbranch {
 
 		protected final double medianValue;
 
-		protected final int direction;
+		private final int direction;
 
-		public final PointSampleList<T> LeftTree;
+		private final PointSampleList<T> LeftTree;
 
-		public final PointSampleList<T> RightTree;
+		private final PointSampleList<T> RightTree;
 
 		public Node(final double medianValue, final int direction, final PointSampleList<T> LeftTree,
 				final PointSampleList<T> RightTree) {
@@ -241,12 +241,27 @@ public class Kdbranch {
 			this.LeftTree = LeftTree;
 			this.RightTree = RightTree;
 		}
+public double getMedianValue(){
+	return medianValue;
+	
+}
+		public int getDirection() {
+			return direction;
+		}
+
+		public PointSampleList<T> getLeftTree() {
+			return LeftTree;
+		}
+
+		public PointSampleList<T> getRightTree() {
+			return RightTree;
+		}
 
 	}
 
 	public static <T extends RealType<T>> Node<T> getTree(PointSampleList<T> list, ArrayList<Long> sortedcoordinateList,
 			int startindex, int lastindex, int direction) {
-	
+
 		int n = list.numDimensions();
 		/****
 		 * To ward against running over the dimensionality, creating some local
@@ -258,8 +273,6 @@ public class Kdbranch {
 			return null;
 
 		else {
-
-			
 
 			if (lastindex > startindex) {
 
@@ -294,28 +307,9 @@ public class Kdbranch {
 
 				}
 
-			
-						 
-						
-						 
-							
-							
-					 
-				
-				
-		
-				
-				
-
-			
-				
-
 				return new Node<T>(pivotElement, direction, LeftTree, RightTree);
 
 			}
-			
-			
-			
 
 			else
 				return null;
@@ -323,96 +317,117 @@ public class Kdbranch {
 		}
 
 	}
-	
-	  public static <T extends RealType<T>> ArrayList<Node<T>> getsubTrees(Node<T> Root,
-	  ArrayList<Long> sortedcoordinateList, int startindex, int lastindex, int
-	  direction) {
-	 
-	  
-	 
-	  double pivotElement= Root.medianValue;
-	  
-	  PointSampleList<T> childA = Root.LeftTree; 
-	  PointSampleList<T> childB =Root.RightTree; 
-	  
-	
-			// Medians for left part of the tree
-		 
-	  ArrayList<Node<T>> allnodes = new ArrayList<Node<T>>();
-		
-		
-		 
+
+	public static <T extends RealType<T>> ArrayList<Node<T>> getLeftsubTrees(PointSampleList<T> list,
+			ArrayList<Long> sortedcoordinateList, int startindex, int lastindex, int direction) {
+
+		// Medians for left part of the tree
+
+		ArrayList<Node<T>> allnodes = new ArrayList<Node<T>>();
+
 		if (lastindex - startindex + 1 <= 2)
 			return null;
-		
-		else
-			
-	{
-			
-			
-			  int[] medianIndexA = new int[2];
-			  int[] medianIndexleftA = new int[2];
-			  double medianElement=0.0;
-			  double firstElement;
-				
-				firstElement = sortedcoordinateList.get(startindex);
-			  
-				medianIndexA = medianIndex(sortedcoordinateList, startindex, lastindex, direction);
 
-				 Node<T> newnodeLeft;// = new Node<T>(pivotElement, direction, childA, childB);
-				 
-				 int  initialindex=medianIndexA[0] - 1;
-			
-			 for(int index = lastindex; index>startindex;--index){
-				 
-				 
-				 
-				 
-				 
-				
-				 
+		else
+
+		{
+
+			int[] medianIndexleftA = new int[2];
+			double medianElement = 0.0;
+			double firstElement;
+
+			firstElement = sortedcoordinateList.get(startindex);
+
+			Node<T> newnodeLeft;// = new Node<T>(pivotElement, direction,
+								// childA, childB);
+
+			int initialindex = lastindex;
+
+			for (int index = lastindex; index > startindex; --index) {
+
 				if (initialindex - startindex + 1 <= 2)
 					break;
-				
-				
-				 medianIndexleftA=medianIndex(sortedcoordinateList, startindex, initialindex, direction);
-				
-				medianElement=medianElement(sortedcoordinateList, medianIndexleftA);
-				
-				 if (medianElement <= firstElement)
-						break;
-				
-				
-				 newnodeLeft = getTree(childA, sortedcoordinateList, startindex, initialindex, direction);
-				 
-				 
-				 initialindex=medianIndexleftA[0] - 1;
-				 
-				 
-allnodes.add(newnodeLeft);				 
-				 System.out.println(allnodes.get(0).LeftTree);
-				 
-					
-					
-			 }
-			
-			
 
-						 
+				medianIndexleftA = medianIndex(sortedcoordinateList, startindex, initialindex, direction);
+
+				medianElement = medianElement(sortedcoordinateList, medianIndexleftA);
+
+				if (medianElement == firstElement)
+					break;
+
+				newnodeLeft = getTree(list, sortedcoordinateList, startindex, initialindex, direction);
+
+				initialindex = medianIndexleftA[0] - 1;
+
+				allnodes.add(newnodeLeft);
+
+			}
+
 			return allnodes;
-						
-						
+
+		}
+
+		// final Node<T> newnodeRight = getTree(childB, sortedcoordinateList,
+		// medianIndexA[0], lastindex, direction);
+
+	}
 	
-		
+	
+	public static <T extends RealType<T>> ArrayList<Node<T>> getRightsubTrees(PointSampleList<T> list,
+			ArrayList<Long> sortedcoordinateList, int startindex, int lastindex, int direction) {
+
+		// Medians for left part of the tree
+
+		ArrayList<Node<T>> allnodes = new ArrayList<Node<T>>();
+
+		if (lastindex - startindex + 1 <= 2)
+			return null;
+
+		else
+
+		{
+
+			int[] medianIndexrightA = new int[2];
+			double medianElement = 0.0;
+			double lastElement;
+
+			lastElement = sortedcoordinateList.get(lastindex);
+
+			Node<T> newnodeRight;// = new Node<T>(pivotElement, direction,
+								// childA, childB);
+
+			int initialindex = startindex;
+
+			for (int index = startindex; index <= lastindex; ++index) {
+
+				if (lastindex - initialindex + 1 <= 2)
+					break;
+
+				medianIndexrightA = medianIndex(sortedcoordinateList, initialindex, lastindex, direction);
+
+				medianElement = medianElement(sortedcoordinateList, medianIndexrightA);
+
+				if (medianElement == lastElement)
+					break;
+
+				newnodeRight = getTree(list, sortedcoordinateList, initialindex, lastindex, direction);
+
+				initialindex = medianIndexrightA[1] + 1;
+
+				allnodes.add(newnodeRight);
+
+			}
+
+			return allnodes;
+
+		}
+
+		// final Node<T> newnodeRight = getTree(childB, sortedcoordinateList,
+		// medianIndexA[0], lastindex, direction);
+
 	}
-
-
-	//final Node<T>	newnodeRight = getTree(childB, sortedcoordinateList, medianIndexA[0], lastindex, direction);
-
-	 
-	}
-	  
-	 
+	
+	
 
 	public static <T extends RealType<T>> PointSampleList<T> getNeighbourhood(PointSampleList<T> branchX,
 			PointSampleList<T> branchY, int direction, int otherdirection) {
@@ -639,39 +654,68 @@ allnodes.add(newnodeLeft);
 		 * X-coordinate values
 		 **********/
 		int n = list.numDimensions();
-		PointSampleList<BitType> LeftTreeX = new PointSampleList<BitType>(n);
-		PointSampleList<BitType> RightTreeX = new PointSampleList<BitType>(n);
+		
 
 		XcoordinatesSort = sortedCoordinates(list, 0);
+		YcoordinatesSort = sortedCoordinates(list, 1);
+		
+		ArrayList<Node<FloatType>> leftnodesX = new ArrayList<Node<FloatType>>();
+		ArrayList<Node<FloatType>> rightnodesX = new ArrayList<Node<FloatType>>();
+		ArrayList<Node<FloatType>> leftnodesY = new ArrayList<Node<FloatType>>();
+		ArrayList<Node<FloatType>> rightnodesY = new ArrayList<Node<FloatType>>();
 
-		Node<FloatType>  testnode;
-ArrayList<Node<FloatType>> allnodes = new ArrayList<Node<FloatType>>() ;
-		
-		
-		
 		int lastindex = (int) XcoordinatesSort.size() - 1;
 		int startindex = 0;
+
+		// Make a KD-tree along the X direction
+
+		leftnodesX = getLeftsubTrees(list, XcoordinatesSort, startindex, lastindex, 0);
 		
+		rightnodesX = getRightsubTrees(list, XcoordinatesSort, startindex, lastindex, 0);
 		
+		for (int index=0; index< leftnodesX.size(); ++index)
+System.out.println("Index of left trees along X : "+leftnodesX.get(index).medianValue);
+
+		for (int index=0; index< rightnodesX.size(); ++index)
+			System.out.println("Index of right trees along X : "+rightnodesX.get(index).medianValue);
 		
-		testnode = getTree(list, XcoordinatesSort, startindex, lastindex, 0);
+		// Make a KD-tree along the Y direction
 
 		
-		allnodes=getsubTrees(testnode, XcoordinatesSort, startindex, lastindex, 0);
+		 lastindex = (int) YcoordinatesSort.size() - 1;
+		 startindex = 0;
 		
 		
+				leftnodesY = getLeftsubTrees(list, YcoordinatesSort, startindex, lastindex, 1);
+				
+				rightnodesY = getRightsubTrees(list, YcoordinatesSort, startindex, lastindex, 1);
+				
+				for (int index=0; index< leftnodesY.size(); ++index)
+		System.out.println("Index of left trees along Y : "+leftnodesY.get(index).medianValue);
 
-	//	System.out.println(rootnode.LeftTree.size());
-		// System.out.println(testnode.LeftTree.size());
+				for (int index=0; index< rightnodesY.size(); ++index)
+					System.out.println("Index of right trees along Y : "+rightnodesY.get(index).medianValue);
+				
+		
+		
+		
+	//	Cursor<FloatType> testleft = leftnodes.get(leftnodes.size()-1).LeftTree.cursor();
 
-		 Cursor<FloatType> test= allnodes.get(1).LeftTree.cursor();
+	//	while (testleft.copyCursor().hasNext()) {
+	//		testleft.fwd();
 
-		 while(test.copyCursor().hasNext()){
-		 test.fwd();
+	//		System.out.println("allNodes index last lefttree : " + testleft.get());
+	//	}
+		
+   	//	Cursor<FloatType> testright = rightnodes.get(rightnodes.size()-1).LeftTree.cursor();
 
-		 System.out.println("allNodes index 1 lefttree : " +
-		 test.get());
-		 }
+	//	while (testright.copyCursor().hasNext()) {
+	//		testright.fwd();
+
+	//		System.out.println("allNodes index last righttree : " + testright.get());
+	//	}
+		
+		
 
 		/*****
 		 * The primary partition (along X direction) is stored in LeftTreeX and
