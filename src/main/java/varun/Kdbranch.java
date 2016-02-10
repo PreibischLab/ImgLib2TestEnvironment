@@ -341,8 +341,8 @@ public class Kdbranch {
 	/*******
 	 * Get the branches on the left side of the ROOT node by moving the
 	 * lastindex of a list to the medianindex of the list in an iteration loop,
-	 * at each step the list is replaced by the appropriate sublist (LeftTree) for further
-	 * iteration
+	 * at each step the list is replaced by the appropriate sublist (LeftTree)
+	 * for further iteration
 	 *******/
 
 	public static <T extends RealType<T>> ArrayList<Node<T>> getLeftsubTrees(PointSampleList<T> list,
@@ -386,8 +386,8 @@ public class Kdbranch {
 	/*******
 	 * Get the branches on the right side of the ROOT node by moving the
 	 * startindex of a list to the medianindex of the list in an iteration loop,
-	 * at each step the list is replaced by the appropriate sublist (RightTree) for further
-	 * iteration
+	 * at each step the list is replaced by the appropriate sublist (RightTree)
+	 * for further iteration
 	 *******/
 
 	public static <T extends RealType<T>> ArrayList<Node<T>> getRightsubTrees(PointSampleList<T> list,
@@ -428,6 +428,83 @@ public class Kdbranch {
 
 		}
 
+	}
+	
+	
+	/***********  Returns the node closest to the given testpoint in a direction   ***********/
+
+	public static <T extends RealType<T>> double closestNode(Point testpoint, Node<T> rootnodedir,
+			ArrayList<Node<T>> leftTrees, ArrayList<Node<T>> rightTrees, int direction) {
+
+		double testnode = 0;
+        
+		double position = testpoint.getDoublePosition(direction);
+
+		ArrayList<Double> posdistance = new ArrayList<Double>();
+		ArrayList<Double> negdistance = new ArrayList<Double>();
+		
+
+		if (position < rootnodedir.medianValue) {
+			// Point is on the LeftTree
+
+			
+
+			for (int index = 0; index < leftTrees.size(); ++index) {
+
+				if (leftTrees.get(index).getMedianValue() - position > 0)
+				posdistance.add(leftTrees.get(index).getMedianValue() - position);
+				else
+				negdistance.add(Math.abs(leftTrees.get(index).getMedianValue() - position));	
+			}
+
+			Collections.sort(posdistance);
+
+			Collections.sort(negdistance);
+			
+			
+		if(Math.abs(negdistance.get(0)) >= Math.abs(posdistance.get(0)))
+			
+			
+			testnode = posdistance.get(0) + position;
+			
+		else
+			testnode = position - Math.abs(negdistance.get(0));
+		
+			
+
+		}
+
+		else {
+			// Point is on the RightTree
+			for (int index = 0; index < rightTrees.size(); ++index) {
+
+				if (rightTrees.get(index).getMedianValue() - position > 0)
+				posdistance.add(rightTrees.get(index).getMedianValue() - position);
+				else
+				negdistance.add(Math.abs(rightTrees.get(index).getMedianValue() - position));	
+			}
+
+			Collections.sort(posdistance);
+
+			Collections.sort(negdistance);
+			
+			
+		if(Math.abs(negdistance.get(0)) >= Math.abs(posdistance.get(0)))
+			
+			
+			testnode = posdistance.get(0) + position;
+			
+		else
+			
+			
+			testnode = position - Math.abs(negdistance.get(0));
+		
+			
+			
+			
+		}
+
+		return testnode;
 	}
 
 	/*************
@@ -523,8 +600,11 @@ public class Kdbranch {
 
 	}
 
-	/********  For a Pair of PointSampleLists, returns a single PointSampleList by combining the two pairs into one (not used currently)   ***********/
-	
+	/********
+	 * For a Pair of PointSampleLists, returns a single PointSampleList by
+	 * combining the two pairs into one (not used currently)
+	 ***********/
+
 	public static <T extends RealType<T>> PointSampleList<T> combineTrees(
 			Pair<PointSampleList<T>, PointSampleList<T>> Treepair) {
 
@@ -559,8 +639,10 @@ public class Kdbranch {
 
 	}
 
-	/********** Starting the distance transform routine (not used currently)  **********/
-	
+	/**********
+	 * Starting the distance transform routine (not used currently)
+	 **********/
+
 	public interface Distance {
 
 		double getDistance(Localizable cursor1, Localizable cursor2);
@@ -599,8 +681,11 @@ public class Kdbranch {
 
 	}
 
-	/************  Creating a bitType image from an image of type T by doing thresholding (not used currently)  ************/
-	
+	/************
+	 * Creating a bitType image from an image of type T by doing thresholding
+	 * (not used currently)
+	 ************/
+
 	public static <T extends RealType<T>> void createBitimage(Img<T> img, Img<BitType> imgout, T ThresholdValue) {
 
 		final Cursor<T> bound = img.localizingCursor();
@@ -662,29 +747,27 @@ public class Kdbranch {
 
 		}
 
-		
 		int n = list.numDimensions();
 
-		
-		/******** Sorting the co-ordinates along X and Y direction   ********/
-		
+		/******** Sorting the co-ordinates along X and Y direction ********/
+
 		XcoordinatesSort = sortedCoordinates(list, 0);
 		YcoordinatesSort = sortedCoordinates(list, 1);
 
-		
-		/**********  Starting the KD-Tree creation    *********/
-		
+		/********** Starting the KD-Tree creation *********/
+
 		ArrayList<Node<FloatType>> leftnodesX = new ArrayList<Node<FloatType>>();
 		ArrayList<Node<FloatType>> rightnodesX = new ArrayList<Node<FloatType>>();
 		ArrayList<Node<FloatType>> leftnodesY = new ArrayList<Node<FloatType>>();
 		ArrayList<Node<FloatType>> rightnodesY = new ArrayList<Node<FloatType>>();
 
-		
-		
+		Node<FloatType> rootnodeX, rootnodeY;
+
 		final int lastindexX = (int) XcoordinatesSort.size() - 1;
 		final int startindexX = 0;
 
 		// Make a KD-tree along the X direction
+		rootnodeX = getTree(list, XcoordinatesSort, startindexX, lastindexX, 0);
 
 		leftnodesX = getLeftsubTrees(list, XcoordinatesSort, startindexX, lastindexX, 0);
 
@@ -709,9 +792,26 @@ public class Kdbranch {
 		final int lastindexY = (int) YcoordinatesSort.size() - 1;
 		final int startindexY = 0;
 
+		rootnodeY = getTree(list, YcoordinatesSort, startindexY, lastindexY, 0);
+
 		leftnodesY = getLeftsubTrees(list, YcoordinatesSort, startindexY, lastindexY, 1);
 
 		rightnodesY = getRightsubTrees(list, YcoordinatesSort, startindexY, lastindexY, 1);
+
+		/******** Make a test point and search for the closest node    *********/
+		
+		Point testpoint = new Point(n);
+        double [] testnode = new double[2];
+		testpoint.setPosition(8, 0);
+		testpoint.setPosition(90, 1);
+
+testnode[0] =		closestNode(testpoint, rootnodeX, leftnodesX, rightnodesX, 0);
+testnode[1] =		closestNode(testpoint, rootnodeY, leftnodesY, rightnodesY, 1);
+
+
+
+System.out.println(testnode[0]);
+System.out.println(testnode[1]);
 
 	}
 
