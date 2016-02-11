@@ -38,7 +38,7 @@ import util.ImgLib2Util;
 import varun.TwoDtree.Distance;
 import varun.TwoDtree.EucledianDistance;
 
-public class Kdbranch {
+public class MyKDtree {
 
 	/********* For an input image returns a PointSampleList ********/
 	public static <T extends RealType<T>> PointSampleList<T> getList(RandomAccessibleInterval<T> img) {
@@ -189,24 +189,16 @@ public class Kdbranch {
 	}
 	/******** End of the Merge-Sort routine for Arraylist *********/
 
-	/******* Returns the medianElement at the inputed medianIndices *******/
-	public static <T extends RealType<T>> Double medianElement(ArrayList<Long> sortedcoordinateList,
-			int[] medianIndex) {
+	/******* Returns the medianElement for input PointSampleList *******/
 
-		double medianElement = 0.0;
+	public static <T extends RealType<T>> double getMedian(PointSampleList<T> list, int direction) {
 
-		medianElement = 0.5 * (sortedcoordinateList.get(medianIndex[0]) + sortedcoordinateList.get(medianIndex[1]));
+		ArrayList<Long> values;
 
-		return medianElement;
+		values = sortedCoordinates(list, direction);
 
-	}
-
-	/********
-	 * Returns the medianIndices for an ArrayList of co-ordinates
-	 ********/
-
-	public static <T extends RealType<T>> int[] medianIndex(ArrayList<Long> sortedcoordinateList, int startindex,
-			int lastindex, int direction) {
+		int startindex = 0;
+		int lastindex = values.size() - 1;
 
 		// Size of a list is lastindex-startindex+1.
 
@@ -228,7 +220,11 @@ public class Kdbranch {
 
 		medianindex[1] = medianIndexB;
 
-		return medianindex;
+		double medianElement = 0.0;
+
+		medianElement = 0.5 * (values.get(medianindex[0]) + values.get(medianindex[1]));
+
+		return medianElement;
 
 	}
 
@@ -279,8 +275,7 @@ public class Kdbranch {
 	 * the List is split up, the two sublists and the direction at which the
 	 * list is split up
 	 ********/
-	public static <T extends RealType<T>> Node<T> getTree(PointSampleList<T> list, ArrayList<Long> sortedcoordinateList,
-			int startindex, int lastindex, int direction) {
+	public static  <T extends RealType<T>> Node<T> getTree(PointSampleList<T> list, int direction) {
 
 		int n = list.numDimensions();
 		/****
@@ -294,62 +289,55 @@ public class Kdbranch {
 
 		else {
 
-			if (lastindex > startindex) {
+			double pivotElement;
 
-				int[] medianIndexA = new int[2];
+			pivotElement = getMedian(list, direction);
 
-				medianIndexA = medianIndex(sortedcoordinateList, startindex, lastindex, direction);
+			final PointSampleList<T> LeftTree = new PointSampleList<T>(n);
+			final PointSampleList<T> RightTree = new PointSampleList<T>(n);
 
-				double pivotElement;
+			final Cursor<T> listCursor = list.localizingCursor();
 
-				pivotElement = medianElement(sortedcoordinateList, medianIndexA);
+			while (listCursor.hasNext()) {
 
-				final PointSampleList<T> LeftTree = new PointSampleList<T>(n);
-				final PointSampleList<T> RightTree = new PointSampleList<T>(n);
+				listCursor.fwd();
 
-				final Cursor<T> listCursor = list.localizingCursor();
+				Point cord = new Point(listCursor);
 
-				while (listCursor.hasNext()) {
+				if (listCursor.getDoublePosition(direction) < pivotElement) {
 
-					listCursor.fwd();
+					LeftTree.add(cord, listCursor.get().copy());
 
-					Point cord = new Point(listCursor);
+				} else {
 
-					if (listCursor.getDoublePosition(direction) < pivotElement) {
-
-						LeftTree.add(cord, listCursor.get().copy());
-
-					} else {
-
-						RightTree.add(cord, listCursor.get().copy());
-
-					}
+					RightTree.add(cord, listCursor.get().copy());
 
 				}
 
-				
-				getTree(LeftTree, sortedcoordinateList,
-						 startindex, medianIndexA[0]-1, direction);
-				
-				
-				
-				return new Node<T>(pivotElement, direction, LeftTree, RightTree);
-
-				 
-				
-				
 			}
 
-			else
-				return null;
+			
+			
+			Node<T> node = new Node<T> (pivotElement, direction, LeftTree, RightTree);
+			
+			
+		
+			
+		
+ 	getTree(LeftTree, direction);
+			
+		
+			
+			
+  getTree(RightTree, direction);
+			
+			
+			//System.out.println(nodeA);
+			
+
+			return node; 
 
 		}
-		
-		
-		
-		
-		
-		
 
 	}
 
@@ -359,38 +347,27 @@ public class Kdbranch {
 	 * at each step the list is replaced by the appropriate sublist (LeftTree)
 	 * for further iteration
 	 *******/
-
-	public static <T extends RealType<T>> ArrayList<Node<T>> getLeftsubTrees(PointSampleList<T> list,
-			ArrayList<Long> sortedcoordinateList, int startindex, int lastindex, int direction) {
+/*
+	public static <T extends RealType<T>> ArrayList<Node<T>> getLeftsubTrees(PointSampleList<T> list, int direction) {
 
 		// Medians for left part of the tree
 
 		ArrayList<Node<T>> allnodes = new ArrayList<Node<T>>();
 
-		if (lastindex - startindex + 1 <= 2)
+		if (list.dimension(direction) <= 2)
 			return null;
 
 		else
 
 		{
 
-			int[] medianIndexleftA = new int[2];
-
 			Node<T> newnode;
 
-			int initialindex = lastindex;
-			
-			
-
 			for (int index = 0; index < list.dimension(direction); ++index) {
-				medianIndexleftA = medianIndex(sortedcoordinateList, startindex, initialindex, direction);
 
-				newnode = getTree(list, sortedcoordinateList, startindex, initialindex, direction);
+				newnode = getTree(list, direction);
 
 				list = newnode.LeftTree;
-
-				
-				initialindex = medianIndexleftA[0] - 1;
 
 				allnodes.add(newnode);
 			}
@@ -407,36 +384,27 @@ public class Kdbranch {
 	 * at each step the list is replaced by the appropriate sublist (RightTree)
 	 * for further iteration
 	 *******/
-
-	public static <T extends RealType<T>> ArrayList<Node<T>> getRightsubTrees(PointSampleList<T> list,
-			ArrayList<Long> sortedcoordinateList, int startindex, int lastindex, int direction) {
+/*
+	public static <T extends RealType<T>> ArrayList<Node<T>> getRightsubTrees(PointSampleList<T> list, int direction) {
 
 		// Medians for left part of the tree
 
 		ArrayList<Node<T>> allnodes = new ArrayList<Node<T>>();
 
-		if (lastindex - startindex + 1 <= 2)
+		if (list.dimension(direction) <= 2)
 			return null;
 
 		else
 
 		{
 
-			int[] medianIndexrightA = new int[2];
-
 			Node<T> newnode;
-
-			int initialindex = startindex;
 
 			for (int index = 0; index < list.dimension(direction); ++index) {
 
-				medianIndexrightA = medianIndex(sortedcoordinateList, initialindex, lastindex, direction);
-
-				newnode = getTree(list, sortedcoordinateList, initialindex, lastindex, direction);
+				newnode = getTree(list, direction);
 
 				list = newnode.RightTree;
-
-				initialindex = medianIndexrightA[1] + 1;
 
 				allnodes.add(newnode);
 
@@ -447,7 +415,7 @@ public class Kdbranch {
 		}
 
 	}
-
+*/
 	/***********
 	 * Returns the node closest to the given testpoint in a direction
 	 ***********/
@@ -755,10 +723,7 @@ public class Kdbranch {
 
 		int n = list.numDimensions();
 
-		/******** Sorting the co-ordinates along X and Y direction ********/
-
-		XcoordinatesSort = sortedCoordinates(list, 0);
-		YcoordinatesSort = sortedCoordinates(list, 1);
+		
 
 		/********** Starting the KD-Tree creation *********/
 
@@ -769,17 +734,17 @@ public class Kdbranch {
 
 		Node<FloatType> rootnodeX, rootnodeY;
 
-		final int lastindexX = (int) XcoordinatesSort.size() - 1;
-		final int startindexX = 0;
-
+		
+		ArrayList<Node<FloatType>> allnodes;
+		
 		// Make a KD-tree along the X direction
-		rootnodeX = getTree(list, XcoordinatesSort, startindexX, lastindexX, 0);
+		rootnodeX = getTree(list, 0);
 
 		System.out.println(rootnodeX.medianValue);
-		
-		leftnodesX = getLeftsubTrees(list, XcoordinatesSort, startindexX, lastindexX, 0);
 
-		rightnodesX = getRightsubTrees(list, XcoordinatesSort, startindexX, lastindexX, 0);
+	//	leftnodesX = getLeftsubTrees(list, 0);
+
+	//	rightnodesX = getRightsubTrees(list, 0);
 
 		// Checks and Tests
 /*
@@ -797,14 +762,11 @@ public class Kdbranch {
 */
 		// Make a KD-tree along the Y direction
 
-		final int lastindexY = (int) YcoordinatesSort.size() - 1;
-		final int startindexY = 0;
+	//	rootnodeY = getTree(list, 0);
 
-		rootnodeY = getTree(list, YcoordinatesSort, startindexY, lastindexY, 0);
+	//	leftnodesY = getLeftsubTrees(list, 1);
 
-		leftnodesY = getLeftsubTrees(list, YcoordinatesSort, startindexY, lastindexY, 1);
-
-		rightnodesY = getRightsubTrees(list, YcoordinatesSort, startindexY, lastindexY, 1);
+	//	rightnodesY = getRightsubTrees(list, 1);
 
 		/******** Make a test point and search for the closest node *********/
 
@@ -813,11 +775,11 @@ public class Kdbranch {
 		testpoint.setPosition(8, 0);
 		testpoint.setPosition(90, 1);
 
-		testnode[0] = closestNode(testpoint, rootnodeX, leftnodesX, rightnodesX, 0);
-		testnode[1] = closestNode(testpoint, rootnodeY, leftnodesY, rightnodesY, 1);
+	//	testnode[0] = closestNode(testpoint, rootnodeX, leftnodesX, rightnodesX, 0);
+	//	testnode[1] = closestNode(testpoint, rootnodeY, leftnodesY, rightnodesY, 1);
 
-	//	System.out.println(testnode[0]);
-	//	System.out.println(testnode[1]);
+		// System.out.println(testnode[0]);
+		// System.out.println(testnode[1]);
 
 	}
 
