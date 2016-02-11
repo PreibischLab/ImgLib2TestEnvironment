@@ -16,7 +16,7 @@ import net.imglib2.RandomAccess;
 import net.imglib2.RandomAccessible;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.RealCursor;
-
+import net.imglib2.algorithm.kdtree.SplitHyperPlaneKDTree;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgFactory;
 import net.imglib2.img.cell.CellImgFactory;
@@ -211,8 +211,7 @@ public class TwoDtree {
 // Medians for left part of the tree
 			int startindexleft = startindex;
 			int lastindexleft = medianIndexA - 1;
-			 
-			
+		
 			
 			
 			int medianIndexleftA, medianIndexleftB;

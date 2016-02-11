@@ -195,7 +195,7 @@ public class MyKDtree {
 
 		ArrayList<Long> values;
 
-		values = sortedCoordinates(list, direction);
+		values = sortedCoordinates(list, direction); // Since the list is sorted I only have to get the value at the middle of the list
 
 		int startindex = 0;
 		int lastindex = values.size() - 1;
@@ -270,12 +270,15 @@ public class MyKDtree {
 
 	}
 
-	/*********
-	 * Returns an object of the type Node, containing the medianValue at which
-	 * the List is split up, the two sublists and the direction at which the
-	 * list is split up
-	 ********/
-	public static  <T extends RealType<T>> Node<T> getTree(PointSampleList<T> list, int direction) {
+	private static <T> void nodetoList(final Node<T> node, final ArrayList<Node<T>> allnodes) {
+		allnodes.add(node);
+	}
+
+	
+	
+/******  Returns a root tree, I do this to initialize an ArrayList<Node<T>> in the main program which I overwrite later to include all the subtrees (Clever or Dangerous?)   ******/
+	
+	public static <T extends RealType<T>> Node<T> getrootTree(PointSampleList<T> list, int direction) {
 
 		int n = list.numDimensions();
 		/****
@@ -288,6 +291,8 @@ public class MyKDtree {
 			return null;
 
 		else {
+
+			
 
 			double pivotElement;
 
@@ -316,106 +321,81 @@ public class MyKDtree {
 
 			}
 
-			
-			
-			Node<T> node = new Node<T> (pivotElement, direction, LeftTree, RightTree);
-			
-			
-		
-			
-		
- 	getTree(LeftTree, direction);
-			
-		
-			
-			
-  getTree(RightTree, direction);
-			
-			
-			//System.out.println(nodeA);
+			Node<T> node = new Node<T>(pivotElement, direction, LeftTree, RightTree);
+
 			
 
-			return node; 
+			return node;
 
 		}
 
 	}
+	
+	
+	
+	
+	/*********
+	 Here I return an Arraylist of Node<T> type by a clever trick, I give in an ArrayList of Node<T> containing only the rootNode and in the course of the routine below overwrite that list with 
+	 the nodes of all the subtrees. The list then contains the object Node<T> for all the subtrees including the rootTree. Is this clever or dangerous way to do it?
+	 ********/
+	public static <T extends RealType<T>> void getTree(PointSampleList<T> list, ArrayList<Node<T>> allnodes, int direction) {
 
-	/*******
-	 * Get the branches on the left side of the ROOT node by moving the
-	 * lastindex of a list to the medianindex of the list in an iteration loop,
-	 * at each step the list is replaced by the appropriate sublist (LeftTree)
-	 * for further iteration
-	 *******/
-/*
-	public static <T extends RealType<T>> ArrayList<Node<T>> getLeftsubTrees(PointSampleList<T> list, int direction) {
-
-		// Medians for left part of the tree
-
-		ArrayList<Node<T>> allnodes = new ArrayList<Node<T>>();
-
+		int n = list.numDimensions();
+		/****
+		 * To ward against running over the dimensionality, creating some local
+		 * restrictions on the global variable direction
+		 ****/
+		if (direction == list.numDimensions())
+			direction = 0;
 		if (list.dimension(direction) <= 2)
-			return null;
+			return;
 
-		else
+		else {
 
-		{
+		//	ArrayList<Node<T>> allnodes = new ArrayList<Node<T>>();
 
-			Node<T> newnode;
+			double pivotElement;
 
-			for (int index = 0; index < list.dimension(direction); ++index) {
+			pivotElement = getMedian(list, direction);
 
-				newnode = getTree(list, direction);
+			final PointSampleList<T> LeftTree = new PointSampleList<T>(n);
+			final PointSampleList<T> RightTree = new PointSampleList<T>(n);
 
-				list = newnode.LeftTree;
+			final Cursor<T> listCursor = list.localizingCursor();
 
-				allnodes.add(newnode);
-			}
+			while (listCursor.hasNext()) {
 
-			return allnodes;
+				listCursor.fwd();
 
-		}
+				Point cord = new Point(listCursor);
 
-	}
+				if (listCursor.getDoublePosition(direction) < pivotElement) {
 
-	/*******
-	 * Get the branches on the right side of the ROOT node by moving the
-	 * startindex of a list to the medianindex of the list in an iteration loop,
-	 * at each step the list is replaced by the appropriate sublist (RightTree)
-	 * for further iteration
-	 *******/
-/*
-	public static <T extends RealType<T>> ArrayList<Node<T>> getRightsubTrees(PointSampleList<T> list, int direction) {
+					LeftTree.add(cord, listCursor.get().copy());
 
-		// Medians for left part of the tree
+				} else {
 
-		ArrayList<Node<T>> allnodes = new ArrayList<Node<T>>();
+					RightTree.add(cord, listCursor.get().copy());
 
-		if (list.dimension(direction) <= 2)
-			return null;
-
-		else
-
-		{
-
-			Node<T> newnode;
-
-			for (int index = 0; index < list.dimension(direction); ++index) {
-
-				newnode = getTree(list, direction);
-
-				list = newnode.RightTree;
-
-				allnodes.add(newnode);
+				}
 
 			}
 
-			return allnodes;
+			Node<T> node = new Node<T>(pivotElement, direction, LeftTree, RightTree);
+
+			getTree(LeftTree, allnodes, direction);
+
+			getTree(RightTree,allnodes, direction);
+
+			nodetoList(node, allnodes);
+		
 
 		}
 
 	}
-*/
+
+	
+	
 	/***********
 	 * Returns the node closest to the given testpoint in a direction
 	 ***********/
@@ -707,7 +687,7 @@ public class MyKDtree {
 		// Make a list by setting an appropriate
 		// interval on the image.
 
-		IterableInterval<FloatType> view = Views.interval(img, new long[] { 0, 0 }, new long[] { 100, 100 });
+		IterableInterval<FloatType> view = Views.interval(img, new long[] { 0, 0 }, new long[] { 10, 0 });
 
 		final Cursor<FloatType> first = view.cursor();
 
@@ -723,8 +703,6 @@ public class MyKDtree {
 
 		int n = list.numDimensions();
 
-		
-
 		/********** Starting the KD-Tree creation *********/
 
 		ArrayList<Node<FloatType>> leftnodesX = new ArrayList<Node<FloatType>>();
@@ -732,51 +710,62 @@ public class MyKDtree {
 		ArrayList<Node<FloatType>> leftnodesY = new ArrayList<Node<FloatType>>();
 		ArrayList<Node<FloatType>> rightnodesY = new ArrayList<Node<FloatType>>();
 
-		Node<FloatType> rootnodeX, rootnodeY;
+		Node<FloatType> rootnodeX, testnode, rootnodeY;
 
-		
-		ArrayList<Node<FloatType>> allnodes;
-		
+		ArrayList<Node<FloatType>> allnodes= new ArrayList<Node<FloatType>>();
+
 		// Make a KD-tree along the X direction
-		rootnodeX = getTree(list, 0);
+		rootnodeX = getrootTree(list, 0);
+allnodes.add(rootnodeX);
 
-		System.out.println(rootnodeX.medianValue);
+getTree(list, allnodes, 0);
 
-	//	leftnodesX = getLeftsubTrees(list, 0);
+for (int i=0; i< allnodes.size(); ++i)
 
-	//	rightnodesX = getRightsubTrees(list, 0);
+System.out.println(allnodes.get(i).medianValue);
+
+
+		// System.out.println(rootnodeX.medianValue);
+
+		//leftnodesX = getLeftsubTrees(list, 0);
+
+		// rightnodesX = getRightsubTrees(list, 0);
 
 		// Checks and Tests
-/*
-		for (int index = 0; index < leftnodesX.size(); ++index)
-			System.out.println("Left trees along LEFT : " + leftnodesX.get(index).medianValue);
-
-		for (int index = 0; index < leftnodesX.size(); ++index)
-			System.out.println("Right trees along LEFT : " + leftnodesX.get(index).medianValue);
-
-		for (int index = 0; index < leftnodesX.size(); ++index)
-			System.out.println("Left trees along RIGHT : " + rightnodesX.get(index).medianValue);
-
-		for (int index = 0; index < leftnodesX.size(); ++index)
-			System.out.println("Right trees along RIGHT : " + rightnodesX.get(index).medianValue);
-*/
+		/*
+		 * for (int index = 0; index < leftnodesX.size(); ++index)
+		 * System.out.println("Left trees along LEFT : " +
+		 * leftnodesX.get(index).medianValue);
+		 * 
+		 * for (int index = 0; index < leftnodesX.size(); ++index)
+		 * System.out.println("Right trees along LEFT : " +
+		 * leftnodesX.get(index).medianValue); /* for (int index = 0; index <
+		 * leftnodesX.size(); ++index) System.out.println(
+		 * "Left trees along RIGHT : " + rightnodesX.get(index).medianValue);
+		 * 
+		 * for (int index = 0; index < leftnodesX.size(); ++index)
+		 * System.out.println("Right trees along RIGHT : " +
+		 * rightnodesX.get(index).medianValue);
+		 */
 		// Make a KD-tree along the Y direction
 
-	//	rootnodeY = getTree(list, 0);
+		// rootnodeY = getTree(list, 0);
 
-	//	leftnodesY = getLeftsubTrees(list, 1);
+		// leftnodesY = getLeftsubTrees(list, 1);
 
-	//	rightnodesY = getRightsubTrees(list, 1);
+		// rightnodesY = getRightsubTrees(list, 1);
 
 		/******** Make a test point and search for the closest node *********/
 
 		Point testpoint = new Point(n);
-		double[] testnode = new double[2];
+		//double[] testnode = new double[2];
 		testpoint.setPosition(8, 0);
 		testpoint.setPosition(90, 1);
 
-	//	testnode[0] = closestNode(testpoint, rootnodeX, leftnodesX, rightnodesX, 0);
-	//	testnode[1] = closestNode(testpoint, rootnodeY, leftnodesY, rightnodesY, 1);
+		// testnode[0] = closestNode(testpoint, rootnodeX, leftnodesX,
+		// rightnodesX, 0);
+		// testnode[1] = closestNode(testpoint, rootnodeY, leftnodesY,
+		// rightnodesY, 1);
 
 		// System.out.println(testnode[0]);
 		// System.out.println(testnode[1]);
