@@ -83,24 +83,6 @@ public class MyKDtree {
 	 * Starting the methods which sort an Arraylist of co-ordinates using
 	 * Merge-Sort algorithm
 	 *********/
-	public static <T extends RealType<T>> ArrayList<Long> sortedCoordinates(PointSampleList<T> list, int direction) {
-
-		final Cursor<T> listCursor = list.localizingCursor();
-
-		final ArrayList<Long> values = new ArrayList<Long>((int) list.dimension(direction));
-
-		while (listCursor.hasNext()) {
-			listCursor.fwd();
-
-			values.add(listCursor.getLongPosition(direction));
-
-		}
-
-		split(values, direction);
-
-		return values;
-
-	}
 
 	public static <T extends RealType<T>> void split(ArrayList<Long> coordinateList, int direction) {
 
@@ -117,7 +99,7 @@ public class MyKDtree {
 			final ArrayList<Long> childA = new ArrayList<Long>((int) coordinateList.size() / 2);
 
 			final ArrayList<Long> childB = new ArrayList<Long>(
-					(int) coordinateList.size() / 2 + coordinateList.size() % 2);
+					(int) (coordinateList.size() / 2 + coordinateList.size() % 2));
 
 			int xindex = 0;
 
@@ -193,9 +175,23 @@ public class MyKDtree {
 
 	public static <T extends RealType<T>> double getMedian(PointSampleList<T> list, int direction) {
 
-		ArrayList<Long> values;
+		final Cursor<T> listCursor = list.localizingCursor();
 
-		values = sortedCoordinates(list, direction); // Since the list is sorted I only have to get the value at the middle of the list
+		final ArrayList<Long> values = new ArrayList<Long>();
+
+		while (listCursor.hasNext()) {
+			listCursor.fwd();
+
+			values.add(listCursor.getLongPosition(direction));
+
+		}
+
+		// Collections.sort(values);
+
+		split(values, direction); // Since the list is sorted I only have to get
+									// the value at the middle of the list
+
+		
 
 		int startindex = 0;
 		int lastindex = values.size() - 1;
@@ -274,10 +270,12 @@ public class MyKDtree {
 		allnodes.add(node);
 	}
 
-	
-	
-/******  Returns a root tree, I do this to initialize an ArrayList<Node<T>> in the main program which I overwrite later to include all the subtrees (Clever or Dangerous?)   ******/
-	
+	/******
+	 * Returns a root tree, I do this to initialize an ArrayList<Node<T>> in the
+	 * main program which I overwrite later to include all the subtrees (Clever
+	 * or Dangerous?)
+	 ******/
+
 	public static <T extends RealType<T>> Node<T> getrootTree(PointSampleList<T> list, int direction) {
 
 		int n = list.numDimensions();
@@ -292,8 +290,6 @@ public class MyKDtree {
 
 		else {
 
-			
-
 			double pivotElement;
 
 			pivotElement = getMedian(list, direction);
@@ -323,22 +319,21 @@ public class MyKDtree {
 
 			Node<T> node = new Node<T>(pivotElement, direction, LeftTree, RightTree);
 
-			
-
 			return node;
 
 		}
 
 	}
-	
-	
-	
-	
+
 	/*********
-	 Here I return an Arraylist of Node<T> type by a clever trick, I give in an ArrayList of Node<T> containing only the rootNode and in the course of the routine below overwrite that list with 
-	 the nodes of all the subtrees. The list then contains the object Node<T> for all the subtrees including the rootTree. Is this clever or dangerous way to do it?
+	 * Here I return an Arraylist of Node<T> type by a clever trick, I give in
+	 * an ArrayList of Node<T> containing only the rootNode and in the course of
+	 * the routine below overwrite that list with the nodes of all the subtrees.
+	 * The list then contains the object Node<T> for all the subtrees including
+	 * the rootTree. Is this clever or dangerous way to do it?
 	 ********/
-	public static <T extends RealType<T>> void getTree(PointSampleList<T> list, ArrayList<Node<T>> allnodes, int direction) {
+	public static <T extends RealType<T>> void getTree(PointSampleList<T> list, ArrayList<Node<T>> allnodes,
+			int direction) {
 
 		int n = list.numDimensions();
 		/****
@@ -352,10 +347,9 @@ public class MyKDtree {
 
 		else {
 
-			if (direction == n)
-				direction = 0;
 			
-		//	ArrayList<Node<T>> allnodes = new ArrayList<Node<T>>();
+
+			// ArrayList<Node<T>> allnodes = new ArrayList<Node<T>>();
 
 			double pivotElement;
 
@@ -386,21 +380,22 @@ public class MyKDtree {
 
 			Node<T> node = new Node<T>(pivotElement, direction, LeftTree, RightTree);
 
-			int otherdirection = direction + 1;
+			int otherdirection = direction+1;
+
+			if (otherdirection == n)
+				otherdirection = 0;
+			
 			
 			getTree(LeftTree, allnodes, otherdirection);
 
-			getTree(RightTree,allnodes, otherdirection);
+			getTree(RightTree, allnodes, otherdirection);
 
 			nodetoList(node, allnodes);
-		
 
 		}
 
 	}
 
-	
-	
 	/***********
 	 * Returns the node closest to the given testpoint in a direction
 	 ***********/
@@ -676,23 +671,12 @@ public class MyKDtree {
 
 		final Img<FloatType> img = ImgLib2Util.openAs32Bit(new File("src/main/resources/bridge.png"));
 
-		final Img<FloatType> imgout = new ArrayImgFactory<FloatType>().create(img, new FloatType());
-
-		FloatType val = new FloatType(100);
-
-		// createBitimage(img, imgout, val);
-
 		PointSampleList<FloatType> list = new PointSampleList<FloatType>(img.numDimensions());
-
-		ArrayList<Long> XcoordinatesSort = new ArrayList<Long>((int) list.dimension(0));
-		ArrayList<Long> YcoordinatesSort = new ArrayList<Long>((int) list.dimension(1));
-
-		ArrayList<Double> MedianElements = new ArrayList<Double>();
 
 		// Make a list by setting an appropriate
 		// interval on the image.
 
-		IterableInterval<FloatType> view = Views.interval(img, new long[] { 0, 0 }, new long[] { 100, 100 });
+		IterableInterval<FloatType> view = Views.interval(img, new long[] { 0, 0 }, new long[] { 2, 2 });
 
 		final Cursor<FloatType> first = view.cursor();
 
@@ -710,26 +694,42 @@ public class MyKDtree {
 
 		/********** Starting the KD-Tree creation *********/
 
-
 		Node<FloatType> rootnode;
 
-		ArrayList<Node<FloatType>> allnodes= new ArrayList<Node<FloatType>>();
+		ArrayList<Node<FloatType>> allnodes = new ArrayList<Node<FloatType>>();
 
 		// Make a KD-tree along the X direction
 		rootnode = getrootTree(list, 0);
-allnodes.add(rootnode);
+	//	allnodes.add(rootnode);
 
-getTree(list, allnodes, 0);
+		getTree(list, allnodes, 0);
 
-for (int i=0; i< allnodes.size(); ++i)
-
-System.out.println(allnodes.get(i).medianValue);
+		
 
 
+		//for (int i=0; i< 10; ++i)
+
+	//	 System.out.println(allnodes.get(i).medianValue);
+		
+		
+		Cursor<FloatType> listcursor = allnodes.get(2).RightTree.cursor();
+		
+		while (listcursor.hasNext()){
+			
+			listcursor.fwd();
+			System.out.println(" list X cor:  "+listcursor.getDoublePosition(0));
+			System.out.println(" list Y cor:  "+listcursor.getDoublePosition(1));
+			System.out.println(" list:  "+listcursor.get());
+			
+		}
+		for (int i =0; i<allnodes.size(); ++i){
+		System.out.println("Median Value  : "  +allnodes.get(i).medianValue);
+		System.out.println("Direction  : "  +allnodes.get(i).direction);
+		}
 		/******** Make a test point and search for the closest node *********/
 
 		Point testpoint = new Point(n);
-	//	double[] testnode = new double[2];
+		// double[] testnode = new double[2];
 		testpoint.setPosition(8, 0);
 		testpoint.setPosition(90, 1);
 

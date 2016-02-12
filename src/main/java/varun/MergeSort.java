@@ -101,7 +101,11 @@ public class MergeSort {
 
 	public static void main(String[] args) {
 
-		int[] list = new int[]{0,1,2,3,4,5,0,1,2,3,4,5};
+		int[] list = new int[1000];
+		
+		for (int i =0; i<1000;++i)
+			list[i]= (int) Math.getExponent(i);
+		
 		
 
 		
@@ -110,7 +114,7 @@ public class MergeSort {
 		
 		for (int i=0; i<list.length; ++i){
 			
-			System.out.print(list[i]);
+			System.out.println(list[i]);
 		}
 		
 
