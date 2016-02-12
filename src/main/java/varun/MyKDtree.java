@@ -345,13 +345,16 @@ public class MyKDtree {
 		 * To ward against running over the dimensionality, creating some local
 		 * restrictions on the global variable direction
 		 ****/
-		if (direction == list.numDimensions())
+		if (direction == n)
 			direction = 0;
 		if (list.dimension(direction) <= 2)
 			return;
 
 		else {
 
+			if (direction == n)
+				direction = 0;
+			
 		//	ArrayList<Node<T>> allnodes = new ArrayList<Node<T>>();
 
 			double pivotElement;
@@ -383,9 +386,11 @@ public class MyKDtree {
 
 			Node<T> node = new Node<T>(pivotElement, direction, LeftTree, RightTree);
 
-			getTree(LeftTree, allnodes, direction);
+			int otherdirection = direction + 1;
+			
+			getTree(LeftTree, allnodes, otherdirection);
 
-			getTree(RightTree,allnodes, direction);
+			getTree(RightTree,allnodes, otherdirection);
 
 			nodetoList(node, allnodes);
 		
@@ -687,7 +692,7 @@ public class MyKDtree {
 		// Make a list by setting an appropriate
 		// interval on the image.
 
-		IterableInterval<FloatType> view = Views.interval(img, new long[] { 0, 0 }, new long[] { 10, 0 });
+		IterableInterval<FloatType> view = Views.interval(img, new long[] { 0, 0 }, new long[] { 100, 100 });
 
 		final Cursor<FloatType> first = view.cursor();
 
@@ -705,18 +710,14 @@ public class MyKDtree {
 
 		/********** Starting the KD-Tree creation *********/
 
-		ArrayList<Node<FloatType>> leftnodesX = new ArrayList<Node<FloatType>>();
-		ArrayList<Node<FloatType>> rightnodesX = new ArrayList<Node<FloatType>>();
-		ArrayList<Node<FloatType>> leftnodesY = new ArrayList<Node<FloatType>>();
-		ArrayList<Node<FloatType>> rightnodesY = new ArrayList<Node<FloatType>>();
 
-		Node<FloatType> rootnodeX, testnode, rootnodeY;
+		Node<FloatType> rootnode;
 
 		ArrayList<Node<FloatType>> allnodes= new ArrayList<Node<FloatType>>();
 
 		// Make a KD-tree along the X direction
-		rootnodeX = getrootTree(list, 0);
-allnodes.add(rootnodeX);
+		rootnode = getrootTree(list, 0);
+allnodes.add(rootnode);
 
 getTree(list, allnodes, 0);
 
@@ -725,40 +726,10 @@ for (int i=0; i< allnodes.size(); ++i)
 System.out.println(allnodes.get(i).medianValue);
 
 
-		// System.out.println(rootnodeX.medianValue);
-
-		//leftnodesX = getLeftsubTrees(list, 0);
-
-		// rightnodesX = getRightsubTrees(list, 0);
-
-		// Checks and Tests
-		/*
-		 * for (int index = 0; index < leftnodesX.size(); ++index)
-		 * System.out.println("Left trees along LEFT : " +
-		 * leftnodesX.get(index).medianValue);
-		 * 
-		 * for (int index = 0; index < leftnodesX.size(); ++index)
-		 * System.out.println("Right trees along LEFT : " +
-		 * leftnodesX.get(index).medianValue); /* for (int index = 0; index <
-		 * leftnodesX.size(); ++index) System.out.println(
-		 * "Left trees along RIGHT : " + rightnodesX.get(index).medianValue);
-		 * 
-		 * for (int index = 0; index < leftnodesX.size(); ++index)
-		 * System.out.println("Right trees along RIGHT : " +
-		 * rightnodesX.get(index).medianValue);
-		 */
-		// Make a KD-tree along the Y direction
-
-		// rootnodeY = getTree(list, 0);
-
-		// leftnodesY = getLeftsubTrees(list, 1);
-
-		// rightnodesY = getRightsubTrees(list, 1);
-
 		/******** Make a test point and search for the closest node *********/
 
 		Point testpoint = new Point(n);
-		//double[] testnode = new double[2];
+	//	double[] testnode = new double[2];
 		testpoint.setPosition(8, 0);
 		testpoint.setPosition(90, 1);
 
