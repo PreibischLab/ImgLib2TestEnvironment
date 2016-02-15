@@ -242,6 +242,8 @@ public class MyKDtree {
 		public final PointSampleList<T> LeftTree;
 
 		public final PointSampleList<T> RightTree;
+		
+		
 
 		public Node(final double medianValue, final int direction, final PointSampleList<T> LeftTree,
 				final PointSampleList<T> RightTree) {
@@ -261,6 +263,8 @@ public class MyKDtree {
 			return medianValue;
 
 		}
+		
+		
 
 		public int getDirection() {
 			return direction;
@@ -423,7 +427,7 @@ public class MyKDtree {
 	 * Returns the node closest to the given testpoint in a direction
 	 ***********/
 
-	public static <T extends RealType<T>> void closestNode(double[] testpoint, Node<T> Trees) {
+	public static <T extends RealType<T>>  Node<T>  closestNode(double[] testpoint, Node<T> Trees) {
 
 		int direction = Trees.direction;
 
@@ -448,6 +452,7 @@ public class MyKDtree {
 			
 			double locationdiff = (testpoint[direction] - Trees.getMedianValue());
 			
+			
 			final boolean leftbranchsearch = locationdiff < 0;
 
 			final PointSampleList<T> searchBranch = leftbranchsearch ? Trees.LeftTree : Trees.RightTree;
@@ -460,22 +465,23 @@ public class MyKDtree {
 					
 					nextnode=Trees;
 				
+			
+				
 				if (nextnode!=Trees)
 		closestNode(testpoint, nextnode);
 			
 		
-			
+
+				System.out.println("  Test: MedianValue:" + nextnode.medianValue);
+
+				System.out.println("  Test: Direction:" + nextnode.direction);
 				
-		
+				//System.out.println("  Number of points on the tree in same direction:" + searchBranch.dimension(direction));
+				
+return nextnode;		
 			
 			
 			
-			System.out.println("  MedianValue:" + nextnode.medianValue);
-
-			System.out.println("  Direction:" + nextnode.direction);
-			
-			System.out.println("  Number of points on the tree in same direction:" + searchBranch.dimension(direction));
-
 		}
 
 		
@@ -696,7 +702,7 @@ public class MyKDtree {
 		// Make a list by setting an appropriate
 		// interval on the image.
 
-		IterableInterval<FloatType> view = Views.interval(img, new long[] { 0, 0 }, new long[] { 20, 20 });
+		IterableInterval<FloatType> view = Views.interval(img, new long[] { 0, 0 }, new long[] { 10, 10 });
 
 		final Cursor<FloatType> first = view.cursor();
 
@@ -714,9 +720,10 @@ public class MyKDtree {
 
 		/********** Starting the KD-Tree creation *********/
 
-		Node<FloatType> rootnode;
+		Node<FloatType> rootnode, finalnode;
 
 		rootnode = makeNode(list, 0);
+		
 
 		ArrayList<Node<FloatType>> allnodes = new ArrayList<Node<FloatType>>();
 
@@ -751,7 +758,15 @@ public class MyKDtree {
 		testpoint[1] = 1.3;
 		
 		
-		closestNode(testpoint, rootnode);
+finalnode =		closestNode(testpoint, rootnode);
+		
+
+		System.out.println("  MedianValue:" + finalnode.medianValue);
+
+		System.out.println("  Direction:" + finalnode.direction);
+		
+		//System.out.println("  Number of points on the tree in same direction:" + searchBranch.dimension(direction));
+
 
 	}
 
