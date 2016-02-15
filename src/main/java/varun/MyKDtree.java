@@ -8,6 +8,10 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
+
+import com.sun.tools.internal.ws.processor.modeler.annotation.MakeSafeTypeVisitor;
+import com.sun.tools.javac.util.Assert;
+
 import net.imglib2.PointSampleList;
 import net.imglib2.RealPointSampleList;
 import net.imglib2.algorithm.kdtree.KDTreeNodeIterable;
@@ -28,6 +32,7 @@ import net.imglib2.img.array.ArrayImgFactory;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.img.cell.CellImgFactory;
 import net.imglib2.img.display.imagej.ImageJFunctions;
+import net.imglib2.neighborsearch.NearestNeighborSearch;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.real.FloatType;
@@ -191,8 +196,6 @@ public class MyKDtree {
 		split(values, direction); // Since the list is sorted I only have to get
 									// the value at the middle of the list
 
-		
-
 		int startindex = 0;
 		int lastindex = values.size() - 1;
 
@@ -230,6 +233,8 @@ public class MyKDtree {
 	 *********/
 	private static class Node<T> {
 
+		public final int n;
+
 		public final double medianValue;
 
 		public final int direction;
@@ -240,11 +245,16 @@ public class MyKDtree {
 
 		public Node(final double medianValue, final int direction, final PointSampleList<T> LeftTree,
 				final PointSampleList<T> RightTree) {
-
+			assert LeftTree.numDimensions() == RightTree.numDimensions();
+			this.n = LeftTree.numDimensions();
 			this.medianValue = medianValue;
 			this.direction = direction;
 			this.LeftTree = LeftTree;
 			this.RightTree = RightTree;
+		}
+
+		public int getnumDimensions() {
+			return n;
 		}
 
 		public double getMedianValue() {
@@ -276,7 +286,7 @@ public class MyKDtree {
 	 * or Dangerous?)
 	 ******/
 
-	public static <T extends RealType<T>> Node<T> getrootTree(PointSampleList<T> list, int direction) {
+	public static <T extends RealType<T>> Node<T> makeNode(PointSampleList<T> list, int direction) {
 
 		int n = list.numDimensions();
 		/****
@@ -347,8 +357,6 @@ public class MyKDtree {
 
 		else {
 
-			
-
 			// ArrayList<Node<T>> allnodes = new ArrayList<Node<T>>();
 
 			double pivotElement;
@@ -366,11 +374,27 @@ public class MyKDtree {
 
 				Point cord = new Point(listCursor);
 
+				/*
+				 * if (listCursor.getDoublePosition(direction) == pivotElement){
+				 * 
+				 * Point splitPoint = new Point(n);
+				 * 
+				 * for (int otherdirection= direction+1; otherdirection<
+				 * list.numDimensions(); ++otherdirection){
+				 * 
+				 * long splitPlane = listCursor.getLongPosition(otherdirection);
+				 * 
+				 * splitPoint.setPosition(pivotElement, direction);
+				 * splitPoint.setPosition(splitPlane, otherdirection); }
+				 * 
+				 * }
+				 */
+
 				if (listCursor.getDoublePosition(direction) < pivotElement) {
 
 					LeftTree.add(cord, listCursor.get().copy());
 
-				} else {
+				} else if (listCursor.getDoublePosition(direction) >= pivotElement) {
 
 					RightTree.add(cord, listCursor.get().copy());
 
@@ -380,12 +404,11 @@ public class MyKDtree {
 
 			Node<T> node = new Node<T>(pivotElement, direction, LeftTree, RightTree);
 
-			int otherdirection = direction+1;
+			int otherdirection = direction + 1;
 
 			if (otherdirection == n)
 				otherdirection = 0;
-			
-			
+
 			getTree(LeftTree, allnodes, otherdirection);
 
 			getTree(RightTree, allnodes, otherdirection);
@@ -399,97 +422,65 @@ public class MyKDtree {
 	/***********
 	 * Returns the node closest to the given testpoint in a direction
 	 ***********/
-/*
-	public static <T extends RealType<T>> double closestNode(Point testpoint, 
-			ArrayList<Node<T>> Trees) {
 
-		double testnode = 0;
+	public static <T extends RealType<T>> void closestNode(double[] testpoint, Node<T> Trees) {
+
+		int direction = Trees.direction;
 
 		
+		
 
-		ArrayList<Double> posdistance = new ArrayList<Double>();
-		ArrayList<Double> negdistance = new ArrayList<Double>();
+			
 
-		// The root node is stored at the last index of the ArrayList Trees.
-		
-		
-	/*	
-		
-		for (int index = Trees.size()-1; index >= 0; --index){
-		
-		
-	int direction =	Trees.get(index).direction;
-		
-		if (testpoint.getDoublePosition(direction) < Trees.get(index).medianValue) {
-			// Point is on the Left side
-			
-			posdistance.add(Trees.get(index).getMedianValue() - testpoint.getDoublePosition(direction));
-			
-		}
-		else
-		{
-			
-			negdistance.add(Trees.get(index).getMedianValue() - testpoint.getDoublePosition(direction));
-			
-			
-			//Point is on the Right side
-			
-			
-		}
-			
-		}
+			int n = Trees.getnumDimensions();
+			int otherdirection;
 
-			 {
+			if (direction == n - 1)
 
-				if (Trees.get(index).getMedianValue() - position > 0)
+				otherdirection = 0;
+
+			else
+
+				otherdirection = direction + 1;
+
+			
+			
+			
+			double locationdiff = (testpoint[direction] - Trees.getMedianValue());
+			
+			final boolean leftbranchsearch = locationdiff < 0;
+
+			final PointSampleList<T> searchBranch = leftbranchsearch ? Trees.LeftTree : Trees.RightTree;
+			final Node<T> nextnode;
+			
+			
+				if (searchBranch.dimension(otherdirection)>2)
+		nextnode  = makeNode(searchBranch, otherdirection);
+				else
 					
-					posdistance.add(Trees.get(index).getMedianValue() - position);
-				else
-					negdistance.add(Math.abs(Trees.get(index).getMedianValue() - position));
-			}
+					nextnode=Trees;
+				
+				if (nextnode!=Trees)
+		closestNode(testpoint, nextnode);
+			
+		
+			
+				
+		
+			
+			
+			
+			System.out.println("  MedianValue:" + nextnode.medianValue);
 
-			Collections.sort(posdistance);
-
-			Collections.sort(negdistance);
-
-			if (Math.abs(negdistance.get(0)) >= Math.abs(posdistance.get(0)))
-
-				testnode = posdistance.get(0) + position;
-
-			else
-				testnode = position - Math.abs(negdistance.get(0));
+			System.out.println("  Direction:" + nextnode.direction);
+			
+			System.out.println("  Number of points on the tree in same direction:" + searchBranch.dimension(direction));
 
 		}
 
-		else {
-			// Point is on the RightTree
-			for (int index = Trees.size()-2; index >= 0; --index) {
-
-				if (Trees.get(index).getMedianValue() - position > 0)
-					posdistance.add(Trees.get(index).getMedianValue() - position);
-				else
-					negdistance.add(Math.abs(Trees.get(index).getMedianValue() - position));
-			}
-
-			Collections.sort(posdistance);
-
-			Collections.sort(negdistance);
-
-			if (Math.abs(negdistance.get(0)) >= Math.abs(posdistance.get(0)))
-
-				testnode = posdistance.get(0) + position;
-
-			else
-
-				testnode = position - Math.abs(negdistance.get(0));
-
-		}
-	}
-		return testnode;
 		
-		
-	}
-*/
+	
+
 	/*************
 	 * Implementation of analogous method for Lists called RetailAll() but done
 	 * here for PointSampleLists to return a PointSampleList having only the
@@ -705,7 +696,7 @@ public class MyKDtree {
 		// Make a list by setting an appropriate
 		// interval on the image.
 
-		IterableInterval<FloatType> view = Views.interval(img, new long[] { 0, 0 }, new long[] { 10, 10 });
+		IterableInterval<FloatType> view = Views.interval(img, new long[] { 0, 0 }, new long[] { 20, 20 });
 
 		final Cursor<FloatType> first = view.cursor();
 
@@ -725,42 +716,42 @@ public class MyKDtree {
 
 		Node<FloatType> rootnode;
 
+		rootnode = makeNode(list, 0);
+
 		ArrayList<Node<FloatType>> allnodes = new ArrayList<Node<FloatType>>();
 
-
-		// Make a KD-tree by splitting along the X direction first and then the Y direction and so on until there is no more splitting possible
+		// Make a KD-tree by splitting along the X direction first and then the
+		// Y direction and so on until there is no more splitting possible
 		getTree(list, allnodes, 0);
 
-		
+		/*********** Testing if the built KD tree is correct ***********/
 
-/*********** Testing if the built KD tree is correct   ***********/
-		
 		Cursor<FloatType> listcursor = allnodes.get(0).RightTree.cursor();
-		
-		while (listcursor.hasNext()){
-			
+
+		while (listcursor.hasNext()) {
+
 			listcursor.fwd();
-			System.out.println(" list X cor:  "+listcursor.getDoublePosition(0));
-			System.out.println(" list Y cor:  "+listcursor.getDoublePosition(1));
-			System.out.println(" list:  "+listcursor.get());
-			
+			// System.out.println(" list X cor:
+			// "+listcursor.getDoublePosition(0));
+			// System.out.println(" list Y cor:
+			// "+listcursor.getDoublePosition(1));
+			// System.out.println(" list: "+listcursor.get());
+
 		}
-		for (int i =0; i<allnodes.size(); ++i){
-		System.out.println("Median Value  : "  +allnodes.get(i).medianValue);
-		System.out.println("Direction  : "  +allnodes.get(i).direction);
+		for (int i = 0; i < allnodes.size(); ++i) {
+			// System.out.println("Median Value : "
+			// +allnodes.get(i).medianValue);
+			// System.out.println("Direction : " +allnodes.get(i).direction);
 		}
 		/******** Make a test point and search for the closest node *********/
 
-		Point testpoint = new Point(n);
-		 double[] testnode = new double[2];
-		testpoint.setPosition(1, 0);
-		testpoint.setPosition(3, 1);
-
-		 testnode[0] = closestNode(testpoint, allnodes, 0);
-		 testnode[1] = closestNode(testpoint, allnodes, 1);
-
-		 System.out.println(" The closest node in direction 0 :"+ testnode[0]);
-		 System.out.println(" The closest node in direction 1 :" +testnode[1]);
+		double[]  testpoint = new double[2];
+		
+		testpoint[0] = 0.3;
+		testpoint[1] = 1.3;
+		
+		
+		closestNode(testpoint, rootnode);
 
 	}
 
