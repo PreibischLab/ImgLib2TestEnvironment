@@ -427,7 +427,7 @@ public class MyKDtree {
 	 * Returns the node closest to the given testpoint in a direction
 	 ***********/
 
-	public static <T extends RealType<T>>  Node<T>  closestNode(double[] testpoint, Node<T> Trees) {
+	public static <T extends RealType<T>>  Node<T>  closestNode(double[] testpoint, Node<T> Trees, Node<T> previousnode) {
 
 		int direction = Trees.direction;
 
@@ -456,25 +456,28 @@ public class MyKDtree {
 			final boolean leftbranchsearch = locationdiff < 0;
 
 			final PointSampleList<T> searchBranch = leftbranchsearch ? Trees.LeftTree : Trees.RightTree;
-			final Node<T> nextnode;
+			 Node<T> nextnode, oldnode;
 			
 			
 				if (searchBranch.dimension(otherdirection)>2)
 		nextnode  = makeNode(searchBranch, otherdirection);
+				
+				
 				else
 					
 					nextnode=Trees;
 				
 			
 				
-				if (nextnode!=Trees)
-		closestNode(testpoint, nextnode);
-			
+				if (nextnode!=Trees){
+					
+		nextnode = closestNode(testpoint, nextnode, Trees);
+				}
 		
 
-				System.out.println("  Test: MedianValue:" + nextnode.medianValue);
+				System.out.println("  Test: MedianValue:" + Trees.medianValue);
 
-				System.out.println("  Test: Direction:" + nextnode.direction);
+				System.out.println("  Test: Direction:" + Trees.direction);
 				
 				//System.out.println("  Number of points on the tree in same direction:" + searchBranch.dimension(direction));
 				
@@ -754,11 +757,11 @@ return nextnode;
 
 		double[]  testpoint = new double[2];
 		
-		testpoint[0] = 0.3;
-		testpoint[1] = 1.3;
+		testpoint[0] = 5.3;
+		testpoint[1] = 5.3;
 		
 		
-finalnode =		closestNode(testpoint, rootnode);
+finalnode =		closestNode(testpoint, rootnode, rootnode);
 		
 
 		System.out.println("  MedianValue:" + finalnode.medianValue);
