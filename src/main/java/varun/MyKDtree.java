@@ -451,7 +451,11 @@ public class MyKDtree {
 	}
 
 	/***********
-	 * Returns the node closest to the given testpoint in a direction
+	 * Returns the complete search path (splitNodes, direction of split and the search branches) giving all the nearest neighbours of a point, also stored are the farther neighbours of the testpoint,
+	 * 
+	 *  index 0 of the nodeList stores the closest node and the search branch and lastindex stores the left or right side or the Root Tree where the first split happened to search for the point.
+	 *  
+	 *  index 0 of the farnodeList stores the least farthest node to the search point and the lastindex stores the other side of the RootTree which should really be far far away from the given point.
 	 ***********/
 
 	public static <T extends RealType<T>> void closestNode(double[] testpoint, Node<T> Trees, ArrayList<searchNode<T>> nodeList,ArrayList<searchNode<T>> farnodeList ) {
