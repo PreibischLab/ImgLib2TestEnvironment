@@ -16,6 +16,7 @@ import net.imglib2.PointSampleList;
 import net.imglib2.RealPointSampleList;
 import net.imglib2.algorithm.kdtree.KDTreeNodeIterable;
 import net.imglib2.algorithm.kdtree.SplitHyperPlaneKDTree;
+import net.imglib2.algorithm.region.hypersphere.HyperSphere;
 import net.imglib2.Cursor;
 import net.imglib2.FinalInterval;
 import net.imglib2.IterableInterval;
@@ -510,6 +511,101 @@ public class MyKDtree {
 
 	}
 
+	public static <T extends RealType<T>> double volumeHypercube(PointSampleList<T> list, int dimensions) {
+		double vol = list.dimension(dimensions);
+		// dimensions (of space) = list.numDimensions() - 1;
+
+		for (int d = dimensions - 1; d >= 0; --d)
+			vol *= list.dimension(d);
+
+		return vol;
+
+	}
+
+	public static <T extends RealType<T>> double NearestNeighbourSearch(double[] testpoint,
+			ArrayList<searchNode<T>> nodeList, ArrayList<searchNode<T>> farnodeList, PointSampleList<T> list) {
+
+		int n = list.numDimensions();
+
+		int dimensions = n - 1;
+
+		double Volume = volumeHypercube(list, dimensions);
+
+		int depth = nodeList.size();
+
+		double constantfactor = Math.sqrt(dimensions) * Math.pow(Volume, 1.0 / dimensions);
+
+		double smallRadius = constantfactor / (Math.pow(2, depth / dimensions + 1));
+
+		double bigRadius = constantfactor / (Math.pow(2, (depth - 1) / dimensions + 1));
+
+		System.out.println(smallRadius);
+		System.out.println(bigRadius);
+
+		return smallRadius;
+
+	}
+
+	public static <T extends RealType<T>> double NearestNeighbourSearch(double[] testpoint,
+			ArrayList<searchNode<T>> nodeList, ArrayList<searchNode<T>> farnodeList, final Distance dist) {
+
+		double mindistance;
+		double bestdistance = Double.MAX_VALUE;
+		double secondbestdistance = Double.MAX_VALUE;
+
+		final Cursor<T> listcursor = nodeList.get(0).getSearchBranch().localizingCursor();
+		while (listcursor.hasNext()) {
+			listcursor.fwd();
+			mindistance = dist.getDistance(listcursor, testpoint);
+
+			bestdistance = Math.min(mindistance, bestdistance);
+		}
+		for (int index = 1; index < nodeList.size() - 1; ++index) {
+
+			final Cursor<T> cursor = nodeList.get(index).getSearchBranch().localizingCursor();
+
+			while (cursor.hasNext()) {
+				cursor.fwd();
+				mindistance = dist.getDistance(cursor, testpoint);
+				secondbestdistance = Math.min(mindistance, secondbestdistance);
+
+				if (secondbestdistance < bestdistance) {
+					bestdistance = secondbestdistance;
+					continue;
+				}
+
+				else {
+
+					break;
+				}
+			}
+		}
+
+		for (int index = 0; index < farnodeList.size() - 1; ++index) {
+
+			final Cursor<T> cursor = farnodeList.get(index).getSearchBranch().localizingCursor();
+
+			while (cursor.hasNext()) {
+				cursor.fwd();
+				mindistance = dist.getDistance(cursor, testpoint);
+				secondbestdistance = Math.min(mindistance, secondbestdistance);
+
+				if (secondbestdistance < bestdistance) {
+					bestdistance = secondbestdistance;
+					continue;
+				}
+
+				else {
+
+					break;
+				}
+			}
+		}
+
+		return bestdistance;
+
+	}
+
 	/*************
 	 * Implementation of analogous method for Lists called RetailAll() but done
 	 * here for PointSampleLists to return a PointSampleList having only the
@@ -650,6 +746,8 @@ public class MyKDtree {
 
 		double getDistance(Localizable cursor1, Localizable cursor2);
 
+		<T extends RealType<T>> double getDistance(Localizable listcursor, double[] testpoint);
+
 	}
 
 	public static class EucledianDistance implements Distance {
@@ -662,6 +760,17 @@ public class MyKDtree {
 				distance += Math.pow((cursor1.getDoublePosition(d) - cursor2.getDoublePosition(d)), 2);
 
 			}
+
+			return Math.sqrt(distance);
+		}
+
+		public <T extends RealType<T>> double getDistance(Localizable listcursor, double[] testpoint) {
+			double distance = 0.0;
+			int n = listcursor.numDimensions();
+
+			for (int d = 0; d < n; ++d)
+				distance += (testpoint[d] - listcursor.getDoublePosition(d))
+						* (testpoint[d] - listcursor.getDoublePosition(d));
 
 			return Math.sqrt(distance);
 		}
@@ -680,6 +789,16 @@ public class MyKDtree {
 			}
 
 			return distance;
+		}
+
+		public <T extends RealType<T>> double getDistance(Localizable listcursor, double[] testpoint) {
+			double distance = 0.0;
+			int n = listcursor.numDimensions();
+
+			for (int d = 0; d < n; ++d)
+				distance += Math.abs(testpoint[d] - listcursor.getDoublePosition(d));
+
+			return Math.sqrt(distance);
 		}
 
 	}
@@ -772,26 +891,33 @@ public class MyKDtree {
 		testpoint[1] = 1.2;
 
 		closestNode(testpoint, rootnode, searchnodes, nonsearchnodes);
-		for (int i = 0; i < searchnodes.size(); ++i) {
-			Cursor<FloatType> listcursor = searchnodes.get(i).getSearchBranch().cursor();
 
-			while (listcursor.hasNext()) {
+		double distance;
+		distance = NearestNeighbourSearch(testpoint, searchnodes, nonsearchnodes, new EucledianDistance());
 
-				listcursor.fwd();
-				System.out.println(" list X cor:" + listcursor.getDoublePosition(0));
-				System.out.println(" list Y cor:" + listcursor.getDoublePosition(1));
-				System.out.println(" list: " + listcursor.get());
+		System.out.println(distance);
 
-			}
+		// for (int i = 0; i < searchnodes.size(); ++i) {
+		// Cursor<FloatType> listcursor =
+		// searchnodes.get(i).getSearchBranch().cursor();
 
-			System.out.println("  MedianValue:" + searchnodes.get(i).medianValue);
+		// while (listcursor.hasNext()) {
 
-			System.out.println("  Direction:" + searchnodes.get(i).direction);
+		// listcursor.fwd();
+		// System.out.println(" list X cor:" + listcursor.getDoublePosition(0));
+		// System.out.println(" list Y cor:" + listcursor.getDoublePosition(1));
+		// System.out.println(" list: " + listcursor.get());
 
-			// System.out.println(" Search Branch:"
-			// + searchnodes.get(i).searchBranch.size());
+		// }
 
-		}
+		// System.out.println(" Depth:" + searchnodes.size());
+
+		// System.out.println(" Direction:" + searchnodes.get(i).direction);
+
+		// System.out.println(" Search Branch:"
+		// + searchnodes.get(i).searchBranch.size());
+
+		// }
 	}
 
 }
