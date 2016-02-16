@@ -231,45 +231,44 @@ public class MyKDtree {
 	 * Constructor for the object Node that contains the Value at which a list
 	 * is split up, the two split lists and the direction of the split
 	 *********/
-	
+
 	private static class searchNode<T> {
-	
+
 		private final int n;
 
 		private final double medianValue;
 
 		private final int direction;
 
-		
-	private final PointSampleList<T> searchBranch;
-	
-	public searchNode(final double medianValue, final int direction, final PointSampleList<T> searchBranch){
-		
-		this.n = searchBranch.numDimensions();
-		this.medianValue = medianValue;
-		this.direction = direction;
-		this.searchBranch = searchBranch;	
-		
+		private final PointSampleList<T> searchBranch;
+
+		public searchNode(final double medianValue, final int direction, final PointSampleList<T> searchBranch) {
+
+			this.n = searchBranch.numDimensions();
+			this.medianValue = medianValue;
+			this.direction = direction;
+			this.searchBranch = searchBranch;
+
+		}
+
+		public int getDirection() {
+			return direction;
+		}
+
+		public double getMedianValue() {
+			return medianValue;
+		}
+
+		public PointSampleList<T> getSearchBranch() {
+			return searchBranch;
+		}
+
+		public int getNumdimensions() {
+			return n;
+		}
+
 	}
 
-	public int getDirection() {
-		return direction;
-	}
-
-	public double getMedianValue() {
-		return medianValue;
-	}
-
-	public PointSampleList<T> getSearchBranch() {
-		return searchBranch;
-	}
-
-	public int getNumdimensions() {
-		return n;
-	}
-	
-	}
-	
 	private static class Node<T> {
 
 		public final int n;
@@ -281,8 +280,6 @@ public class MyKDtree {
 		public final PointSampleList<T> LeftTree;
 
 		public final PointSampleList<T> RightTree;
-		
-		
 
 		public Node(final double medianValue, final int direction, final PointSampleList<T> LeftTree,
 				final PointSampleList<T> RightTree) {
@@ -320,7 +317,7 @@ public class MyKDtree {
 	private static <T> void nodetoList(final Node<T> node, final ArrayList<Node<T>> allnodes) {
 		allnodes.add(node);
 	}
-	
+
 	private static <T> void searchNodetoList(final searchNode<T> searchnode, final ArrayList<searchNode<T>> allnodes) {
 		allnodes.add(searchnode);
 	}
@@ -419,8 +416,6 @@ public class MyKDtree {
 
 				Point cord = new Point(listCursor);
 
-				
-
 				if (listCursor.getDoublePosition(direction) < pivotElement) {
 
 					LeftTree.add(cord, listCursor.get().copy());
@@ -451,19 +446,22 @@ public class MyKDtree {
 	}
 
 	/***********
-	 * Returns the complete search path (splitNodes, direction of split and the search branches) giving all the nearest neighbours of a point, also stored are the farther neighbours of the testpoint,
+	 * Returns the complete search path (splitNodes, direction of split and the
+	 * search branches) giving all the nearest neighbours of a point, also
+	 * stored are the farther neighbours of the testpoint,
 	 * 
-	 *  index 0 of the nodeList stores the closest node and the search branch and lastindex stores the left or right side or the Root Tree where the first split happened to search for the point.
-	 *  
-	 *  index 0 of the farnodeList stores the least farthest node to the search point and the lastindex stores the other side of the RootTree which should really be far far away from the given point.
+	 * index 0 of the nodeList stores the closest node and the search branch and
+	 * lastindex stores the left or right side or the Root Tree where the first
+	 * split happened to search for the point.
+	 * 
+	 * index 0 of the farnodeList stores the least farthest node to the search
+	 * point and the lastindex stores the other side of the RootTree which
+	 * should really be far far away from the given point.
 	 ***********/
 
-	public static <T extends RealType<T>> void closestNode(double[] testpoint, Node<T> Trees, ArrayList<searchNode<T>> nodeList,ArrayList<searchNode<T>> farnodeList ) {
+	public static <T extends RealType<T>> void closestNode(double[] testpoint, Node<T> Trees,
+			ArrayList<searchNode<T>> nodeList, ArrayList<searchNode<T>> farnodeList) {
 
-		
-		
-		
-		
 		int direction = Trees.direction;
 
 		int n = Trees.getnumDimensions();
@@ -483,40 +481,32 @@ public class MyKDtree {
 
 		final PointSampleList<T> searchBranch = leftbranchsearch ? Trees.LeftTree : Trees.RightTree;
 		final PointSampleList<T> nonsearchBranch = leftbranchsearch ? Trees.RightTree : Trees.LeftTree;
-		
+
 		Node<T> nextnode;
 		searchNode<T> searchnode;
 		searchNode<T> nonsearchnode;
 
-		
-		if (searchBranch.dimension(otherdirection) > 2){
+		if (searchBranch.dimension(otherdirection) > 2) {
 			nextnode = makeNode(searchBranch, otherdirection);
-			 searchnode = new  searchNode<T>(nextnode.medianValue, otherdirection, searchBranch); 
-			 nonsearchnode = new searchNode<T>(nextnode.medianValue, otherdirection, nonsearchBranch); 
+			searchnode = new searchNode<T>(nextnode.medianValue, otherdirection, searchBranch);
+			nonsearchnode = new searchNode<T>(nextnode.medianValue, otherdirection, nonsearchBranch);
 		}
-		
 
-		else{
+		else {
 
 			nextnode = Trees;
-			searchnode = new  searchNode<T>(nextnode.medianValue, otherdirection, searchBranch); 
-			nonsearchnode = new searchNode<T>(nextnode.medianValue, otherdirection, nonsearchBranch); 
-		
+			searchnode = new searchNode<T>(nextnode.medianValue, otherdirection, searchBranch);
+			nonsearchnode = new searchNode<T>(nextnode.medianValue, otherdirection, nonsearchBranch);
+
 		}
-		
-		
-		
+
 		if (nextnode != Trees) {
 
 			closestNode(testpoint, nextnode, nodeList, farnodeList);
 		}
-		
-		
+
 		searchNodetoList(searchnode, nodeList);
 		searchNodetoList(nonsearchnode, farnodeList);
-		
-		
-		
 
 	}
 
@@ -746,8 +736,6 @@ public class MyKDtree {
 			cord.setPosition(first);
 
 			list.add(cord, first.get().copy());
-			
-			
 
 		}
 
@@ -756,17 +744,14 @@ public class MyKDtree {
 		/********** Starting the KD-Tree creation *********/
 
 		Node<FloatType> rootnode, finalnode;
-		
-		
 
 		rootnode = makeNode(list, 0);
 
 		ArrayList<Node<FloatType>> allnodes = new ArrayList<Node<FloatType>>();
-		
+
 		ArrayList<searchNode<FloatType>> searchnodes = new ArrayList<searchNode<FloatType>>();
-		
+
 		ArrayList<searchNode<FloatType>> nonsearchnodes = new ArrayList<searchNode<FloatType>>();
-		
 
 		// Make a KD-tree by splitting along the X direction first and then the
 		// Y direction and so on until there is no more splitting possible
@@ -774,7 +759,6 @@ public class MyKDtree {
 
 		/*********** Testing if the built KD tree is correct ***********/
 
-		
 		for (int i = 0; i < allnodes.size(); ++i) {
 			// System.out.println("Median Value : "
 			// +allnodes.get(i).medianValue);
@@ -787,30 +771,27 @@ public class MyKDtree {
 		testpoint[0] = 0.4;
 		testpoint[1] = 1.2;
 
-		 closestNode(testpoint, rootnode, searchnodes, nonsearchnodes);
-		 for (int i=0; i<searchnodes.size(); ++i){ 
-		 Cursor<FloatType> listcursor = searchnodes.get(i).getSearchBranch().cursor();
+		closestNode(testpoint, rootnode, searchnodes, nonsearchnodes);
+		for (int i = 0; i < searchnodes.size(); ++i) {
+			Cursor<FloatType> listcursor = searchnodes.get(i).getSearchBranch().cursor();
 
 			while (listcursor.hasNext()) {
 
 				listcursor.fwd();
-				 System.out.println(" list X cor:" +listcursor.getDoublePosition(0));
-				 System.out.println(" list Y cor:" +listcursor.getDoublePosition(1));
-				 System.out.println(" list: "+listcursor.get());
+				System.out.println(" list X cor:" + listcursor.getDoublePosition(0));
+				System.out.println(" list Y cor:" + listcursor.getDoublePosition(1));
+				System.out.println(" list: " + listcursor.get());
 
 			}
-		 
 
-		 
-	System.out.println("  MedianValue:" + searchnodes.get(i).medianValue);
+			System.out.println("  MedianValue:" + searchnodes.get(i).medianValue);
 
-		System.out.println("  Direction:" + searchnodes.get(i).direction);
+			System.out.println("  Direction:" + searchnodes.get(i).direction);
 
-	//	 System.out.println(" Search Branch:"
-	//	 + searchnodes.get(i).searchBranch.size());
+			// System.out.println(" Search Branch:"
+			// + searchnodes.get(i).searchBranch.size());
 
-		
-}
+		}
 	}
 
 }
