@@ -14,6 +14,8 @@ import net.imglib2.RandomAccessible;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.RealCursor;
 import net.imglib2.img.Img;
+import net.imglib2.img.array.ArrayImgFactory;
+import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.real.FloatType;
@@ -621,142 +623,65 @@ continue;
 
 	}
 
-	/*************
-	 * Implementation of analogous method for Lists called RetailAll() but done
-	 * here for PointSampleLists to return a RealPointSampleList having only the
-	 * common elements of two differently sized PointSampleLists, could be
-	 * useful (not used currently)
-	 *************/
-	public static <T extends RealType<T>> RealPointSampleList<T> getNeighbourhood(RealPointSampleList<T> branchX,
-			RealPointSampleList<T> branchY, int direction, int otherdirection) {
-
-		int n = branchX.numDimensions();
-
-		RealPointSampleList<T> localNeighbourhood = new RealPointSampleList<T>(n);
-
-		RealPointSampleList<T> smalllist = new RealPointSampleList<T>(n);
-
-		RealPointSampleList<T> biglist = new RealPointSampleList<T>(n);
-
-		final RealCursor<T> Xcursor = branchX.localizingCursor();
-		final RealCursor<T> Ycursor = branchY.localizingCursor();
-
-		if (branchY.size() > branchX.size()) {
-
-			while (Xcursor.hasNext()) {
-				Xcursor.fwd();
-				RealPoint newpoint = new RealPoint(n);
-				newpoint.setPosition(Xcursor);
-				smalllist.add(newpoint, Xcursor.get().copy());
-			}
-		}
-
-		else {
-			while (Ycursor.hasNext()) {
-				Ycursor.fwd();
-				RealPoint newpointsec = new RealPoint(n);
-				newpointsec.setPosition(Ycursor);
-				smalllist.add(newpointsec, Ycursor.get().copy());
-			}
-
-		}
-
-		if (branchY.size() > branchX.size()) {
-
-			while (Ycursor.hasNext()) {
-				Ycursor.fwd();
-				RealPoint newpoint = new RealPoint(n);
-				newpoint.setPosition(Ycursor);
-				biglist.add(newpoint, Ycursor.get().copy());
-			}
-		}
-
-		else {
-			while (Xcursor.hasNext()) {
-				Xcursor.fwd();
-				RealPoint newpointsec = new RealPoint(n);
-				newpointsec.setPosition(Xcursor);
-				biglist.add(newpointsec, Xcursor.get().copy());
-			}
-
-		}
-
-		final RealCursor<T> smallcursor = smalllist.localizingCursor();
-		final RealCursor<T> bigcursor = biglist.localizingCursor();
-		bigcursor.fwd();
-
-		while (bigcursor.hasNext()) {
-
-			if (smallcursor.hasNext()) {
-
-				smallcursor.fwd();
-			}
-
-			else {
-				smallcursor.reset();
-				smallcursor.fwd();
-				if (bigcursor.hasNext())
-					bigcursor.fwd();
-
-			}
-			if (bigcursor.getDoublePosition(direction) == smallcursor.getDoublePosition(direction)
-					&& bigcursor.getDoublePosition(otherdirection) == smallcursor.getDoublePosition(otherdirection)) {
-
-				RealPoint newpoint = new RealPoint(n);
-				newpoint.setPosition(bigcursor);
-
-				localNeighbourhood.add(newpoint, bigcursor.get().copy());
-			}
-
-		}
-
-		return localNeighbourhood;
-
-	}
-
-	/********
-	 * For a Pair of PointSampleLists, returns a single RealPointSampleList by
-	 * combining the two pairs into one (not used currently)
-	 ***********/
-
-	public static <T extends RealType<T>> RealPointSampleList<T> combineTrees(
-			Pair<RealPointSampleList<T>, RealPointSampleList<T>> Treepair) {
-
-		int n = Treepair.getA().numDimensions();
-
-		RealPointSampleList<T> singleTree = new RealPointSampleList<T>(n);
-		RealCursor<T> treecursorA = Treepair.getA().cursor();
-		RealCursor<T> treecursorB = Treepair.getB().cursor();
-
-		while (treecursorA.hasNext()) {
-
-			treecursorA.fwd();
-			RealPoint treepoint = new RealPoint(n);
-
-			treepoint.setPosition(treecursorA);
-
-			singleTree.add(treepoint, treecursorA.get().copy());
-
-		}
-		while (treecursorB.hasNext()) {
-
-			treecursorB.fwd();
-			RealPoint treepoint = new RealPoint(n);
-
-			treepoint.setPosition(treecursorB);
-
-			singleTree.add(treepoint, treecursorB.get().copy());
-
-		}
-
-		return singleTree;
-
-	}
+	
 
 	/**********
-	 * Starting the distance transform routine (not used currently)
+	 * Starting the distance transform routine 
 	 **********/
 
+	
+	public static  void distanceTransform(RealPointSampleList<BitType> list){
+		
+		int n = list.numDimensions();
+		
+		RealPointSampleList<BitType> bitlist;
+		Node<BitType> rootnode;
+		ArrayList<searchNode<BitType>> searchnodes = new ArrayList<searchNode<BitType>>();
+
+		ArrayList<searchNode<BitType>> nonsearchnodes = new ArrayList<searchNode<BitType>>();
+		
+		rootnode = makeNode(list, 0);
+		
+		ArrayList<Node<BitType>> allnodes = new ArrayList<Node<BitType>>();
+		
+		
+		
+		RealCursor<BitType> listcursor = list.localizingCursor();
+		
+		while(listcursor.hasNext()){
+			listcursor.fwd();
+			
+			if (listcursor.get().getInteger() == 0){
+				
+				// Start finding the nearest neighbours for all the points having 0 value
+				
+				double[] testpoint= new double[n] ;
+				
+				for (int d=0; d < n; ++d)
+					testpoint[d] = listcursor.getDoublePosition(d);
+				
+				
+				closestNode(testpoint, rootnode, searchnodes, nonsearchnodes);
+				
+				
+				
+				
+				
+			}
+			
+			
+			
+		}
+		
+		
+		
+		
+		
+		
+	}
+	
+	
+	
 	public interface Distance {
 
 		double getDistance(RealLocalizable cursor1, RealLocalizable cursor2);
@@ -853,16 +778,24 @@ continue;
 	public static void main(String[] args) {
 
 		final Img<FloatType> img = ImgLib2Util.openAs32Bit(new File("src/main/resources/dt.png"));
-
+		final Img<BitType> imgout = new ArrayImgFactory<BitType>().create(img, new BitType());
+		
+		FloatType val = new FloatType(200);
+		
+		createBitimage(img, imgout, val);
+		
 		RealPointSampleList<FloatType> list = new RealPointSampleList<FloatType>(img.numDimensions());
-
+		RealPointSampleList<BitType> bitlist = new RealPointSampleList<BitType>(imgout.numDimensions());
+		
 		// Make a list by setting an appropriate
 		// interval on the image.
 
 		RandomAccessibleInterval<FloatType> view = Views.interval(img, new long[] { 0, 0 }, new long[] { 5, 5 });
 
 		list = getList(img);
+		bitlist= getList(imgout);
 
+		
 		final RealCursor<FloatType> first = list.cursor();
 
 		while (first.hasNext()) {
