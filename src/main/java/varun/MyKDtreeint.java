@@ -395,7 +395,7 @@ public class MyKDtreeint {
 	 ********/
 	public static <T extends RealType<T>> void getTree(PointSampleList<T> list, ArrayList<Node<T>> allnodes,
 			int direction) {
-
+		
 		int n = list.numDimensions();
 		/****
 		 * To ward against running over the dimensionality, creating some local
@@ -611,7 +611,7 @@ public class MyKDtreeint {
 		}
 
 		
-		RealCursor<T> c =farnodeList.get(0).getSearchBranch().cursor();
+		Cursor<T> c =farnodeList.get(0).getSearchBranch().cursor();
 //		finalNode.getSearchBranch().cursor();
 
 		 while (c.hasNext()) {
