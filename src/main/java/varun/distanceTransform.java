@@ -129,7 +129,7 @@ public class distanceTransform {
 				
 					}
 				}
-				//System.out.println(mindistance);
+				System.out.println(mindistance);
 
 				outbound.get().setReal(mindistance);
 			
@@ -161,7 +161,7 @@ public class distanceTransform {
 		computeDistance(imgout, img, new EucledianDistance());
 
 		ImageJFunctions.show(img).setTitle("Eucledian_FloatType_output");
-
+/*
 		computeDistance(imgout, bitimgout, new EucledianDistance());
 
 		ImageJFunctions.show(bitimgout).setTitle("Eucledian_BitType_output");
@@ -174,7 +174,7 @@ public class distanceTransform {
 		computeDistance(imgout, bitimgout, new MannhattanDistance());
 
 		ImageJFunctions.show(bitimgout).setTitle("Mannhattan_BitType_output");
-		
+		*/
 		
 
 	}
