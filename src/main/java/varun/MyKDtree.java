@@ -527,7 +527,7 @@ public class MyKDtree {
 
 	}
 
-	public static <T extends RealType<T>> Pair<Double , searchNode<T> > NearestNeighbourSearch(double[] testpoint,
+	public static <T extends RealType<T>> Pair<Double, searchNode<T>> NearestNeighbourSearch(double[] testpoint,
 			ArrayList<searchNode<T>> nodeList, ArrayList<searchNode<T>> farnodeList, final Distance dist) {
 
 		double mindistance;
@@ -583,16 +583,13 @@ public class MyKDtree {
 			if (thirdbestdistance < bestdistance) {
 				bestdistance = thirdbestdistance;
 				finalNode = semifinalNode;
-continue;
+				continue;
 			}
-		
+
 			else
 				continue;
-			
-			
-		}
 
-		
+		}
 
 		for (int index = 1; index < farnodeList.size() - 1; ++index) {
 
@@ -617,71 +614,164 @@ continue;
 			}
 		}
 
-		Pair<Double , searchNode<T> > pair = new ValuePair<Double, searchNode<T>>(bestdistance, finalNode);
-		
+		Pair<Double, searchNode<T>> pair = new ValuePair<Double, searchNode<T>>(bestdistance, finalNode);
+
 		return pair;
 
 	}
 
-	
+	public static double ValueNeighbourSearch(double[] testpoint, ArrayList<searchNode<BitType>> nodeList,
+			ArrayList<searchNode<BitType>> farnodeList, final Distance dist) {
+
+		double mindistance;
+		double bestdistance = Double.MAX_VALUE;
+		double secondbestdistance = Double.MAX_VALUE;
+		double thirdbestdistance = Double.MAX_VALUE;
+
+		
+
+		final RealCursor<BitType> listcursor = nodeList.get(0).getSearchBranch().localizingCursor();
+
+		
+
+		while (listcursor.hasNext()) {
+			if (listcursor.next().getInteger() == 1) {
+				mindistance = dist.getDistance(listcursor, testpoint);
+
+				bestdistance = Math.min(mindistance, bestdistance);
+
+			}
+
+		}
+		for (int index = 1; index < nodeList.size() - 1; ++index) {
+
+			final RealCursor<BitType> cursor = nodeList.get(index).getSearchBranch().localizingCursor();
+
+			while (cursor.hasNext()) {
+				if (listcursor.next().getInteger() == 1) {
+					mindistance = dist.getDistance(cursor, testpoint);
+					secondbestdistance = Math.min(mindistance, secondbestdistance);
+
+					if (secondbestdistance < bestdistance) {
+						bestdistance = secondbestdistance;
+
+						continue;
+					}
+
+					else {
+
+						break;
+					}
+				}
+			}
+		}
+
+		final RealCursor<BitType> farlistcursor = farnodeList.get(0).getSearchBranch().localizingCursor();
+
+		while (farlistcursor.hasNext()) {
+			if (farlistcursor.next().getInteger() == 1) {
+				mindistance = dist.getDistance(farlistcursor, testpoint);
+
+				thirdbestdistance = Math.min(mindistance, bestdistance);
+
+				if (thirdbestdistance < bestdistance) {
+					bestdistance = thirdbestdistance;
+
+					continue;
+				}
+
+				else
+					continue;
+
+			}
+		}
+
+		for (int index = 1; index < farnodeList.size() - 1; ++index) {
+
+			final RealCursor<BitType> farcursor = farnodeList.get(index).getSearchBranch().localizingCursor();
+
+			while (farcursor.hasNext()) {
+				if (farlistcursor.next().getInteger() == 1) {
+					mindistance = dist.getDistance(farcursor, testpoint);
+					thirdbestdistance = Math.min(mindistance, thirdbestdistance);
+
+					if (thirdbestdistance < bestdistance) {
+						bestdistance = thirdbestdistance;
+						
+
+						continue;
+					}
+
+					else {
+
+						break;
+					}
+				}
+			}
+		}
+
+		return bestdistance;
+
+	}
 
 	/**********
-	 * Starting the distance transform routine 
+	 * Starting the distance transform routine
 	 **********/
 
-	
-	public static  void distanceTransform(RealPointSampleList<BitType> list){
-		
+	public static <T extends RealType<T>> void distanceTransform(RealPointSampleList<BitType> list, RandomAccessibleInterval<BitType> imgout) {
+
 		int n = list.numDimensions();
+
 		
-		RealPointSampleList<BitType> bitlist;
 		Node<BitType> rootnode;
+		
 		ArrayList<searchNode<BitType>> searchnodes = new ArrayList<searchNode<BitType>>();
 
 		ArrayList<searchNode<BitType>> nonsearchnodes = new ArrayList<searchNode<BitType>>();
-		
+
 		rootnode = makeNode(list, 0);
+
 		
-		ArrayList<Node<BitType>> allnodes = new ArrayList<Node<BitType>>();
+
+		double distance;
+
+		final RealCursor<BitType> listcursor =  list.localizingCursor();
 		
-		
-		
-		RealCursor<BitType> listcursor = list.localizingCursor();
-		
-		while(listcursor.hasNext()){
+		final RandomAccess<BitType> outbound = imgout.randomAccess();
+
+		while (listcursor.hasNext()) {
 			listcursor.fwd();
+		
 			
-			if (listcursor.get().getInteger() == 0){
-				
-				// Start finding the nearest neighbours for all the points having 0 value
-				
-				double[] testpoint= new double[n] ;
-				
-				for (int d=0; d < n; ++d)
+	//	outbound.setPosition(listcursor);	 This is the only remaining problem, how to localize a real cursor.
+		
+		
+			if (listcursor.get().getInteger() == 0) {
+
+				// Start finding the nearest neighbours for all the points
+				// having 0 value
+
+				double[] testpoint = new double[n];
+
+				for (int d = 0; d < n; ++d)
 					testpoint[d] = listcursor.getDoublePosition(d);
-				
-				
+
 				closestNode(testpoint, rootnode, searchnodes, nonsearchnodes);
-				
-				
-				
-				
+
+				distance = ValueNeighbourSearch(testpoint, searchnodes, nonsearchnodes, new EucledianDistance());
+
+				outbound.get().setReal(distance);
 				
 			}
 			
-			
-			
+			else
+				
+				outbound.get().setReal(0);
+
 		}
-		
-		
-		
-		
-		
-		
+
 	}
-	
-	
-	
+
 	public interface Distance {
 
 		double getDistance(RealLocalizable cursor1, RealLocalizable cursor2);
@@ -779,23 +869,22 @@ continue;
 
 		final Img<FloatType> img = ImgLib2Util.openAs32Bit(new File("src/main/resources/dt.png"));
 		final Img<BitType> imgout = new ArrayImgFactory<BitType>().create(img, new BitType());
-		
+
 		FloatType val = new FloatType(200);
-		
+
 		createBitimage(img, imgout, val);
-		
+
 		RealPointSampleList<FloatType> list = new RealPointSampleList<FloatType>(img.numDimensions());
 		RealPointSampleList<BitType> bitlist = new RealPointSampleList<BitType>(imgout.numDimensions());
-		
+
 		// Make a list by setting an appropriate
 		// interval on the image.
 
 		RandomAccessibleInterval<FloatType> view = Views.interval(img, new long[] { 0, 0 }, new long[] { 5, 5 });
 
 		list = getList(img);
-		bitlist= getList(imgout);
+		bitlist = getList(imgout);
 
-		
 		final RealCursor<FloatType> first = list.cursor();
 
 		while (first.hasNext()) {
@@ -825,7 +914,6 @@ continue;
 		// Y direction and so on until there is no more splitting possible
 		getTree(list, allnodes, 0);
 
-		
 		/******** Make a test point and search for the closest node *********/
 
 		double[] testpoint = new double[2];
@@ -835,26 +923,23 @@ continue;
 
 		closestNode(testpoint, rootnode, searchnodes, nonsearchnodes);
 
-		
-		
-		Pair< Double , searchNode<FloatType> > pair;
-		
+		Pair<Double, searchNode<FloatType>> pair;
+
 		pair = NearestNeighbourSearch(testpoint, searchnodes, nonsearchnodes, new EucledianDistance());
 
-		System.out.println("Distance to Nearest Neighbour: " +pair.getA());
-		
-		
+		System.out.println("Distance to Nearest Neighbour: " + pair.getA());
+
 		final RealCursor<FloatType> testcursor = pair.getB().searchBranch.localizingCursor();
-while(testcursor.hasNext()){
-	
-	testcursor.fwd();
-	
-	System.out.println("X-cord of points on nearest branch: " +testcursor.getDoublePosition(0));
-	System.out.println("Y-cord of points on nearest branch: " +testcursor.getDoublePosition(1));
-	System.out.println("PxVal of points on nearest branch:  "+testcursor.get());
-	
-}
-		
+		while (testcursor.hasNext()) {
+
+			testcursor.fwd();
+
+			System.out.println("X-cord of points on nearest branch: " + testcursor.getDoublePosition(0));
+			System.out.println("Y-cord of points on nearest branch: " + testcursor.getDoublePosition(1));
+			System.out.println("PxVal of points on nearest branch:  " + testcursor.get());
+
+		}
+
 	}
 
 }
