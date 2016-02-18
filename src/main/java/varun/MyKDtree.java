@@ -427,24 +427,13 @@ public class MyKDtree {
 	}
 
 	/***********
-	 * Returns the complete search path (splitNodes, direction of split and the
-	 * search branches) giving all the nearest neighbours of a point, also
-	 * stored are the farther neighbours of the testpoint,
-	 * 
-	 * index 0 of the nodeList stores the closest node and the search branch and
-	 * lastindex stores the left or right side or the Root Tree where the first
-	 * split happened to search for the point.
-	 * 
-	 * index 0 of the farnodeList stores the least farthest node to the search
-	 * point and the lastindex stores the other side of the RootTree which
-	 * should really be far far away from the given point.
+	 Returns the node closest to the testpoint
 	 ***********/
 	
 	
 	
 	
-	public static <T extends RealType<T>> void closestNode(RealLocalizable testpoint, Node<T> Trees,
-			ArrayList<searchNode<T>> nodeList, ArrayList<searchNode<T>> farnodeList) {
+	public static <T extends RealType<T>> Node<T> closestNode(RealLocalizable testpoint, Node<T> Trees) {
 
 		int direction = Trees.direction;
 
@@ -456,292 +445,56 @@ public class MyKDtree {
 			otherdirection = 0;
 
 		else
-
 			otherdirection = direction + 1;
 
 		double locationdiff = (testpoint.getDoublePosition(direction) - Trees.getMedianValue());
 
+		
+		double Bestdistsquared = Double.MAX_VALUE;
+
+		 double dist = locationdiff*locationdiff;
+		 double axisdiff = locationdiff*locationdiff;
+		for (int d = 0; d<n; ++d){
+		if (d!=direction)
+			
+			dist += testpoint.getDoublePosition(d)*testpoint.getDoublePosition(d);
+		}
+		
+		Node<T> finalnode = Trees;
+		
+		if (dist < Bestdistsquared){
+			Bestdistsquared = dist;
+			
+		finalnode = Trees;
+		}
+		
 		final boolean leftbranchsearch = locationdiff < 0;
 
 		final PointSampleList<T> searchBranch = leftbranchsearch ? Trees.LeftTree : Trees.RightTree;
 		final PointSampleList<T> nonsearchBranch = leftbranchsearch ? Trees.RightTree : Trees.LeftTree;
 
-		Node<T> nextnode;
-		searchNode<T> searchnode;
-		searchNode<T> nonsearchnode;
-
+		Node<T> nearnode, farnode;
 		if ((searchBranch.realMax(otherdirection) - searchBranch.realMin(otherdirection) + 1) > 2) {
-			nextnode = makeNode(searchBranch, otherdirection);
-			searchnode = new searchNode<T>(nextnode.medianValue, otherdirection, searchBranch);
-			nonsearchnode = new searchNode<T>(nextnode.medianValue, otherdirection, nonsearchBranch);
+		nearnode = makeNode(searchBranch, otherdirection);
+		finalnode=closestNode(testpoint,nearnode);
 		}
-
-		else {
-
-			nextnode = Trees;
-			searchnode = new searchNode<T>(nextnode.medianValue, otherdirection, searchBranch);
-			nonsearchnode = new searchNode<T>(nextnode.medianValue, otherdirection, nonsearchBranch);
-
-		}
-
 		
-		searchNodetoList(searchnode, nodeList);
-		searchNodetoList(nonsearchnode, farnodeList);
-		
-		if (nextnode != Trees) {
-
-			closestNode(testpoint, nextnode, nodeList, farnodeList);
+		if (axisdiff<= Bestdistsquared && (nonsearchBranch.realMax(otherdirection) - nonsearchBranch.realMin(otherdirection) + 1) > 2 ){
+		farnode = makeNode(nonsearchBranch, otherdirection);
+		finalnode=closestNode(testpoint,farnode);
 		}
+		
+		
+		System.out.println(Bestdistsquared);
+		
+		
+	return finalnode;
 
 		
 
 	}
 
-	public static <T extends RealType<T>> void closestNode(RealLocalizable testpoint, ArrayList<Node<T>> Trees,
-			ArrayList<searchNode<T>> nodeList, ArrayList<searchNode<T>> farnodeList) {
-
-		for (int index = Trees.size() - 1; index >= 0; --index) {
-			int direction = Trees.get(index).direction;
-
-			double locationdiff = (testpoint.getDoublePosition(direction) - Trees.get(index).getMedianValue());
-
-			final boolean rightbranchsearch = locationdiff >= 0;
-
-			final PointSampleList<T> searchBranch = rightbranchsearch ? Trees.get(index).RightTree
-					: Trees.get(index).LeftTree;
-			final PointSampleList<T> nonsearchBranch = rightbranchsearch ? Trees.get(index).LeftTree
-					: Trees.get(index).RightTree;
-
-			final searchNode<T> searchnode = new searchNode<T>(Trees.get(index).medianValue, direction, searchBranch);
-			final searchNode<T> nonsearchnode = new searchNode<T>(Trees.get(index).medianValue, direction,
-					nonsearchBranch);
-
-			searchNodetoList(searchnode, nodeList);
-			searchNodetoList(nonsearchnode, farnodeList);
-			
-			
-			
-
-		}
-
-	}
-
-	public static <T extends RealType<T>> Node<T> closestsearchNode(RealLocalizable testpoint, Node<T> rootnode) {
-
-		Node<T> searchnode= rootnode;
-		
-		int n = rootnode.getnumDimensions();
-		int otherdirection;
-
-		int direction = rootnode.direction;
-
-		if (direction == n - 1)
-			otherdirection = 0;
-
-		else
-			otherdirection = direction + 1;
-
-		double locationdiff = (testpoint.getDoublePosition(direction) - rootnode.getMedianValue());
-
-		final boolean rightbranchsearch = locationdiff >= 0;
-
-		final PointSampleList<T> searchBranch = rightbranchsearch ? rootnode.RightTree : rootnode.LeftTree;
 	
-
-		if (searchBranch.realMax(otherdirection) - searchBranch.realMin(otherdirection) + 1 > 2) {
-
-			searchnode = makeNode(searchBranch, otherdirection);
-			searchnode = closestsearchNode(testpoint, searchnode);
-
-		}
-	
-
-
-return searchnode;
-
-	}
-	public static <T extends RealType<T>> Node<T> closestnonsearchNode(RealLocalizable testpoint, Node<T> rootnode) {
-
-		Node<T> nonsearchnode= rootnode;
-		
-		int n = rootnode.getnumDimensions();
-		int otherdirection;
-
-		int direction = rootnode.direction;
-
-		if (direction == n - 1)
-			otherdirection = 0;
-
-		else
-			otherdirection = direction + 1;
-
-		double locationdiff = (testpoint.getDoublePosition(direction) - rootnode.getMedianValue());
-
-		final boolean rightbranchsearch = locationdiff >= 0;
-
-		
-		final PointSampleList<T> nonsearchBranch = rightbranchsearch ? rootnode.LeftTree : rootnode.RightTree;
-
-		if (nonsearchBranch.realMax(otherdirection) - nonsearchBranch.realMin(otherdirection) + 1 > 2) {
-
-			nonsearchnode = makeNode(nonsearchBranch, otherdirection);
-			nonsearchnode = closestnonsearchNode(testpoint, nonsearchnode);
-
-		}
-	
-		
-			
-
-
-return nonsearchnode;
-
-	}
-	
-
-	public static <T extends RealType<T>> Pair<Double, searchNode<T>> NearestNeighbourSearch(RealLocalizable testpoint,
-			ArrayList<searchNode<T>> nodeList, ArrayList<searchNode<T>> farnodeList, final Distance dist) {
-
-		double mindistance;
-		double bestdistance = Double.MAX_VALUE;
-		double secondbestdistance = Double.MAX_VALUE;
-
-		searchNode<T> finalNode;
-
-		final Cursor<T> listcursor = nodeList.get(0).getSearchBranch().localizingCursor();
-
-		finalNode = nodeList.get(0);
-		while (listcursor.hasNext()) {
-			listcursor.fwd();
-
-			mindistance = dist.getDistance(listcursor, testpoint);
-
-			bestdistance = Math.min(mindistance, bestdistance);
-
-		}
-
-		for (int index = 1; index < nodeList.size(); ++index) {
-
-			final Cursor<T> cursor = nodeList.get(index).getSearchBranch().localizingCursor();
-
-			while (cursor.hasNext()) {
-				cursor.fwd();
-
-				mindistance = dist.getDistance(cursor, testpoint);
-				secondbestdistance = Math.min(mindistance, bestdistance);
-
-			}
-
-			if (secondbestdistance > bestdistance)
-				break;
-			else {
-
-				bestdistance = secondbestdistance;
-				finalNode = nodeList.get(index);
-
-			}
-		}
-
-		for (int index = 1; index < farnodeList.size(); ++index) {
-
-			final Cursor<T> farcursor = farnodeList.get(index).getSearchBranch().localizingCursor();
-
-			while (farcursor.hasNext()) {
-				farcursor.fwd();
-
-				mindistance = dist.getDistance(farcursor, testpoint);
-				secondbestdistance = Math.min(mindistance, bestdistance);
-
-			}
-
-			if (secondbestdistance > bestdistance)
-				break;
-
-			else {
-
-				bestdistance = secondbestdistance;
-				finalNode = nodeList.get(index);
-
-			}
-
-		}
-
-		Pair<Double, searchNode<T>> pair = new ValuePair<Double, searchNode<T>>(bestdistance, finalNode);
-
-		return pair;
-	}
-	public static <T extends RealType<T>>  double ValueNeighbourSearch(RealLocalizable testpoint,
-			ArrayList<searchNode<T>> nodeList, ArrayList<searchNode<T>> farnodeList, final Distance dist) {
-
-		double mindistance;
-		double bestdistance = Double.MAX_VALUE;
-		double secondbestdistance = Double.MAX_VALUE;
-
-		
-
-		final Cursor<T> listcursor = nodeList.get(0).getSearchBranch().localizingCursor();
-
-		
-		while (listcursor.hasNext()) {
-			listcursor.fwd();
-
-			mindistance = dist.getDistance(listcursor, testpoint);
-
-			bestdistance = Math.min(mindistance, bestdistance);
-
-		}
-
-		for (int index = 1; index < nodeList.size(); ++index) {
-
-			final Cursor<T> cursor = nodeList.get(index).getSearchBranch().localizingCursor();
-
-			while (cursor.hasNext()) {
-				cursor.fwd();
-
-				mindistance = dist.getDistance(cursor, testpoint);
-				secondbestdistance = Math.min(mindistance, bestdistance);
-
-			}
-
-			if (secondbestdistance > bestdistance)
-			
-				break;
-			
-			else
-				
-                bestdistance = secondbestdistance;
-				
-
-			
-		}
-
-		for (int index = 1; index < farnodeList.size(); ++index) {
-
-			final Cursor<T> farcursor = farnodeList.get(index).getSearchBranch().localizingCursor();
-
-			while (farcursor.hasNext()) {
-				farcursor.fwd();
-
-				mindistance = dist.getDistance(farcursor, testpoint);
-				secondbestdistance = Math.min(mindistance, bestdistance);
-
-			}
-
-			if (secondbestdistance > bestdistance)
-				
-				break;
-
-			else {
-
-				bestdistance = secondbestdistance;
-				
-
-			}
-
-		}
-
-		return bestdistance;
-
-	}
 
 	/**********
 	 * Starting the distance transform routine
@@ -773,26 +526,30 @@ return nonsearchnode;
 
 			outbound.setPosition(listcursor);
 			if (listcursor.get().getInteger() == 0) {
-			ArrayList<searchNode<BitType>> searchnodes = new ArrayList<searchNode<BitType>>();
+		//	ArrayList<searchNode<BitType>> searchnodes = new ArrayList<searchNode<BitType>>();
 
-			ArrayList<searchNode<BitType>> nonsearchnodes = new ArrayList<searchNode<BitType>>();
+			//ArrayList<searchNode<BitType>> nonsearchnodes = new ArrayList<searchNode<BitType>>();
 			
 
-			closestNode(listcursor, allnodes, searchnodes, nonsearchnodes);
+			//closestNode(listcursor, allnodes, searchnodes, nonsearchnodes);
 
 				//closestNode(listcursor, rootnode, searchnodes, nonsearchnodes);
 				
-				
-				
-				distance = ValueNeighbourSearch(listcursor, searchnodes, nonsearchnodes, dist);
+				searchnode=closestNode(listcursor, rootnode);
+				Cursor<BitType> test = searchnode.LeftTree.cursor();
+				while(test.hasNext()){
+				test.fwd();
+				//	System.out.println(test.getDoublePosition(1));
+				}
+			//	distance = ValueNeighbourSearch(listcursor, searchnodes, nonsearchnodes, dist);
 
-				System.out.println(distance);
-				outbound.get().setReal(distance);
+			//	System.out.println(distance);
+			//	outbound.get().setReal(distance);
 
 			}
-			else
+			//else
 				
-				outbound.get().setReal(0);
+				//outbound.get().setReal(0);
 			
 
 		}
