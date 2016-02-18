@@ -466,6 +466,77 @@ public class MyKDtree {
 		}
 
 	}
+	
+	
+	public static <T extends RealType<T>> void closestNode(double[] testpoint, Node<T> rootnode,
+			searchNode<T> node, searchNode<T> farnode) {
+
+		Node<T> newnode;
+		
+		int n= rootnode.getnumDimensions();
+		int otherdirection;
+		
+		
+			int direction = rootnode.direction;
+
+			if (direction == n - 1)
+				otherdirection = 0;
+				
+				else
+					otherdirection = direction + 1;
+			
+			
+			double locationdiff = (testpoint[direction] - node.getMedianValue());
+
+			final boolean rightbranchsearch = locationdiff >= 0;
+
+			final PointSampleList<T> searchBranch = rightbranchsearch ? rootnode.RightTree : rootnode.LeftTree;
+			final PointSampleList<T> nonsearchBranch = rightbranchsearch ? rootnode.LeftTree: rootnode.RightTree;
+
+			
+			
+			 node = new searchNode<T>(rootnode.medianValue, direction, searchBranch);
+			 farnode = new searchNode<T>(rootnode.medianValue, direction,nonsearchBranch);
+
+			 if (searchBranch.realMax(otherdirection) - searchBranch.realMin(otherdirection) + 1 > 2){
+			 
+			 newnode = makeNode(searchBranch, otherdirection);
+			 
+			
+			 
+			 closestNode(testpoint, newnode,node,farnode);
+	}
+		
+
+	}
+	
+	
+	public static <T extends RealType<T>> void closestNode(double[] testpoint, ArrayList<Node<T>> Trees,
+			searchNode<T> node, searchNode<T> farnode) {
+
+		for (int index = Trees.size()-1; index >=0; --index) {
+			int direction = Trees.get(index).direction;
+
+			double locationdiff = (testpoint[direction] - Trees.get(index).getMedianValue());
+
+			final boolean rightbranchsearch = locationdiff >= 0;
+
+			final PointSampleList<T> searchBranch = rightbranchsearch ? Trees.get(index).RightTree : Trees.get(index).LeftTree;
+			final PointSampleList<T> nonsearchBranch = rightbranchsearch ? Trees.get(index).LeftTree: Trees.get(index).RightTree;
+
+			
+			
+			 node = new searchNode<T>(Trees.get(index).medianValue, direction, searchBranch);
+			 farnode = new searchNode<T>(Trees.get(index).medianValue, direction,
+					nonsearchBranch);
+
+			
+
+		}
+
+	}
+	
+	
 
 	public static <T extends RealType<T>> double volumeHypercube(PointSampleList<T> list, int dimensions) {
 		double vol = list.realMax(dimensions) - list.realMin(dimensions) + 1;
@@ -644,6 +715,57 @@ public class MyKDtree {
 
 	}
 
+	public static double ValueNeighbourSearch(double[] testpoint, searchNode<BitType> node,
+			searchNode<BitType> farnode, final Distance dist) {
+
+		double mindistance;
+		double bestdistance = Double.MAX_VALUE;
+		double secondbestdistance = Double.MAX_VALUE;
+
+		final Cursor<BitType> listcursor = node.getSearchBranch().localizingCursor();
+
+		while (listcursor.hasNext()) {
+			listcursor.fwd();
+			if (listcursor.get().getInteger() == 1) {
+				mindistance = dist.getDistance(listcursor, testpoint);
+
+				bestdistance = Math.min(mindistance, bestdistance);
+
+			}
+
+		}
+
+		
+
+		
+
+			final Cursor<BitType> farcursor = farnode.getSearchBranch().localizingCursor();
+
+			while (farcursor.hasNext()) {
+				farcursor.fwd();
+				if (farcursor.get().getInteger() == 1) {
+					mindistance = dist.getDistance(farcursor, testpoint);
+					secondbestdistance = Math.min(mindistance, bestdistance);
+
+				}
+
+			
+
+			if (secondbestdistance > bestdistance)
+				break;
+			else
+
+				bestdistance = secondbestdistance;
+
+		}
+
+		System.out.println(bestdistance);
+		return bestdistance;
+
+	}
+
+	
+	
 	/**********
 	 * Starting the distance transform routine
 	 **********/
@@ -681,18 +803,30 @@ public class MyKDtree {
 
 				for (int d = 0; d < n; ++d)
 					testpoint[d] = listcursor.getDoublePosition(d);
+				double locationdiff = (testpoint[rootnode.direction] - rootnode.getMedianValue());
+
+				final boolean rightbranchsearch = locationdiff >= 0;
+
+				final PointSampleList<BitType> searchBranch = rightbranchsearch ? rootnode.RightTree : rootnode.LeftTree;
+				final PointSampleList<BitType> nonsearchBranch = rightbranchsearch ? rootnode.LeftTree: rootnode.RightTree;
 
 				
+				searchNode<BitType> searchnode = new searchNode<BitType>(rootnode.medianValue, rootnode.direction, searchBranch);
+				
+				searchNode<BitType> nonsearchnode = new searchNode<BitType>(rootnode.medianValue, rootnode.direction, nonsearchBranch);
 				
 				
-				ArrayList<searchNode<BitType>> searchnodes = new ArrayList<searchNode<BitType>>();
+				closestNode(testpoint, allnodes, searchnode, nonsearchnode);
+				distance = ValueNeighbourSearch(testpoint, searchnode, nonsearchnode, dist);
+				
+			//	ArrayList<searchNode<BitType>> searchnodes = new ArrayList<searchNode<BitType>>();
 
-				ArrayList<searchNode<BitType>> nonsearchnodes = new ArrayList<searchNode<BitType>>();
+			//	ArrayList<searchNode<BitType>> nonsearchnodes = new ArrayList<searchNode<BitType>>();
 				
 
-				closestNode(testpoint, allnodes, searchnodes, nonsearchnodes);
+			//	closestNode(testpoint, allnodes, searchnodes, nonsearchnodes);
 
-				distance = ValueNeighbourSearch(testpoint, searchnodes, nonsearchnodes, dist);
+			//	distance = ValueNeighbourSearch(testpoint, searchnodes, nonsearchnodes, dist);
 
 				// System.out.println(distance);
 
