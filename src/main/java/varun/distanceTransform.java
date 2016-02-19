@@ -146,7 +146,7 @@ public class distanceTransform {
 
 	public static void main(String[] args) {
 
-		final Img<FloatType> img = ImgLib2Util.openAs32Bit(new File("src/main/resources/bridge.png"));
+		final Img<FloatType> img = ImgLib2Util.openAs32Bit(new File("src/main/resources/dt.png"));
 
 		ImageJFunctions.show(img).setTitle("Original_Image");
 

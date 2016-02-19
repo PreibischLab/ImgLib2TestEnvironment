@@ -73,6 +73,30 @@ public class MyKDtree {
 
 	}
 
+	public static PointSampleList<BitType> getvalueList(PointSampleList<BitType> list, int val) {
+
+		int n = list.numDimensions();
+
+		final Cursor<BitType> first = list.cursor();
+
+		// A point sample list with coordinates declared and initialized.
+		PointSampleList<BitType> parent = new PointSampleList<BitType>(n);
+
+		while (first.hasNext()) {
+			first.fwd();
+			if (first.get().getInteger() == val) {
+				Point cord = new Point(n);
+
+				cord.setPosition(first);
+
+				parent.add(cord, first.get().copy());
+
+			}
+		}
+		return parent;
+
+	}
+
 	/*********
 	 * Starting the methods which sort an Arraylist of co-ordinates using
 	 * Merge-Sort algorithm
@@ -432,7 +456,8 @@ public class MyKDtree {
 	}
 
 	/***********
-	 * Returns the node closest to the testpoint
+	 * Returns the node closest to the testpoint stores as a single entry in the
+	 * arrayList
 	 ***********/
 
 	public static <T extends RealType<T>> void closestNode(RealLocalizable testpoint, Node<T> Trees,
@@ -572,73 +597,52 @@ public class MyKDtree {
 	 * Starting the distance transform routine
 	 **********/
 
-	public static <T extends RealType<T>> void distanceTransform(PointSampleList<BitType> list,
-			RandomAccessibleInterval<T> imgout, final Distance dist) {
+	public static <T extends RealType<T>> void distanceTransform(PointSampleList<BitType> totallist,
+			PointSampleList<BitType> list, PointSampleList<BitType> listzerosorones, RandomAccessibleInterval<T> imgout,
+			final Distance dist) {
 
-		Node<BitType> rootnode, searchnode;
+		Node<BitType> rootnode;
 
 		rootnode = makeNode(list, 0);
 
-		double mindistance = Double.MAX_VALUE;
+		double mindistance = 0;
 		double Bestdistsquared = Double.MAX_VALUE;
 
-		final Cursor<BitType> listcursor = list.localizingCursor();
+		final Cursor<BitType> zerooronelistcursor = listzerosorones.localizingCursor();
 
 		final RandomAccess<T> outbound = imgout.randomAccess();
 
-		while (listcursor.hasNext()) {
-			listcursor.fwd();
-			outbound.setPosition(listcursor);
+		while (zerooronelistcursor.hasNext()) {
+			zerooronelistcursor.fwd();
+			outbound.setPosition(zerooronelistcursor);
+			ArrayList<Node<BitType>> singlenode = new ArrayList<Node<BitType>>();
+			closestNode(zerooronelistcursor, rootnode, singlenode, Bestdistsquared);
+			PointSampleList<BitType> singletree = combineTrees(singlenode.get(0));
 
-			if (listcursor.get().getInteger() == 0) {
+			Cursor<BitType> singlecursor = singletree.cursor();
 
-				ArrayList<Node<BitType>> singlenode = new ArrayList<Node<BitType>>();
-				closestNode(listcursor, rootnode, singlenode, Bestdistsquared);
-				PointSampleList<BitType> singletree = combineTrees(singlenode.get(0));
+			while (singlecursor.hasNext()) {
+				singlecursor.fwd();
 
-				Cursor<BitType> singlecursor = singletree.cursor();
-				
-				double distance = 0;
-				while (singlecursor.hasNext()) {
-					singlecursor.fwd();
-
-					if (singlecursor.get().getInteger() == 1) {
-
-						listcursor.fwd();
-
-						distance = dist.getDistance(listcursor, singlecursor);
-
-						mindistance = Math.min(mindistance, distance);
-
-					}
-				/*	else  {
-						final Cursor<BitType> second = list.cursor();
-					
-					
-
-					
-					while (second.hasNext()) {
-						if (second.next().getInteger() == 1) {
-
-							distance=dist.getDistance(listcursor,second);
-
-					mindistance = Math.min(mindistance, distance);
-					
-						}
-					}
-
-					}*/
-				}
-
-				System.out.println(mindistance);
+				mindistance = dist.getDistance(zerooronelistcursor, singlecursor);
 				outbound.get().setReal(mindistance);
+				System.out.println(mindistance);
 			}
 
-			else
-
-				outbound.get().setReal(0);
-
 		}
+		
+		final Cursor<BitType> listcursor = list.localizingCursor();
+while(listcursor.hasNext()){
+	listcursor.fwd();
+	outbound.setPosition(listcursor);
+	outbound.get().setReal(0);
+	
+	
+}
+		
+
+		
+
 	}
 
 	public interface Distance {
@@ -756,11 +760,20 @@ public class MyKDtree {
 
 		list = getList(bitimg);
 
-	//	distanceTransform(list, imgout, new EucledianDistance());
+		PointSampleList<BitType> listonlyones = new PointSampleList<BitType>(bitimg.numDimensions());
 
-	 testNeighbours(list, new EucledianDistance()); // Writes nearest neighbours in a file
+		PointSampleList<BitType> listonlyzeros = new PointSampleList<BitType>(bitimg.numDimensions());
 
-	//	ImageJFunctions.show(imgout).setTitle("KD-Tree output");
+		listonlyones = getvalueList(list, 1);
+		listonlyzeros = getvalueList(list, 0);
+
+		 distanceTransform(list,listonlyones,listonlyzeros, imgout, new
+		 EucledianDistance());
+
+		// testNeighbours(list, new EucledianDistance()); // Writes nearest
+		// neighbours in a file
+
+		ImageJFunctions.show(imgout).setTitle("KD-Tree output");
 
 	}
 }
