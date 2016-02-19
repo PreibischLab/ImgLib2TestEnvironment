@@ -605,7 +605,7 @@ public class MyKDtree {
 
 		rootnode = makeNode(list, 0);
 
-		double mindistance = 0;
+		
 		double Bestdistsquared = Double.MAX_VALUE;
 
 		final Cursor<BitType> zerooronelistcursor = listzerosorones.localizingCursor();
@@ -614,19 +614,22 @@ public class MyKDtree {
 
 		while (zerooronelistcursor.hasNext()) {
 			zerooronelistcursor.fwd();
+			double mindistance = Double.MAX_VALUE;
 			outbound.setPosition(zerooronelistcursor);
 			ArrayList<Node<BitType>> singlenode = new ArrayList<Node<BitType>>();
 			closestNode(zerooronelistcursor, rootnode, singlenode, Bestdistsquared);
 			PointSampleList<BitType> singletree = combineTrees(singlenode.get(0));
 
 			Cursor<BitType> singlecursor = singletree.cursor();
-
+double distance = 0;
 			while (singlecursor.hasNext()) {
 				singlecursor.fwd();
 
-				mindistance = dist.getDistance(zerooronelistcursor, singlecursor);
+				distance = dist.getDistance(zerooronelistcursor, singlecursor);
+				mindistance = Math.min(distance, mindistance);
+				
 				outbound.get().setReal(mindistance);
-				System.out.println(mindistance);
+				
 			}
 
 		}
@@ -636,7 +639,7 @@ while(listcursor.hasNext()){
 	listcursor.fwd();
 	outbound.setPosition(listcursor);
 	outbound.get().setReal(0);
-	
+	System.out.println(outbound.get());
 	
 }
 		
