@@ -658,8 +658,8 @@ public class MyKDtree {
 			ArrayList<Node<BitType>> nodelist = new ArrayList<Node<BitType>>();
 			closestNode(zerooronelistcursor, rootnode, nodelist, Bestdistsquared);
 
-			PointSampleList<BitType> singletree = combineTrees(nodelist.get(0));
-			System.out.println(nodelist.size());
+			PointSampleList<BitType> singletree = combineTrees(nodelist.get(1));
+			System.out.println(singletree.size());
 
 			Cursor<BitType> singlecursor = singletree.cursor();
 			double distance = 0;
