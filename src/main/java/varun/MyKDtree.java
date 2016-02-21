@@ -511,10 +511,13 @@ public class MyKDtree {
 		  if (dist < Bestdistsquared) {
 			  
 			  finalnode =Trees; 
-			  
-			  list.add(finalnode); 
+			  Bestdistsquared = mindistsquared;
+			 
 			  
 		  }
+		  
+		  else
+			  finalnode = null;
 		 
 		final boolean leftbranchsearch = locationdiff < 0;
 		double distleaf = 0;
@@ -526,7 +529,9 @@ public class MyKDtree {
 			nearnode = makeNode(searchBranch, otherdirection);
 
 			
-			
+			double newlocationdiff = (testpoint.getDoublePosition(otherdirection) - nearnode.nodePoint[otherdirection]);
+
+			double newaxisdiff = newlocationdiff * newlocationdiff;
 
 			
 			for (int d = 0; d < n; ++d) {
@@ -537,21 +542,26 @@ public class MyKDtree {
 
 			// if distleaf< locationdiff do not search farchild
 
-			closestNode(testpoint, nearnode, list, mindistsquared);
+		//	closestNode(testpoint, nearnode, list, mindistsquared);
 
-		}
-
-		if (distleaf >= locationdiff){
 		
-		if ((nonsearchBranch.realMax(otherdirection) - nonsearchBranch.realMin(otherdirection) + 1) > 2) {
-			farnode = makeNode(nonsearchBranch, otherdirection);
 
+		//if (distleaf >= newlocationdiff){
+	//	if (axisdiff >= mindistsquared){
+		if (axisdiff >= mindistsquared && (nonsearchBranch.realMax(otherdirection) - nonsearchBranch.realMin(otherdirection) + 1) > 2) {
+			farnode = makeNode(nonsearchBranch, otherdirection);
+			
 			
 				closestNode(testpoint, farnode, list, mindistsquared);
 		}
+		//}
 		}
+		if (finalnode!= null)
+		 list.add(finalnode); 
 
 	}
+	
+	
 
 	/********
 	 * For a Node<T>, returns a single PointSampleList by combining the Left and
@@ -658,8 +668,8 @@ public class MyKDtree {
 			ArrayList<Node<BitType>> nodelist = new ArrayList<Node<BitType>>();
 			closestNode(zerooronelistcursor, rootnode, nodelist, Bestdistsquared);
 
-			PointSampleList<BitType> singletree = combineTrees(nodelist.get(1));
-			System.out.println(singletree.size());
+			PointSampleList<BitType> singletree = combineTrees(nodelist.get(0));
+			//System.out.println(singletree.size());
 
 			Cursor<BitType> singlecursor = singletree.cursor();
 			double distance = 0;
