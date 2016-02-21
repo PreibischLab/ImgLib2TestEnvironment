@@ -1,6 +1,9 @@
 package varun;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.PrintStream;
 
 import net.imglib2.Cursor;
 import net.imglib2.Localizable;
@@ -103,12 +106,13 @@ public class distanceTransform {
 	
 	
 	public static <T extends RealType<T>> void computeDistance(RandomAccessibleInterval<BitType> img,
-			RandomAccessibleInterval<T> imgout, final Distance dist) {
+			RandomAccessibleInterval<T> imgout, final Distance dist) throws FileNotFoundException {
 
 		final Cursor<BitType> bound = Views.iterable(img).cursor();
 
 		final RandomAccess<T> outbound = imgout.randomAccess();
-
+		PrintStream out = new PrintStream(new FileOutputStream("BruteForcedist.txt"));
+		System.setOut(out);
 		while (bound.hasNext()) {
 			bound.fwd();
 			outbound.setPosition(bound);
@@ -144,7 +148,7 @@ public class distanceTransform {
 
 	}
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws FileNotFoundException {
 
 		final Img<FloatType> img = ImgLib2Util.openAs32Bit(new File("src/main/resources/dt.png"));
 

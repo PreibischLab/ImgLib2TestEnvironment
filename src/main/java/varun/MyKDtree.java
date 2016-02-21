@@ -6,6 +6,9 @@ import java.io.FileOutputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Iterator;
+
+import com.sun.tools.javac.api.Formattable.LocalizedString;
+
 import net.imglib2.PointSampleList;
 import net.imglib2.Cursor;
 import net.imglib2.FinalInterval;
@@ -288,16 +291,21 @@ public class MyKDtree {
 
 		public final double medianValue;
 
+		public final double[] nodePoint;
+
 		public final int direction;
 
 		public final PointSampleList<T> LeftTree;
 
 		public final PointSampleList<T> RightTree;
 
-		public Node(final double medianValue, final int direction, final PointSampleList<T> LeftTree,
-				final PointSampleList<T> RightTree) {
+		public Node(final double medianValue, RealLocalizable point, final int direction,
+				final PointSampleList<T> LeftTree, final PointSampleList<T> RightTree) {
 			assert LeftTree.numDimensions() == RightTree.numDimensions();
 			this.n = LeftTree.numDimensions();
+			this.nodePoint = new double[n];
+			point.localize(nodePoint);
+
 			this.medianValue = medianValue;
 			this.direction = direction;
 			this.LeftTree = LeftTree;
@@ -325,6 +333,12 @@ public class MyKDtree {
 			return RightTree;
 		}
 
+		public void localize(double[] point) {
+
+			for (int d = 0; d < n; ++d)
+				point[d] = (double) nodePoint[d];
+		}
+
 	}
 
 	private static <T> void nodetoList(final Node<T> node, final ArrayList<Node<T>> allnodes) {
@@ -337,8 +351,7 @@ public class MyKDtree {
 
 	/******
 	 * Returns a root tree, I do this to initialize an ArrayList<Node<T>> in the
-	 * main program which I overwrite later to include all the subtrees (Clever
-	 * or Dangerous?)
+	 * main program which I overwrite later to include all the subtrees
 	 ******/
 
 	public static <T extends RealType<T>> Node<T> makeNode(PointSampleList<T> list, int direction) {
@@ -381,7 +394,10 @@ public class MyKDtree {
 
 			}
 
-			Node<T> node = new Node<T>(pivotElement, direction, LeftTree, RightTree);
+			Cursor<T> rightTreecursor = RightTree.localizingCursor();
+			rightTreecursor.fwd();
+
+			Node<T> node = new Node<T>(pivotElement, rightTreecursor, direction, LeftTree, RightTree);
 
 			return node;
 
@@ -437,8 +453,10 @@ public class MyKDtree {
 					RightTree.add(cord, listCursor.get().copy());
 
 			}
+			Cursor<T> rightTreecursor = RightTree.localizingCursor();
+			rightTreecursor.fwd();
 
-			final Node<T> node = new Node<T>(pivotElement, direction, LeftTree, RightTree);
+			final Node<T> node = new Node<T>(pivotElement, rightTreecursor, direction, LeftTree, RightTree);
 
 			int otherdirection = direction + 1;
 
@@ -461,7 +479,7 @@ public class MyKDtree {
 	 ***********/
 
 	public static <T extends RealType<T>> void closestNode(RealLocalizable testpoint, Node<T> Trees,
-			ArrayList<Node<T>> singlenode, double Bestdistsquared) {
+			ArrayList<Node<T>> list, double Bestdistsquared) {
 
 		int direction = Trees.direction;
 
@@ -475,20 +493,31 @@ public class MyKDtree {
 		else
 			otherdirection = direction + 1;
 
-		double locationdiff = (testpoint.getDoublePosition(direction) - Trees.getMedianValue());
+		double locationdiff = (testpoint.getDoublePosition(direction) - Trees.nodePoint[direction]);
 
-		double dist = locationdiff * locationdiff;
 		double axisdiff = locationdiff * locationdiff;
-		for (int d = 0; d < n; ++d) {
-			if (d != direction)
 
-				dist += testpoint.getDoublePosition(d) * testpoint.getDoublePosition(d);
+		double dist = 0;
+		for (int d = 0; d < n; ++d) {
+
+			dist += (testpoint.getDoublePosition(d) - Trees.nodePoint[d])
+					* (testpoint.getDoublePosition(d) - Trees.nodePoint[d]);
 		}
 
-		Node<T> finalnode;
-
+	final	Node<T> finalnode;
+		
+		final double mindistsquared = Math.min(dist, Bestdistsquared);
+		
+		  if (dist < Bestdistsquared) {
+			  
+			  finalnode =Trees; 
+			  
+			  list.add(finalnode); 
+			  
+		  }
+		 
 		final boolean leftbranchsearch = locationdiff < 0;
-
+		double distleaf = 0;
 		final PointSampleList<T> searchBranch = leftbranchsearch ? Trees.LeftTree : Trees.RightTree;
 		final PointSampleList<T> nonsearchBranch = leftbranchsearch ? Trees.RightTree : Trees.LeftTree;
 
@@ -496,26 +525,30 @@ public class MyKDtree {
 		if ((searchBranch.realMax(otherdirection) - searchBranch.realMin(otherdirection) + 1) > 2) {
 			nearnode = makeNode(searchBranch, otherdirection);
 
-			if ((searchBranch.realMax(direction) - searchBranch.realMin(direction) + 1) > 2)
-				closestNode(testpoint, nearnode, singlenode, Bestdistsquared);
+			
+			
+
+			
+			for (int d = 0; d < n; ++d) {
+
+				distleaf += (testpoint.getDoublePosition(d) - nearnode.nodePoint[d])
+						* (testpoint.getDoublePosition(d) - nearnode.nodePoint[d]);
+			}
+
+			// if distleaf< locationdiff do not search farchild
+
+			closestNode(testpoint, nearnode, list, mindistsquared);
 
 		}
 
-		if (axisdiff <= Bestdistsquared
-				&& (nonsearchBranch.realMax(otherdirection) - nonsearchBranch.realMin(otherdirection) + 1) > 2) {
+		if (distleaf >= locationdiff){
+		
+		if ((nonsearchBranch.realMax(otherdirection) - nonsearchBranch.realMin(otherdirection) + 1) > 2) {
 			farnode = makeNode(nonsearchBranch, otherdirection);
 
-			if ((nonsearchBranch.realMax(direction) - nonsearchBranch.realMin(direction) + 1) > 2)
-				closestNode(testpoint, farnode, singlenode, Bestdistsquared);
+			
+				closestNode(testpoint, farnode, list, mindistsquared);
 		}
-
-		if (dist < Bestdistsquared) {
-			Bestdistsquared = dist;
-
-			finalnode = Trees;
-
-			nodetoList(finalnode, singlenode);
-
 		}
 
 	}
@@ -541,7 +574,7 @@ public class MyKDtree {
 
 			treepoint.setPosition(treecursorA);
 
-			singleTree.add(treepoint, treecursorA.get().copy());
+			singleTree.add(treepoint, treecursorA.get());
 
 		}
 		while (treecursorB.hasNext()) {
@@ -572,9 +605,10 @@ public class MyKDtree {
 		double Bestdistsquared = Double.MAX_VALUE;
 		while (listcursor.hasNext()) {
 			listcursor.fwd();
-			ArrayList<Node<BitType>> singlenode = new ArrayList<Node<BitType>>();
-			closestNode(listcursor, rootnode, singlenode, Bestdistsquared);
-			PointSampleList<BitType> singletree = combineTrees(singlenode.get(0));
+			Node<BitType> finalnode;
+			ArrayList<Node<BitType>> nodelist = new ArrayList<Node<BitType>>();
+			closestNode(listcursor, rootnode, nodelist, Bestdistsquared);
+			PointSampleList<BitType> singletree = combineTrees(nodelist.get(nodelist.size() - 1));
 			Cursor<BitType> singlecursor = singletree.cursor();
 
 			while (singlecursor.hasNext()) {
@@ -595,17 +629,20 @@ public class MyKDtree {
 
 	/**********
 	 * Starting the distance transform routine
+	 * 
+	 * @throws FileNotFoundException
 	 **********/
 
-	public static <T extends RealType<T>> void distanceTransform(PointSampleList<BitType> totallist,
-			PointSampleList<BitType> list, PointSampleList<BitType> listzerosorones, RandomAccessibleInterval<T> imgout,
-			final Distance dist) {
+	public static <T extends RealType<T>> void distanceTransform(PointSampleList<BitType> list,
+			PointSampleList<BitType> listzerosorones, RandomAccessibleInterval<T> imgout, final Distance dist)
+					throws FileNotFoundException {
 
 		Node<BitType> rootnode;
 
 		rootnode = makeNode(list, 0);
+		PrintStream out = new PrintStream(new FileOutputStream("KDtreemindist.txt"));
+		System.setOut(out);
 
-		
 		double Bestdistsquared = Double.MAX_VALUE;
 
 		final Cursor<BitType> zerooronelistcursor = listzerosorones.localizingCursor();
@@ -616,35 +653,35 @@ public class MyKDtree {
 			zerooronelistcursor.fwd();
 			double mindistance = Double.MAX_VALUE;
 			outbound.setPosition(zerooronelistcursor);
-			ArrayList<Node<BitType>> singlenode = new ArrayList<Node<BitType>>();
-			closestNode(zerooronelistcursor, rootnode, singlenode, Bestdistsquared);
-			PointSampleList<BitType> singletree = combineTrees(singlenode.get(0));
+
+			Node<BitType> finalnode;
+			ArrayList<Node<BitType>> nodelist = new ArrayList<Node<BitType>>();
+			closestNode(zerooronelistcursor, rootnode, nodelist, Bestdistsquared);
+
+			PointSampleList<BitType> singletree = combineTrees(nodelist.get(0));
+			System.out.println(nodelist.size());
 
 			Cursor<BitType> singlecursor = singletree.cursor();
-double distance = 0;
+			double distance = 0;
 			while (singlecursor.hasNext()) {
 				singlecursor.fwd();
 
 				distance = dist.getDistance(zerooronelistcursor, singlecursor);
 				mindistance = Math.min(distance, mindistance);
-				
-				outbound.get().setReal(mindistance);
-				
+
 			}
+			outbound.get().setReal(mindistance);
+			System.out.println(mindistance);
 
 		}
-		
-		final Cursor<BitType> listcursor = list.localizingCursor();
-while(listcursor.hasNext()){
-	listcursor.fwd();
-	outbound.setPosition(listcursor);
-	outbound.get().setReal(0);
-	System.out.println(outbound.get());
-	
-}
-		
 
-		
+		final Cursor<BitType> listcursor = list.localizingCursor();
+		while (listcursor.hasNext()) {
+			listcursor.fwd();
+			outbound.setPosition(listcursor);
+			outbound.get().setReal(0);
+
+		}
 
 	}
 
@@ -770,8 +807,7 @@ while(listcursor.hasNext()){
 		listonlyones = getvalueList(list, 1);
 		listonlyzeros = getvalueList(list, 0);
 
-		 distanceTransform(list,listonlyones,listonlyzeros, imgout, new
-		 EucledianDistance());
+		distanceTransform(listonlyones, listonlyzeros, imgout, new EucledianDistance());
 
 		// testNeighbours(list, new EucledianDistance()); // Writes nearest
 		// neighbours in a file
