@@ -280,8 +280,7 @@ public class MyKDtree {
 		cursorA.fwd();
 		cursorB.fwd();
 
-	//	System.out.println("listA : " + cursorA.get());
-	//	System.out.println("listB : " + cursorB.get());
+	
 
 		boolean cannotMoveOn = false;
 		
@@ -312,7 +311,7 @@ public class MyKDtree {
 					while ( stopped == false );
 				}
 				
-		//		System.out.println("In here");
+	
 			}
 
 			else
@@ -340,7 +339,7 @@ public class MyKDtree {
 					}
 					while ( stopped == false );
 				}
-		//		System.out.println("Out here");
+		
 			}
 
 		}
@@ -567,12 +566,12 @@ public class MyKDtree {
 			}
 
 			final double locationdiff = Position[ currentBest.direction] - currentBest.nodePoint[currentBest.direction];
-			final double axisdiff = locationdiff*locationdiff;
+			
 			final boolean leftbranchsearch = locationdiff < 0;
 
 			// search the near branch
 			final PointSampleList<T> searchBranch = leftbranchsearch ? currentBest.LeftTree : currentBest.RightTree;
-			final PointSampleList<T> nonsearchBranch = leftbranchsearch ? currentBest.RightTree : currentBest.LeftTree;
+			
 			
 			
 			
@@ -624,7 +623,7 @@ public class MyKDtree {
 			final boolean leftbranchsearch = locationdiff < 0;
 
 			// search the near branch
-			final PointSampleList<T> searchBranch = leftbranchsearch ? currentBest.LeftTree : currentBest.RightTree;
+			
 			final PointSampleList<T> nonsearchBranch = leftbranchsearch ? currentBest.RightTree : currentBest.LeftTree;
 			
 			
@@ -813,72 +812,10 @@ public class MyKDtree {
 
 	}
 
-	/*********
-	 * Here I return an Arraylist of Node<T> type by a clever trick, I give in
-	 * an ArrayList of Node<T> containing only the rootNode and in the course of
-	 * the routine below overwrite that list with the nodes of all the subtrees.
-	 * The list then contains the object Node<T> for all the subtrees including
-	 * the rootTree. Is this clever or dangerous way to do it?
-	 ********/
-	/*
-	 * public static <T extends RealType<T>> void getTree(PointSampleList<T>
-	 * list, ArrayList<Node<T>> allnodes, int direction) {
-	 * 
-	 * int n = list.numDimensions(); /**** To ward against running over the
-	 * dimensionality, creating some local restrictions on the global variable
-	 * direction /* if (direction == n) direction = 0; if
-	 * ((list.realMax(direction) - list.realMin(direction) + 1) <= 2) return;
-	 * 
-	 * else {
-	 * 
-	 * // ArrayList<Node<T>> allnodes = new ArrayList<Node<T>>();
-	 * 
-	 * double pivotElement;
-	 * 
-	 * pivotElement = getMedian(list, direction);
-	 * 
-	 * final PointSampleList<T> LeftTree = new PointSampleList<T>(n); final
-	 * PointSampleList<T> RightTree = new PointSampleList<T>(n);
-	 * 
-	 * final Cursor<T> listCursor = list.localizingCursor();
-	 * 
-	 * while (listCursor.hasNext()) {
-	 * 
-	 * listCursor.fwd();
-	 * 
-	 * Point cord = new Point(listCursor);
-	 * 
-	 * if (listCursor.getDoublePosition(direction) < pivotElement)
-	 * 
-	 * LeftTree.add(cord, listCursor.get().copy());
-	 * 
-	 * else
-	 * 
-	 * RightTree.add(cord, listCursor.get().copy());
-	 * 
-	 * } Cursor<T> rightTreecursor = RightTree.localizingCursor();
-	 * rightTreecursor.fwd();
-	 * 
-	 * final Node<T> node = new Node<T>(pivotElement, rightTreecursor,
-	 * direction, LeftTree, RightTree);
-	 * 
-	 * int otherdirection = direction + 1;
-	 * 
-	 * if (otherdirection == n) otherdirection = 0;
-	 * 
-	 * getTree(LeftTree, allnodes, otherdirection);
-	 * 
-	 * getTree(RightTree, allnodes, otherdirection);
-	 * 
-	 * nodetoList(node, allnodes);
-	 * 
-	 * }
-	 * 
-	 * }
-	 */
+	
 	/***********
 	 * Returns the node closest to the testpoint stores as a single entry in the
-	 * arrayList
+	 * arrayList, done in a sort of "non-java" fashion
 	 ***********/
 
 	public static <T extends RealType<T>> void closestNode(RealLocalizable testpoint, Node<T> Trees,
@@ -995,7 +932,7 @@ public class MyKDtree {
 
 	/********
 	 * For a Node<T>, returns a single PointSampleList by combining the Left and
-	 * Right Tree pairs into one (not used currently)
+	 * Right Tree pairs into one 
 	 ***********/
 
 	public static <T extends RealType<T>> PointSampleList<T> combineTrees(Node<T> Tree) {
@@ -1036,7 +973,9 @@ public class MyKDtree {
 	
 
 	/**********
-	 * Starting the distance transform routine
+	 * Starting the distance transform routine, done in a sort of non-Java fashion, by getting a needed object out of a void method by creating an empty ArrayList of the object 
+	 * and then overwritting it in the program. For a better tasting implementation see the overloaded version below which creates a NN object and uses getters and setters to get
+	 * the correct distance transform. 
 	 * 
 	 * @throws FileNotFoundException
 	 **********/
@@ -1078,7 +1017,7 @@ public class MyKDtree {
 				singlefartree = combineTrees(farnodelist.get(0));
 			else
 				singlefartree = null;
-			// System.out.println(singletree.size());
+			
 
 			
 			Cursor<BitType> singlecursor = singletree.cursor();
@@ -1124,7 +1063,7 @@ public class MyKDtree {
 
 	}
 	
-	
+	/****  This is more of a "Java" way of getting NN by using an NN object and using getters and setters to get the Best Node point   ****/
 	public static <T extends RealType<T>> void ConcisedistanceTransform(PointSampleList<BitType> list,
 			PointSampleList<BitType> listzerosorones, RandomAccessibleInterval<T> imgout, final Distance dist)
 					throws FileNotFoundException {
@@ -1237,11 +1176,9 @@ public class MyKDtree {
 			double distance = 0.0;
 
 			for (int d = 0; d < cursor2.numDimensions(); ++d) {
-				// if (cursor1.getDoublePosition(d) !=
-				// cursor2.getDoublePosition(d))
+				
 				distance += Math.pow((cursor1.getDoublePosition(d) - cursor2.getDoublePosition(d)), 2);
-				// else
-				// distance = Double.MAX_VALUE;
+				
 			}
 
 			return Math.sqrt(distance);
@@ -1267,11 +1204,9 @@ public class MyKDtree {
 			double distance = 0.0;
 
 			for (int d = 0; d < cursor2.numDimensions(); ++d) {
-				// if (cursor1.getDoublePosition(d) !=
-				// cursor2.getDoublePosition(d))
+				
 				distance += Math.abs(cursor1.getDoublePosition(d) - cursor2.getDoublePosition(d));
-				// else
-				// distance = Double.MAX_VALUE;
+				
 			}
 
 			return distance;
@@ -1324,7 +1259,7 @@ public class MyKDtree {
 
 	public static void main(String[] args) throws FileNotFoundException {
 
-		final Img<FloatType> img = ImgLib2Util.openAs32Bit(new File("src/main/resources/dt.png"));
+		final Img<FloatType> img = ImgLib2Util.openAs32Bit(new File("src/main/resources/bridge.png"));
 		final Img<BitType> bitimg = new ArrayImgFactory<BitType>().create(img, new BitType());
 		final Img<FloatType> imgout = new ArrayImgFactory<FloatType>().create(img, new FloatType());
 
@@ -1334,9 +1269,9 @@ public class MyKDtree {
 
 		PointSampleList<BitType> list = new PointSampleList<BitType>(bitimg.numDimensions());
 
-		RandomAccessibleInterval<BitType> view = Views.interval(bitimg, new long[] { 0, 0 }, new long[] { 200, 200 });
+		RandomAccessibleInterval<BitType> view = Views.interval(bitimg, new long[] { 0, 0 }, new long[] { 400, 400 });
 
-		list = getList(bitimg);
+		list = getList(view);
 
 		PointSampleList<BitType> listonlyones = new PointSampleList<BitType>(bitimg.numDimensions());
 
@@ -1349,11 +1284,7 @@ public class MyKDtree {
 		listonlyones = getvalueList(list, 1);
 		listonlyzeros = getvalueList(list, 0);
 
-	//	PointSampleList<BitType> Xsorted = new PointSampleList<BitType>(bitimg.numDimensions());
-	//	Xsorted = listonlyones;
-		
-	//	PointSampleList<BitType> Ysorted = new PointSampleList<BitType>(bitimg.numDimensions());
-	//	Ysorted = listonlyones;
+
 		
 		split(listonlyones, 0 );
 		split(listonlyones, 1 );
