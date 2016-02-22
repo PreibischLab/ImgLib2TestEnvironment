@@ -14,6 +14,7 @@ import net.imglib2.Cursor;
 import net.imglib2.FinalInterval;
 import net.imglib2.IterableInterval;
 import net.imglib2.KDTreeNode;
+import net.imglib2.Localizable;
 import net.imglib2.RealLocalizable;
 import net.imglib2.RealPointSampleList;
 import net.imglib2.Sampler;
@@ -192,6 +193,161 @@ public class MyKDtree {
 		}
 
 	}
+	
+	
+	
+
+	public static <T extends RealType<T>> void split(PointSampleList<T> list, int direction ) {
+
+		int n = list.numDimensions();
+
+		if (list.size() <= 1)
+			return;
+
+		else {
+
+			/****
+			 * To ward against running over the dimensionality, creating some
+			 * local restrictions on the global variable direction
+			 ****/
+			if (direction == list.numDimensions())
+				direction = 0;
+
+			// the first element belonging to the right list childB
+			final int splitIndex =(int)list.size()/2 ;
+					
+					
+
+			
+			
+			final PointSampleList<T> childA = new PointSampleList<T>(n);
+			final PointSampleList<T> childB = new PointSampleList<T>(n);
+
+			final Cursor<T> listCursor = list.localizingCursor();
+
+			int index = 0;
+			while (listCursor.hasNext()) {
+
+				listCursor.fwd();
+
+				Point cord = new Point(listCursor);
+
+
+				if ( index < splitIndex )
+				{
+
+					childA.add(cord, listCursor.get().copy());
+
+				//	System.out.println("childA: "+listCursor.get());
+
+				} else
+
+				{
+
+					childB.add(cord, listCursor.get().copy());
+				//	System.out.println("childB: "+listCursor.get());
+				}
+				index++;
+			}
+
+			
+			split(childA, direction);
+
+			split(childB, direction);
+
+			mergeList(list, childA, childB, direction);
+		}
+
+	}
+	
+	
+	
+	
+	
+	
+	
+	///*****       Returns a sorted list *********////
+	public static <T extends RealType<T>> void mergeList(PointSampleList<T> list, PointSampleList<T> listA,
+			PointSampleList<T> listB, int direction) {
+
+		final Cursor<T> cursorA = listA.localizingCursor();
+		final Cursor<T> cursorB = listB.localizingCursor();
+		final Cursor<T> cursor = list.localizingCursor();
+
+		
+		
+		
+		cursorA.fwd();
+		cursorB.fwd();
+
+	//	System.out.println("listA : " + cursorA.get());
+	//	System.out.println("listB : " + cursorB.get());
+
+		boolean cannotMoveOn = false;
+		
+		do
+		{
+			// here is where you decide what you sort after
+			if (cursorA.getDoublePosition(direction) < (cursorB.getDoublePosition(direction)) ) {
+
+				cursor.fwd();
+				cursor.get().set( cursorA.get() );
+				if ( cursorA.hasNext() )
+					cursorA.fwd();
+				else
+				{
+					cannotMoveOn = true;
+					
+					// move cursorB until the end
+					boolean stopped = false;
+					do
+					{
+						cursor.fwd();
+						cursor.get().set( cursorB.get() );
+						if ( cursorB.hasNext() )
+							cursorB.fwd();
+						else
+							stopped = true;					
+					}
+					while ( stopped == false );
+				}
+				
+		//		System.out.println("In here");
+			}
+
+			else
+
+			{
+
+				cursor.fwd();
+				cursor.get().set( cursorB.get() );
+				if ( cursorB.hasNext() )
+					cursorB.fwd();
+				else
+				{
+					cannotMoveOn = true;
+					
+					// move cursorA until the end
+					boolean stopped = false;
+					do
+					{
+						cursor.fwd();
+						cursor.get().set( cursorA.get() );
+						if ( cursorA.hasNext() )
+							cursorA.fwd();
+						else
+							stopped = true;					
+					}
+					while ( stopped == false );
+				}
+		//		System.out.println("Out here");
+			}
+
+		}
+		while ( cannotMoveOn == false );
+	}
+	
+	
 	/******** End of the Merge-Sort routine for Arraylist *********/
 
 	/******* Returns the medianElement for input PointSampleList *******/
@@ -209,10 +365,7 @@ public class MyKDtree {
 
 		}
 
-		// Collections.sort(values);
-
-		split(values, direction); // Since the list is sorted I only have to get
-									// the value at the middle of the list
+		
 
 		int startindex = 0;
 		int lastindex = values.size() - 1;
@@ -245,7 +398,8 @@ public class MyKDtree {
 
 	}
 
-	
+
+
 
 	public static class Node<T> {
 
@@ -500,11 +654,6 @@ public class MyKDtree {
 
 			}
 
-			// Collections.sort(values);
-
-			split(values, direction); // Since the list is sorted I only have to get
-										// the value at the middle of the list
-
 			int startindex = 0;
 			int lastindex = values.size() - 1;
 
@@ -532,9 +681,14 @@ public class MyKDtree {
 
 			medianElement = 0.5 * (values.get(medianindex[0]) + values.get(medianindex[1]));
 
+			
+			
 			return medianElement;
 
 		}
+
+		
+		
 
 		
 		
@@ -1170,7 +1324,7 @@ public class MyKDtree {
 
 	public static void main(String[] args) throws FileNotFoundException {
 
-		final Img<FloatType> img = ImgLib2Util.openAs32Bit(new File("src/main/resources/bridge.png"));
+		final Img<FloatType> img = ImgLib2Util.openAs32Bit(new File("src/main/resources/dt.png"));
 		final Img<BitType> bitimg = new ArrayImgFactory<BitType>().create(img, new BitType());
 		final Img<FloatType> imgout = new ArrayImgFactory<FloatType>().create(img, new FloatType());
 
@@ -1180,23 +1334,43 @@ public class MyKDtree {
 
 		PointSampleList<BitType> list = new PointSampleList<BitType>(bitimg.numDimensions());
 
-		RandomAccessibleInterval<BitType> view = Views.interval(bitimg, new long[] { 60, 60 }, new long[] { 200, 200 });
+		RandomAccessibleInterval<BitType> view = Views.interval(bitimg, new long[] { 0, 0 }, new long[] { 200, 200 });
 
 		list = getList(bitimg);
 
 		PointSampleList<BitType> listonlyones = new PointSampleList<BitType>(bitimg.numDimensions());
 
 		PointSampleList<BitType> listonlyzeros = new PointSampleList<BitType>(bitimg.numDimensions());
+		
+		
+		
+		
 
 		listonlyones = getvalueList(list, 1);
 		listonlyzeros = getvalueList(list, 0);
 
+	//	PointSampleList<BitType> Xsorted = new PointSampleList<BitType>(bitimg.numDimensions());
+	//	Xsorted = listonlyones;
+		
+	//	PointSampleList<BitType> Ysorted = new PointSampleList<BitType>(bitimg.numDimensions());
+	//	Ysorted = listonlyones;
+		
+		split(listonlyones, 0 );
+		split(listonlyones, 1 );
+		
+		
+		
+		
+		
+		
 		ConcisedistanceTransform(listonlyones, listonlyzeros, imgout, new EucledianDistance());
 
 		// testNeighbours(list, new EucledianDistance()); // Writes nearest
 		// neighbours in a file
 
 		ImageJFunctions.show(imgout).setTitle("KD-Tree output");
+		
+	
 
 	}
 }
