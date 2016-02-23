@@ -525,8 +525,8 @@ public class MyKDtree {
 			Node<T> nearnode;
 			if ((searchBranch.realMax(otherdirection) - searchBranch.realMin(otherdirection) + 1) > 2) {
 				nearnode = makeNode(searchBranch, otherdirection);
-if (nearnode!=null)
-				closestNode(nearnode);
+				if (nearnode != null)
+					closestNode(nearnode);
 
 			}
 
@@ -565,11 +565,11 @@ if (nearnode!=null)
 			final PointSampleList<T> nonsearchBranch = leftbranchsearch ? currentBest.RightTree : currentBest.LeftTree;
 
 			Node<T> farnode;
-			if (axisdiff >= Bestfardistsquared
+			if (axisdiff <= Bestfardistsquared
 					&& (nonsearchBranch.realMax(otherdirection) - nonsearchBranch.realMin(otherdirection) + 1) > 2) {
 				farnode = makeNode(nonsearchBranch, otherdirection);
-if (farnode!= null)
-				closestNode(farnode);
+				if (farnode != null)
+					closestNode(farnode);
 			}
 		}
 
@@ -781,8 +781,8 @@ if (farnode!= null)
 		if ((searchBranch.realMax(otherdirection) - searchBranch.realMin(otherdirection) + 1) > 2) {
 
 			nearnode = makeNode(searchBranch, otherdirection);
-if (nearnode!=null)
-			closestNode(testpoint, nearnode, list, mindistsquared);
+			if (nearnode != null)
+				closestNode(testpoint, nearnode, list, mindistsquared);
 
 		}
 
@@ -835,11 +835,11 @@ if (nearnode!=null)
 
 		Node<T> farnode;
 
-		if (axisdiff >= mindistsquared
+		if (axisdiff <= mindistsquared
 				&& (nonsearchBranch.realMax(otherdirection) - nonsearchBranch.realMin(otherdirection) + 1) > 2) {
 			farnode = makeNode(nonsearchBranch, otherdirection);
-if (farnode !=null)
-			furtherNode(testpoint, farnode, list, mindistsquared);
+			if (farnode != null)
+				furtherNode(testpoint, farnode, list, mindistsquared);
 		}
 
 		if (finalnode != null)
@@ -1142,7 +1142,7 @@ if (farnode !=null)
 
 	public static void main(String[] args) throws FileNotFoundException {
 
-		final Img<FloatType> img = ImgLib2Util.openAs32Bit(new File("src/main/resources/DrosophilaWingSmall.tif"));
+		final Img<FloatType> img = ImgLib2Util.openAs32Bit(new File("src/main/resources/dt.png"));
 		final Img<BitType> bitimg = new ArrayImgFactory<BitType>().create(img, new BitType());
 		final Img<FloatType> imgout = new ArrayImgFactory<FloatType>().create(img, new FloatType());
 
@@ -1169,15 +1169,10 @@ if (farnode !=null)
 		ConcisedistanceTransform(listonlyones, listonlyzeros, imgout, new EucledianDistance());
 
 		new ImageJ();
-		
+
 		ImageJFunctions.show(img).setTitle("KD-Tree input");
 
-		
-		
 		ImageJFunctions.show(imgout).setTitle("KD-Tree output");
-		
-		
-		
 
 	}
 }
