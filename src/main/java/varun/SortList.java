@@ -1,48 +1,151 @@
-package varun;
 
+package varun;
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Random;
+import java.io.FileNotFoundException;
 
 import net.imglib2.Cursor;
-import net.imglib2.FinalInterval;
 import net.imglib2.IterableInterval;
-import net.imglib2.Localizable;
 import net.imglib2.Point;
 import net.imglib2.PointSampleList;
-import net.imglib2.RandomAccess;
-import net.imglib2.RandomAccessible;
-import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.Img;
-import net.imglib2.img.cell.CellImgFactory;
+import net.imglib2.img.array.ArrayImgFactory;
 import net.imglib2.img.display.imagej.ImageJFunctions;
+import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.real.FloatType;
 import net.imglib2.view.Views;
 import util.ImgLib2Util;
+import varun.MyKDtree.EucledianDistance;
 
-public class SortList {
+public class SortList{
+	public static <T extends RealType<T>> void split(PointSampleList<T> list, int direction) {
 
-	public static <T extends RealType<T>> PointSampleList<T> getList(RandomAccessibleInterval<T> img) {
+		int n = list.numDimensions();
 
-		final RandomAccessible<T> infinite = Views.extendZero(img);
+		if (list.size() <= 1)
+			return;
 
-		final int n = img.numDimensions();
-		long min[] = new long[n];
-		long max[] = new long[n];
+		else {
+/****
+			 * To ward against running over the dimensionality, creating some
+			 * local restrictions on the global variable direction
+			 ****/
+			if (direction == list.numDimensions())
+				direction = 0;
 
-		for (int d = 0; d < n; ++d) {
+			// the first element belonging to the right list childB
+			final int splitIndex = (int) list.size() / 2;
 
-			min[d] = img.min(d);
-			max[d] = img.max(d);
+			final PointSampleList<T> childA = new PointSampleList<T>(n);
+			final PointSampleList<T> childB = new PointSampleList<T>(n);
 
+			final Cursor<T> listCursor = list.localizingCursor();
+
+			int index = 0;
+			while (listCursor.hasNext()) {
+
+				listCursor.fwd();
+
+				Point cord = new Point(listCursor);
+
+				if (index < splitIndex) {
+
+					childA.add(cord, listCursor.get().copy());
+
+					// System.out.println("childA: "+listCursor.get());
+
+				} else
+
+				{
+
+					childB.add(cord, listCursor.get().copy());
+					// System.out.println("childB: "+listCursor.get());
+				}
+				index++;
+			}
+
+			split(childA, direction);
+
+			split(childB, direction);
+
+			mergeList(list, childA, childB, direction);
 		}
 
-		FinalInterval interval = new FinalInterval(min, max);
+	}
 
-		final IterableInterval<T> imgav = Views.interval(infinite, interval);
+	/// ***** Returns a sorted list *********////
+	public static <T extends RealType<T>> void mergeList(PointSampleList<T> list, PointSampleList<T> listA,
+			PointSampleList<T> listB, int direction) {
 
-		final Cursor<T> first = imgav.cursor();
+		final Cursor<T> cursorA = listA.localizingCursor();
+		final Cursor<T> cursorB = listB.localizingCursor();
+		final Cursor<T> cursor = list.localizingCursor();
+
+		cursorA.fwd();
+		cursorB.fwd();
+
+		boolean cannotMoveOn = false;
+
+		do {
+			// here is where you decide what you sort after
+			if (cursorA.getDoublePosition(direction) < (cursorB.getDoublePosition(direction))) {
+
+				cursor.fwd();
+				cursor.get().set(cursorA.get());
+				if (cursorA.hasNext())
+					cursorA.fwd();
+				else {
+					cannotMoveOn = true;
+
+					// move cursorB until the end
+					boolean stopped = false;
+					do {
+						cursor.fwd();
+						cursor.get().set(cursorB.get());
+						if (cursorB.hasNext())
+							cursorB.fwd();
+						else
+							stopped = true;
+					} while (stopped == false);
+				}
+
+			}
+
+			else
+
+			{
+
+				cursor.fwd();
+				cursor.get().set(cursorB.get());
+				if (cursorB.hasNext())
+					cursorB.fwd();
+				else {
+					cannotMoveOn = true;
+
+					// move cursorA until the end
+					boolean stopped = false;
+					do {
+						cursor.fwd();
+						cursor.get().set(cursorA.get());
+						if (cursorA.hasNext())
+							cursorA.fwd();
+						else
+							stopped = true;
+					} while (stopped == false);
+				}
+
+			}
+
+		} while (cannotMoveOn == false);
+	}
+
+	
+	/********* For an input image returns a PointSampleList ********/
+	public static <T extends RealType<T>> PointSampleList<T> getList(IterableInterval<T> img) {
+
+		int n = img.numDimensions();
+
+		final Cursor<T> first = img.cursor();
 
 		// A point sample list with coordinates declared and initialized.
 		PointSampleList<T> parent = new PointSampleList<T>(n);
@@ -61,371 +164,57 @@ public class SortList {
 
 	}
 
-	public static <T extends RealType<T>> void listtoImage(PointSampleList<T> list,
-			RandomAccessibleInterval<T> imageout) {
-
-		final Cursor<T> testCursor = list.localizingCursor().copyCursor();
-		final RandomAccess<T> imageCursor = imageout.randomAccess();
-
-		while (testCursor.hasNext()) {
-
-			testCursor.fwd();
-
-			imageCursor.setPosition(testCursor);
-			imageCursor.get().set(testCursor.get());
-
-		}
-
-	}
-
-	public static <T extends RealType<T>> void split(PointSampleList<T> list, int direction, int loc) {
+	public static PointSampleList<BitType> getvalueList(PointSampleList<BitType> list, int val) {
 
 		int n = list.numDimensions();
 
-		if (list.dimension(direction) < 2)
-			return;
+		final Cursor<BitType> first = list.cursor();
 
-		else {
-
-			/****
-			 * To ward against running over the dimensionality, creating some
-			 * local restrictions on the global variable direction
-			 ****/
-			if (direction == list.numDimensions())
-				direction = 0;
-
-			int otherdirection;
-
-			otherdirection = direction + 1;
-			if (direction == list.numDimensions() - 1)
-				otherdirection = 0;
-			if (direction >= 0 && direction < list.numDimensions() - 1)
-				otherdirection = direction + 1;
-
-			int meanIndex;
-
-			final Cursor<T> listCursor = list.localizingCursor().copyCursor();
-
-			PointSampleList<T> childA = new PointSampleList<T>(n);
-
-			PointSampleList<T> childB = new PointSampleList<T>(n);
-
-			if (list.dimension(direction) % 2 == 0)
-
-				meanIndex = (int) (loc + list.dimension(direction) / 2);
-
-			else
-
-				meanIndex = (int) (loc + (list.dimension(direction) + list.dimension(direction) % 2) / 2);
-
-			// Here I split the list along the median in one direction
-
-			while (listCursor.hasNext()) {
-
-				listCursor.fwd();
-
-				Point splitPoint = new Point(n);
-
-				splitPoint.setPosition(meanIndex, direction);
-
-				Point cord = new Point(n);
-
-				cord.setPosition(listCursor);
-				if (listCursor.getLongPosition(direction) < splitPoint.getLongPosition(direction)) {
-
-					childA.add(cord, listCursor.get().copy());
-
-					// System.out.println("childA: "+listCursor.get());
-
-				} else
-
-				{
-
-					childB.add(cord, listCursor.get().copy());
-					// System.out.println("childB: "+listCursor.get());
-				}
-
-			}
-
-			Localizable firstlocA = firstLocation(childA);
-
-			int locA = firstlocA.getIntPosition(direction);
-
-			Localizable firstlocB = firstLocation(childB);
-
-			int locB = firstlocB.getIntPosition(direction);
-
-			firstlocB.getIntPosition(direction);
-
-			split(childA, direction, locA);
-
-			split(childB, direction, locB);
-
-			mergeList(list, childA, childB);
-
-			// sortChild(childA, otherdirection);
-
-			// sortChild(childB, otherdirection);
-
-			// mergeAll(list, childA, childB);
-
-		}
-
-	}
-
-	public static <T extends RealType<T>> Localizable firstLocation(final IterableInterval<T> interval) {
-		Cursor<T> c = interval.localizingCursor();
-		c.fwd();
-		return c;
-	}
-
-	public static <T extends RealType<T>> void mergeList(PointSampleList<T> list, PointSampleList<T> listA,
-			PointSampleList<T> listB) {
-
-		final Cursor<T> cursorA = listA.localizingCursor().copyCursor();
-
-		final Cursor<T> cursorB = listB.localizingCursor().copyCursor();
-
-		final Cursor<T> cursor = list.localizingCursor().copyCursor();
-
-		cursor.fwd();
-		cursorA.fwd();
-		cursorB.fwd();
-
-		System.out.println("listA : " + cursorA.get());
-		System.out.println("listB : " + cursorB.get());
-
-		while (cursorA.hasNext() && cursorB.hasNext()) {
-
-			if (cursorA.get().compareTo(cursorB.get()) < 0) {
-
-				cursor.get().set(cursorA.get().copy());
-
-				cursorA.fwd();
-
-				cursor.fwd();
-				System.out.println("In here");
-			}
-
-			else
-
-			{
-
-				cursor.get().set(cursorB.get().copy());
-
-				cursorB.fwd();
-
-				cursor.fwd();
-
-				System.out.println("Out here");
-			}
-
-		}
-
-		while (cursorA.hasNext()) {
-
-			cursor.get().set(cursorA.get().copy());
-
-			cursorA.fwd();
-			cursor.fwd();
-			System.out.println("In here Alone");
-		}
-
-		while (cursorB.hasNext()) {
-
-			cursor.get().set(cursorB.get().copy());
-
-			cursorB.fwd();
-			cursor.fwd();
-			System.out.println("Out here Alone");
-		}
-
-	}
-
-	public static <T extends RealType<T>> void mergeAll(PointSampleList<T> list, PointSampleList<T> listA,
-			PointSampleList<T> listB) {
-
-		Cursor<T> cursorA = listA.localizingCursor().copyCursor();
-
-		Cursor<T> cursorB = listB.localizingCursor().copyCursor();
-
-		Cursor<T> cursor = list.localizingCursor().copyCursor();
-
-		cursor.fwd();
-		cursorA.fwd();
-		cursorB.fwd();
-
-		while (cursorA.hasNext()) {
-
-			cursor.get().set(cursorA.get());
-
-			cursorA.fwd();
-
-			cursor.fwd();
-
-		}
-
-		while (cursorB.hasNext()) {
-
-			cursor.get().set(cursorB.get());
-
-			cursorB.fwd();
-
-			cursor.fwd();
-
-		}
-
-	}
-
-	public static <T extends RealType<T>> void sortChild(PointSampleList<T> list, int direction, int loc) {
-
-		int n = list.numDimensions();
-
-		if (list.dimension(direction) < 2)
-			return;
-
-		else {
-
-			/****
-			 * To ward against running over the dimensionality, creating some
-			 * local restrictions on the global variable direction
-			 ****/
-			if (direction == list.numDimensions())
-				direction = 0;
-
-			int otherdirection;
-
-			otherdirection = direction + 1;
-			if (direction == list.numDimensions() - 1)
-				otherdirection = 0;
-			if (direction >= 0 && direction < list.numDimensions() - 1)
-				otherdirection = direction + 1;
-
-			int meanIndex;
-
-			final Cursor<T> listCursor = list.localizingCursor().copyCursor();
-
-			PointSampleList<T> childA = new PointSampleList<T>(n);
-
-			PointSampleList<T> childB = new PointSampleList<T>(n);
-
-			// meanIndex = (int) (list.min(direction)+ ((list.max(direction) -
-			// list.min(direction)) / 2)+ list.dimension(direction) % 2 ) ;
-
-			if (list.dimension(direction) % 2 == 0)
-
-				meanIndex = (int) (loc + list.dimension(direction) / 2);
-
-			else
-
-				meanIndex = (int) (loc + (list.dimension(direction) + list.dimension(direction) % 2) / 2);
-
-			// System.out.print(meanIndex);
-
-			// Here I split the list along the median in one direction
-
-			while (listCursor.hasNext()) {
-
-				listCursor.fwd();
-
-				Point splitPoint = new Point(n);
-
-				splitPoint.setPosition(meanIndex, direction);
-
-				Point cord = new Point(n);
-
-				cord.setPosition(listCursor);
-				if (listCursor.getLongPosition(direction) < splitPoint.getLongPosition(direction)) {
-
-					childA.add(cord, listCursor.get().copy());
-
-					// System.out.println("childA: "+listCursor.get());
-
-				} else
-
-				{
-
-					childB.add(cord, listCursor.get().copy());
-					// System.out.println("childB: "+listCursor.get());
-				}
-
-			}
-
-			Localizable firstlocA = firstLocation(childA);
-
-			int locA = firstlocA.getIntPosition(direction);
-
-			Localizable firstlocB = firstLocation(childB);
-
-			int locB = firstlocB.getIntPosition(direction);
-
-			firstlocB.getIntPosition(direction);
-
-			sortChild(childA, direction, locA);
-
-			sortChild(childB, direction, locB);
-
-			mergeList(list, childA, childB);
-
-			// sortChild(childA, otherdirection);
-
-			// sortChild(childB, otherdirection);
-
-			// mergeAll(list, childA, childB);
-
-		}
-
-	}
-
-	public static void main(String[] args) {
-
-		final Img<FloatType> img = ImgLib2Util.openAs32Bit(new File("src/main/resources/bridge.png"));
-
-		Img<FloatType> imgout = new CellImgFactory<FloatType>().create(img, img.firstElement());
-
-		PointSampleList<FloatType> list = new PointSampleList<FloatType>(img.numDimensions());
-
-		IterableInterval<FloatType> view = Views.interval(img, new long[] { 0, 0 }, new long[] { 3, 0 });
-
-		final Cursor<FloatType> first = view.cursor();
+		// A point sample list with coordinates declared and initialized.
+		PointSampleList<BitType> parent = new PointSampleList<BitType>(n);
 
 		while (first.hasNext()) {
 			first.fwd();
-			Point cord = new Point(img.numDimensions());
+			if (first.get().getInteger() == val) {
+				Point cord = new Point(n);
 
-			cord.setPosition(first);
+				cord.setPosition(first);
 
-			list.add(cord, first.get().copy());
-			// System.out.println("Set of x co-ordinates Initial List : " +
-			// cord.getDoublePosition(0));
-			// System.out.println("Set of y co-ordinates Initial List : " +
-			// cord.getDoublePosition(1));
-			System.out.println("Values Initial list : " + first.get());
+				parent.add(cord, first.get().copy());
 
+			}
 		}
+		return parent;
 
-		System.out.println(list.dimension(0));
+	}
 
-		// list = getList(img);
 
-		split(list, 0, 0); // Split list along X direction
-		// split(list, 1); // Split list along Y direction
+	public static void main(String[] args) throws FileNotFoundException {
+		 long startTime = System.currentTimeMillis();
+		final Img<FloatType> img = ImgLib2Util.openAs32Bit(new File("src/main/resources/dt.png"));
+		final Img<BitType> bitimg = new ArrayImgFactory<BitType>().create(img, new BitType());
+		final Img<FloatType> imgout = new ArrayImgFactory<FloatType>().create(img, new FloatType());
+		PointSampleList<BitType> list = new PointSampleList<BitType>(bitimg.numDimensions());
 
-		Cursor<FloatType> testtwo = list.cursor();
+		IterableInterval<BitType> view = Views.interval(bitimg, new long[] { 0, 0 }, new long[] { 127, 127 });
 
-		while (testtwo.hasNext()) {
-			testtwo.fwd();
-			Point newpoint = new Point(img.numDimensions());
+		list = getList(view);
 
-			newpoint.setPosition(testtwo);
+		PointSampleList<BitType> listonlyones = new PointSampleList<BitType>(bitimg.numDimensions());
 
-			// System.out.println("Set of x co-ordinates sorted List : " +
-			// newpoint.getDoublePosition(0));
-			// System.out.println("Set of y co-ordinates sorted List : " +
-			// newpoint.getDoublePosition(1));
-			System.out.println("Values sorted list : " + testtwo.get());
+		PointSampleList<BitType> listonlyzeros = new PointSampleList<BitType>(bitimg.numDimensions());
 
-		}
+		listonlyones = getvalueList(list, 1);
+		listonlyzeros = getvalueList(list, 0);
 
+		split(listonlyones, 0);
+		split(listonlyones, 1);
+
+	
+		long endTime   = System.currentTimeMillis();
+		long totalTime = endTime - startTime;
+		System.out.println(totalTime);
+		
+		
 	}
 }

@@ -149,7 +149,7 @@ public class distanceTransform {
 	}
 
 	public static void main(String[] args) throws FileNotFoundException {
-		long startTime = System.currentTimeMillis();
+		
 		final Img<FloatType> img = ImgLib2Util.openAs32Bit(new File("src/main/resources/bridge.png"));
 
 		ImageJFunctions.show(img).setTitle("Original_Image");
@@ -165,7 +165,7 @@ public class distanceTransform {
 		createBitimage(img, bitimg, val);
 		
 		RandomAccessibleInterval<BitType> view = Views.interval(bitimg, new long[] { 0, 0 }, new long[] { 100, 100 });
-
+		long startTime = System.currentTimeMillis();
 		computeDistance(view, imgout, new EucledianDistance());
 
 		ImageJFunctions.show(imgout).setTitle("Eucledian_FloatType_output");

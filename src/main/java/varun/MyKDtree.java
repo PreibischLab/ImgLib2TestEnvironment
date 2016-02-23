@@ -541,21 +541,21 @@ public class MyKDtree {
 		while (treecursorA.hasNext()) {
 
 			treecursorA.fwd();
-			Point treepoint = new Point(n);
+			Point treepointA = new Point(n);
 
-			treepoint.setPosition(treecursorA);
+			treepointA.setPosition(treecursorA);
 
-			singleTree.add(treepoint, treecursorA.get());
+			singleTree.add(treepointA, treecursorA.get());
 
 		}
 		while (treecursorB.hasNext()) {
 
 			treecursorB.fwd();
-			Point treepoint = new Point(n);
+			Point treepointB = new Point(n);
 
-			treepoint.setPosition(treecursorB);
+			treepointB.setPosition(treecursorB);
 
-			singleTree.add(treepoint, treecursorB.get().copy());
+			singleTree.add(treepointB, treecursorB.get().copy());
 
 		}
 
@@ -596,6 +596,8 @@ public class MyKDtree {
 
 			PointSampleList<BitType> singletree = combineTrees(Bestnode.getfinalnode());
 
+		
+			
 			Cursor<BitType> singlecursor = singletree.cursor();
 
 			while (singlecursor.hasNext()) {
@@ -734,7 +736,7 @@ public class MyKDtree {
 	}
 
 	public static void main(String[] args) throws FileNotFoundException {
-		 long startTime = System.currentTimeMillis();
+		
 		final Img<FloatType> img = ImgLib2Util.openAs32Bit(new File("src/main/resources/bridge.png"));
 		final Img<BitType> bitimg = new ArrayImgFactory<BitType>().create(img, new BitType());
 		final Img<FloatType> imgout = new ArrayImgFactory<FloatType>().create(img, new FloatType());
@@ -760,7 +762,7 @@ public class MyKDtree {
 
 		split(listonlyones, 0);
 		split(listonlyones, 1);
-
+		 long startTime = System.currentTimeMillis();
 		ConcisedistanceTransform(listonlyones, listonlyzeros, imgout, new EucledianDistance());
 
 	//	new ImageJ();
