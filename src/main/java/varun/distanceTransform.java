@@ -111,8 +111,8 @@ public class distanceTransform {
 		final Cursor<BitType> bound = Views.iterable(img).cursor();
 
 		final RandomAccess<T> outbound = imgout.randomAccess();
-		PrintStream out = new PrintStream(new FileOutputStream("BruteForcedist.txt"));
-		System.setOut(out);
+	//	PrintStream out = new PrintStream(new FileOutputStream("BruteForcedist.txt"));
+		//System.setOut(out);
 		while (bound.hasNext()) {
 			bound.fwd();
 			outbound.setPosition(bound);
@@ -133,7 +133,7 @@ public class distanceTransform {
 				
 					}
 				}
-				System.out.println(mindistance);
+			//	System.out.println(mindistance);
 
 				outbound.get().setReal(mindistance);
 			
@@ -149,22 +149,33 @@ public class distanceTransform {
 	}
 
 	public static void main(String[] args) throws FileNotFoundException {
-
-		final Img<FloatType> img = ImgLib2Util.openAs32Bit(new File("src/main/resources/dt.png"));
+		long startTime = System.currentTimeMillis();
+		final Img<FloatType> img = ImgLib2Util.openAs32Bit(new File("src/main/resources/bridge.png"));
 
 		ImageJFunctions.show(img).setTitle("Original_Image");
 
-		final Img<BitType> imgout = new ArrayImgFactory<BitType>().create(img, new BitType());
+		final Img<BitType> bitimg = new ArrayImgFactory<BitType>().create(img, new BitType());
 
-		final Img<BitType> bitimgout = new ArrayImgFactory<BitType>().create(img, new BitType());
+		final Img<FloatType> imgout = new ArrayImgFactory<FloatType>().create(img, new FloatType());
 
 		FloatType val = new FloatType(200);
 
-		createBitimage(img, imgout, val);
+		
+		
+		createBitimage(img, bitimg, val);
+		
+		RandomAccessibleInterval<BitType> view = Views.interval(bitimg, new long[] { 0, 0 }, new long[] { 100, 100 });
 
-		computeDistance(imgout, img, new EucledianDistance());
+		computeDistance(view, imgout, new EucledianDistance());
 
-		ImageJFunctions.show(img).setTitle("Eucledian_FloatType_output");
+		ImageJFunctions.show(imgout).setTitle("Eucledian_FloatType_output");
+		
+		
+		
+		long endTime   = System.currentTimeMillis();
+		long totalTime = endTime - startTime;
+		System.out.println(totalTime);
+		
 /*
 		computeDistance(imgout, bitimgout, new EucledianDistance());
 
