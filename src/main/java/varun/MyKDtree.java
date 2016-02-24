@@ -94,20 +94,27 @@ public class MyKDtree {
 
 	public static class Node<T> {
 
-		public final int n;
+		private final int n;
 
-		public final double medianValue;
+		private final double medianValue;
 
-		public final double[] nodePoint;
+		private final double[] nodePoint;
 
-		public final int direction;
+		private final int direction;
 
-		public final PointSampleList<T> LeftTree;
+		private final PointSampleList<T> LeftTree;
 
-		public final PointSampleList<T> RightTree;
+		private final PointSampleList<T> RightTree;
+
+		private final ArrayList<Point> newleftXlist;
+		private final ArrayList<Point> newleftYlist;
+		private final ArrayList<Point> newrightXlist;
+		private final ArrayList<Point> newrightYlist;
 
 		public Node(final double medianValue, RealLocalizable point, final int direction,
-				final PointSampleList<T> LeftTree, final PointSampleList<T> RightTree) {
+				final PointSampleList<T> LeftTree, final PointSampleList<T> RightTree,
+				final ArrayList<Point> newleftXlist, ArrayList<Point> newleftYlist, ArrayList<Point> newrightXlist,
+				ArrayList<Point> newrightYlist) {
 			assert LeftTree.numDimensions() == RightTree.numDimensions();
 			this.n = LeftTree.numDimensions();
 			this.nodePoint = new double[n];
@@ -117,17 +124,16 @@ public class MyKDtree {
 			this.direction = direction;
 			this.LeftTree = LeftTree;
 			this.RightTree = RightTree;
+			
+			this.newleftXlist = newleftXlist;
+			this.newleftYlist = newleftYlist;
+			this.newrightXlist = newrightXlist;
+			this.newrightYlist = newrightYlist;
+			
+			
 		}
 
-		public Node() {
-			super();
-			this.n = 0;
-			this.medianValue = 0;
-			this.nodePoint = new double[n];
-			this.direction = 0;
-			this.LeftTree = null;
-			this.RightTree = null;
-		}
+		
 
 		public int getnumDimensions() {
 			return n;
@@ -149,11 +155,38 @@ public class MyKDtree {
 		public PointSampleList<T> getRightTree() {
 			return RightTree;
 		}
+		
+		
+		
 
 		public void localize(double[] point) {
 
 			for (int d = 0; d < n; ++d)
 				point[d] = (double) nodePoint[d];
+		}
+
+
+
+		public ArrayList<Point> getNewleftXlist() {
+			return newleftXlist;
+		}
+
+
+
+		public ArrayList<Point> getNewleftYlist() {
+			return newleftYlist;
+		}
+
+
+
+		public ArrayList<Point> getNewrightXlist() {
+			return newrightXlist;
+		}
+
+
+
+		public ArrayList<Point> getNewrightYlist() {
+			return newrightYlist;
 		}
 
 	}
@@ -174,6 +207,10 @@ public class MyKDtree {
 		protected PointSampleList<T> finalsearchbranch;
 
 		protected PointSampleList<T> finalnonsearchbranch;
+		
+		protected ArrayList<Point> Xlist;
+		
+		protected ArrayList<Point> Ylist;
 
 		protected Node<T> finalnode;
 
@@ -199,13 +236,13 @@ public class MyKDtree {
 		public void search(final RealLocalizable cursor, int direction) {
 			cursor.localize(Position);
 			Bestdistsquared = Double.MAX_VALUE;
-			closestNode(list, direction);
+			closestNode(list,Xlist,Ylist, direction);
 		}
 
 		public void searchfar(final RealLocalizable cursor, int direction) {
 			cursor.localize(Position);
 			Bestfardistsquared = Double.MAX_VALUE;
-			furtherNode(list, direction);
+			furtherNode(list,Xlist,Ylist, direction);
 		}
 
 		public double getBestdist() {
@@ -224,11 +261,11 @@ public class MyKDtree {
 			return farfinalnode;
 		}
 
-		private void closestNode(final PointSampleList<T> list, int direction) {
+		private void closestNode(final PointSampleList<T> list,ArrayList<Point> Xlist, ArrayList<Point>Ylist, int direction) {
 
-			Node<T> currentBest = makeNode(list, direction);
+			Node<T> currentBest = makeNode(list,Xlist, Ylist, direction);
 
-		//	System.out.println(" Closest Node: " + currentBest.medianValue);
+			// System.out.println(" Closest Node: " + currentBest.medianValue);
 
 			int nodedirection = currentBest.direction;
 
@@ -243,15 +280,18 @@ public class MyKDtree {
 			final boolean leftbranchsearch = locationdiff < 0;
 
 			final PointSampleList<T> searchBranch = leftbranchsearch ? currentBest.LeftTree : currentBest.RightTree;
-			final PointSampleList<T> nonsearchBranch = leftbranchsearch ? currentBest.RightTree : currentBest.LeftTree;
+			//final PointSampleList<T> nonsearchBranch = leftbranchsearch ? currentBest.RightTree : currentBest.LeftTree;
+			final ArrayList<Point> newXlist = leftbranchsearch? currentBest.newleftXlist: currentBest.newrightXlist;
+			final ArrayList<Point> newYlist = leftbranchsearch? currentBest.newleftYlist: currentBest.newrightYlist;
+			
+			
 			if (dist < Bestdistsquared) {
 				Bestdistsquared = dist;
 				finalnode = currentBest;
 
 			}
 
-			PointSampleList<T> newXlist = new PointSampleList<T>(n);
-			PointSampleList<T> newYlist = new PointSampleList<T>(n);
+			
 
 			int otherdirection;
 
@@ -263,16 +303,14 @@ public class MyKDtree {
 				otherdirection = nodedirection + 1;
 
 			if ((searchBranch.realMax(otherdirection) - searchBranch.realMin(otherdirection) + 1) > 2) {
-				closestNode(searchBranch, otherdirection);
+				closestNode(searchBranch,newXlist, newYlist, otherdirection);
 			}
 
 		}
 
-		private void furtherNode(final PointSampleList<T> list, int direction) {
+		private void furtherNode(final PointSampleList<T> list,ArrayList<Point> Xlist, ArrayList<Point>Ylist, int direction) {
 
-			Node<T> currentfarBest = makeNode(list, direction);
-
-		
+			Node<T> currentfarBest = makeNode(list,Xlist,Ylist, direction);
 
 			int nodedirection = currentfarBest.direction;
 
@@ -291,14 +329,17 @@ public class MyKDtree {
 
 			final PointSampleList<T> nonsearchBranch = leftbranchsearch ? currentfarBest.RightTree
 					: currentfarBest.LeftTree;
+			
+			final ArrayList<Point> newXlist = leftbranchsearch? currentfarBest.newrightXlist: currentfarBest.newleftXlist;
+			final ArrayList<Point> newYlist = leftbranchsearch? currentfarBest.newrightYlist: currentfarBest.newleftYlist;
+			
 			if (dist < Bestfardistsquared) {
 				Bestfardistsquared = dist;
 				farfinalnode = currentfarBest;
 
 			}
 
-			PointSampleList<T> newXlist = new PointSampleList<T>(n);
-			PointSampleList<T> newYlist = new PointSampleList<T>(n);
+			
 
 			int otherdirection;
 
@@ -312,7 +353,7 @@ public class MyKDtree {
 			if (axisdiff <= Bestdistsquared
 					&& (nonsearchBranch.realMax(otherdirection) - nonsearchBranch.realMin(otherdirection) + 1) > 2) {
 
-				furtherNode(nonsearchBranch, otherdirection);
+				furtherNode(nonsearchBranch,newXlist,newYlist, otherdirection);
 			}
 
 		}
@@ -428,8 +469,10 @@ public class MyKDtree {
 
 		}
 
-		public double getMedian(PointSampleList<T> sortedlist, int direction) {
+		public double getMedian(PointSampleList<T> sortedlist,ArrayList<Point> Xlist, ArrayList<Point> Ylist, int direction) {
 
+			double medianElement = 0;
+			/*
 			long jumpsteps;
 
 			if ((sortedlist.size()) % 2 == 1)
@@ -449,12 +492,14 @@ public class MyKDtree {
 
 				listCursor.fwd();
 			medianElement = 0.5 * (medianElement + listCursor.getDoublePosition(direction));
+			*/
 
 			return medianElement;
 
 		}
 
-		public Node<T> makeNode(PointSampleList<T> sortedlist, int direction) {
+		public Node<T> makeNode(PointSampleList<T> sortedlist, ArrayList<Point> Xlist, ArrayList<Point> Ylist,
+				int direction) {
 
 			int n = sortedlist.numDimensions();
 
@@ -482,33 +527,51 @@ public class MyKDtree {
 
 				int[] point = new int[n];
 
-				pivotElement = getMedian(sortedlist, direction);
+				pivotElement = getMedian(sortedlist, Xlist, Ylist, direction);
 
 				final PointSampleList<T> LeftTree = new PointSampleList<T>(n);
 				final PointSampleList<T> RightTree = new PointSampleList<T>(n);
 
+				final ArrayList<Point> newXleftlist = new ArrayList<Point>();
+				final ArrayList<Point> newXrightlist = new ArrayList<Point>();
+				final ArrayList<Point> newYleftlist = new ArrayList<Point>();
+				final ArrayList<Point> newYrightlist = new ArrayList<Point>();
 				final Cursor<T> listCursor = sortedlist.localizingCursor();
-
+				int index = 0;
 				while (listCursor.hasNext()) {
 
 					listCursor.fwd();
 
 					Point cord = new Point(listCursor);
 
-					if (listCursor.getDoublePosition(direction) < pivotElement)
+					Point newXpoint = Xlist.get(index);
+
+					Point newYpoint = Ylist.get(index);
+
+					if (listCursor.getDoublePosition(direction) < pivotElement) {
 
 						LeftTree.add(cord, listCursor.get());
+						newXleftlist.add(newXpoint);
+						newYleftlist.add(newYpoint);
 
-					else
+					}
+
+					else {
 
 						RightTree.add(cord, listCursor.get());
+						newXrightlist.add(newXpoint);
+						newYrightlist.add(newYpoint);
 
+					}
+
+					index++;
 				}
 
 				Cursor<T> rightTreecursor = RightTree.localizingCursor();
 				rightTreecursor.fwd();
 
-				Node<T> node = new Node<T>(pivotElement, rightTreecursor, direction, LeftTree, RightTree);
+				Node<T> node = new Node<T>(pivotElement, rightTreecursor, direction, LeftTree, RightTree, newXleftlist,
+						newYleftlist, newXrightlist, newYrightlist);
 
 				return node;
 
@@ -518,117 +581,113 @@ public class MyKDtree {
 
 	}
 
-	
 	public static <T extends RealType<T>> ArrayList<Point> getpointList(PointSampleList<T> sortedlist) {
 		ArrayList<Point> pointlist = new ArrayList<Point>();
-		
+
 		Cursor<T> newlistCursor = sortedlist.localizingCursor();
-		
-	while (newlistCursor.hasNext()) {
 
-		newlistCursor.fwd();
+		while (newlistCursor.hasNext()) {
 
-		Point newcord = new Point(newlistCursor);
-		
-		pointlist.add(newcord);
-		
-		
-	}
-	
-	return pointlist;
-	}
-	
-	/******  Returns an arrayList of Points sorted in the given direction, useful for computing median      ******/
-	
-	public static <T extends RealType<T>> void sortpointList( ArrayList<Point> pointlist,
-			int direction) {
-	if (pointlist.size() <= 1)
-		return;
+			newlistCursor.fwd();
 
-	else {
+			Point newcord = new Point(newlistCursor);
 
-		// the first element belonging to the right list childB
-		final int splitIndex = (int) pointlist.size() / 2;
-
-		Iterator<Point> iterator = pointlist.iterator();
-
-		final ArrayList<Point> childA = new ArrayList<Point>((int) pointlist.size() / 2);
-
-		final ArrayList<Point> childB = new ArrayList<Point>((int) (pointlist.size() / 2 + pointlist.size() % 2));
-
-		int index = 0;
-
-		while (iterator.hasNext()) {
-			iterator.next();
-
-			if (index < splitIndex)
-				childA.add(pointlist.get(index));
-
-			else
-
-				childB.add(pointlist.get(index));
-
-			index++;
+			pointlist.add(newcord);
 
 		}
 
-		sortpointList(childA, direction);
-
-		sortpointList(childB, direction);
-	
-		mergepointListValue(pointlist,childA,childB,direction);
-
-	
-	
+		return pointlist;
 	}
-	
-	}
-	
-	/// ***** Returns a sorted list *********////
-			public static void mergepointListValue(ArrayList<Point> sortedlist, ArrayList<Point> listA, ArrayList<Point> listB, int direction) {
 
-				int i = 0, j = 0, k = 0;
+	/******
+	 * Returns an arrayList of Points sorted in the given direction, useful for
+	 * computing median
+	 ******/
 
-				while (i < listA.size() && j < listB.size()) {
+	public static <T extends RealType<T>> void sortpointList(ArrayList<Point> pointlist, int direction) {
+		if (pointlist.size() <= 1)
+			return;
 
-					if (listA.get(i).getDoublePosition(direction)<(listB.get(j).getDoublePosition(direction)) ) {
+		else {
 
-						sortedlist.set(k, listA.get(i));
+			// the first element belonging to the right list childB
+			final int splitIndex = (int) pointlist.size() / 2;
 
-						++i;
-						++k;
-					}
+			Iterator<Point> iterator = pointlist.iterator();
 
-					else {
+			final ArrayList<Point> childA = new ArrayList<Point>((int) pointlist.size() / 2);
 
-						sortedlist.set(k, listB.get(j));
+			final ArrayList<Point> childB = new ArrayList<Point>((int) (pointlist.size() / 2 + pointlist.size() % 2));
 
-						++j;
-						++k;
+			int index = 0;
 
-					}
+			while (iterator.hasNext()) {
+				iterator.next();
 
-				}
+				if (index < splitIndex)
+					childA.add(pointlist.get(index));
 
-				while (i < listA.size()) {
-					sortedlist.set(k, listA.get(i));
-					++i;
-					++k;
+				else
 
-				}
+					childB.add(pointlist.get(index));
 
-				while (j < listB.size()) {
-					sortedlist.set(k, listB.get(j));
-					++j;
-					++k;
-
-				}
+				index++;
 
 			}
 
-	
-	
-	
+			sortpointList(childA, direction);
+
+			sortpointList(childB, direction);
+
+			mergepointListValue(pointlist, childA, childB, direction);
+
+		}
+
+	}
+
+	/// ***** Returns a sorted list *********////
+	public static void mergepointListValue(ArrayList<Point> sortedlist, ArrayList<Point> listA, ArrayList<Point> listB,
+			int direction) {
+
+		int i = 0, j = 0, k = 0;
+
+		while (i < listA.size() && j < listB.size()) {
+
+			if (listA.get(i).getDoublePosition(direction) < (listB.get(j).getDoublePosition(direction))) {
+
+				sortedlist.set(k, listA.get(i));
+
+				++i;
+				++k;
+			}
+
+			else {
+
+				sortedlist.set(k, listB.get(j));
+
+				++j;
+				++k;
+
+			}
+
+		}
+
+		while (i < listA.size()) {
+			sortedlist.set(k, listA.get(i));
+			++i;
+			++k;
+
+		}
+
+		while (j < listB.size()) {
+			sortedlist.set(k, listB.get(j));
+			++j;
+			++k;
+
+		}
+
+	}
+
 	public static <T extends RealType<T>> PointSampleList<T> combineTrees(Node<T> Tree) {
 
 		assert Tree.LeftTree.numDimensions() == Tree.RightTree.numDimensions();
@@ -840,32 +899,25 @@ public class MyKDtree {
 
 		PointSampleList<BitType> listonlyzeros = new PointSampleList<BitType>(n);
 
-		listonlyones =getvalueList(list, 1);
+		listonlyones = getvalueList(list, 1);
 		listonlyzeros = getvalueList(list, 0);
 
 		ArrayList<Point> Xpointsort = new ArrayList<Point>();
 		ArrayList<Point> Ypointsort = new ArrayList<Point>();
-		
-		
-		
-		
-		
-		Xpointsort = getpointList(listonlyones);  
-		
+
+		Xpointsort = getpointList(listonlyones);
+
 		Ypointsort = getpointList(listonlyones);
-		
-		
-		
-		
+
 		sortpointList(Xpointsort, 0); // Type points, sorted by X-coordinate
 		sortpointList(Ypointsort, 1); // Type points, sorted by Y-coordinate
-		
+
 		System.out.println(Xpointsort);
 		System.out.println(Ypointsort);
-		
-		
+
 		long startTime = System.currentTimeMillis();
-	//	ConcisedistanceTransform(listonlyones, listonlyzeros, imgout, new EucledianDistance());
+		// ConcisedistanceTransform(listonlyones, listonlyzeros, imgout, new
+		// EucledianDistance());
 
 		// new ImageJ();
 
