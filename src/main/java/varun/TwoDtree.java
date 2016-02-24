@@ -1010,6 +1010,8 @@ for (int medianindex= medianElementsRight.size()-2; medianindex>0; --medianindex
 		PointSampleList<BitType> RightTreeX = new PointSampleList<BitType>(n);
 
 		XcoordinatesSort = sortedCoordinates(list, 0);
+		
+		System.out.println(XcoordinatesSort.size());
 
 		MedianLeftX = medianValueLeft(XcoordinatesSort, 0, XcoordinatesSort.size() - 1, 0);
 

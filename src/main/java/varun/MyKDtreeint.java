@@ -207,7 +207,7 @@ public class MyKDtreeint {
 		medianindex[1] = medianIndexB;
 
 		double medianElement = 0.0;
-
+//System.out.println(medianIndexA);
 		medianElement = 0.5 * (values.get(medianindex[0]) + values.get(medianindex[1]));
 
 		return medianElement;

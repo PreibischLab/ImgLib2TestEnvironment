@@ -23,7 +23,7 @@ import net.imglib2.type.numeric.real.FloatType;
 import net.imglib2.view.Views;
 import util.ImgLib2Util;
 
-public class Sort1DPointSampleList {
+public class SortPointSampleList {
 	
 	
 	public static <T extends RealType<T>> PointSampleList<T> getList(RandomAccessibleInterval<T> img) {
@@ -72,7 +72,7 @@ public class Sort1DPointSampleList {
 
 		int n = list.numDimensions();
 
-		if (list.dimension(direction) <= 1)
+		if (list.size() <= 1)
 			return;
 
 		else {
@@ -85,7 +85,7 @@ public class Sort1DPointSampleList {
 				direction = 0;
 
 			// the first element belonging to the right list childB
-			final int splitIndex = (int)list.dimension(direction) / 2;
+			final int splitIndex = (int)list.size() / 2;
 
 			
 			
@@ -119,12 +119,29 @@ public class Sort1DPointSampleList {
 				i++;
 			}
 
-			
+			Cursor<T> testlist = list.localizingCursor();
 			split(childA, direction);
 
 			split(childB, direction);
 
-			mergeList(list, childA, childB);
+			mergeList(list, childA, childB, direction);
+			
+
+			Cursor<T> test = list.localizingCursor();
+			
+
+			while (test.hasNext()) {
+				test.fwd();
+				testlist.fwd();
+				
+				T tester = testlist.get();
+
+				T sectester = test.get();
+				if (tester.compareTo(sectester) == 0);
+				 System.out.println( testlist.getDoublePosition(direction) );
+
+			}
+			
 		}
 
 	}
@@ -142,7 +159,7 @@ public class Sort1DPointSampleList {
 	
 	///*****       Returns a sorted list *********////
 	public static <T extends RealType<T>> void mergeList(PointSampleList<T> list, PointSampleList<T> listA,
-			PointSampleList<T> listB) {
+			PointSampleList<T> listB, int direction) {
 
 		final Cursor<T> cursorA = listA.localizingCursor();
 		final Cursor<T> cursorB = listB.localizingCursor();
@@ -162,9 +179,11 @@ public class Sort1DPointSampleList {
 		do
 		{
 			// here is where you decide what you sort after
-			if (cursorA.get().compareTo(cursorB.get()) < 0) {
+			if (cursorA.get().compareTo(cursorB.get()) < 0) { // Sort by pixel intensity
+		
 
 				cursor.fwd();
+				
 				cursor.get().set( cursorA.get() );
 				if ( cursorA.hasNext() )
 					cursorA.fwd();
@@ -234,7 +253,7 @@ public class Sort1DPointSampleList {
 		
 		//Make a 1D list along the X direction by setting an appropriate interval on the image. 
 
-		IterableInterval<FloatType> view = Views.interval(img, new long[] { 0, 0 }, new long[] { 100, 0 });
+		IterableInterval<FloatType> view = Views.interval(img, new long[] { 0, 0 }, new long[] { 100, 100 });
 
 		final Cursor<FloatType> first = view.cursor();
 
@@ -270,7 +289,7 @@ public class Sort1DPointSampleList {
 			 //newpoint.getDoublePosition(0));
 			 //System.out.println("Set of y co-ordinates sorted List : " +
 			 //newpoint.getDoublePosition(1));
-			System.out.println("Values sorted list : " + testtwo.get());
+		//	System.out.println("Values sorted list : " + testtwo.get());
 
 		}
 

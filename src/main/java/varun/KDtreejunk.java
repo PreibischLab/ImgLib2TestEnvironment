@@ -4,7 +4,6 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
-import java.util.Iterator;
 
 import net.imglib2.Cursor;
 import net.imglib2.Point;
@@ -18,155 +17,14 @@ import varun.MyKDtree.Distance;
 import varun.MyKDtree.Node;
 
 public class KDtreejunk {
-	/*********
-	 * Starting the methods which sort an Arraylist of co-ordinates using
-	 * Merge-Sort algorithm
-	 *********/
-
-	public static <T extends RealType<T>> void split(ArrayList<Double> coordinateList, int direction) {
-
-		if (coordinateList.size() <= 1)
-			return;
-
-		else {
-
-			// the first element belonging to the right list childB
-			final int splitIndex = (int) coordinateList.size() / 2;
-
-			Iterator<Double> iterator = coordinateList.iterator();
-
-			final ArrayList<Double> childA = new ArrayList<Double>((int) coordinateList.size() / 2);
-
-			final ArrayList<Double> childB = new ArrayList<Double>(
-					(int) (coordinateList.size() / 2 + coordinateList.size() % 2));
-
-			int xindex = 0;
-
-			while (iterator.hasNext()) {
-				iterator.next();
-
-				if (xindex < splitIndex)
-					childA.add(coordinateList.get(xindex));
-
-				else
-
-					childB.add(coordinateList.get(xindex));
-
-				xindex++;
-
-			}
-
-			split(childA, direction);
-
-			split(childB, direction);
-
-			mergeListValue(coordinateList, childA, childB);
-
-		}
-
-	}
-
-	/// ***** Returns a sorted list *********////
-	public static <T extends RealType<T>> void mergeListValue(ArrayList<Double> sortedlist, ArrayList<Double> listA,
-			ArrayList<Double> listB) {
-
-		int i = 0, j = 0, k = 0;
-
-		while (i < listA.size() && j < listB.size()) {
-
-			if (listA.get(i) < listB.get(j)) {
-
-				sortedlist.set(k, listA.get(i));
-
-				++i;
-				++k;
-			}
-
-			else {
-
-				sortedlist.set(k, listB.get(j));
-
-				++j;
-				++k;
-
-			}
-
-		}
-
-		while (i < listA.size()) {
-			sortedlist.set(k, listA.get(i));
-			++i;
-			++k;
-
-		}
-
-		while (j < listB.size()) {
-			sortedlist.set(k, listB.get(j));
-			++j;
-			++k;
-
-		}
-
-	}
 	
-	
-	/******** End of the Merge-Sort routine for Arraylist *********/
-
-	/******* Returns the medianElement for input PointSampleList *******/
-
-	public static <T extends RealType<T>> double getMedian(PointSampleList<T> list, int direction) {
-
-		final Cursor<T> listCursor = list.localizingCursor();
-
-		final ArrayList<Double> values = new ArrayList<Double>();
-
-		while (listCursor.hasNext()) {
-			listCursor.fwd();
-
-			values.add(listCursor.getDoublePosition(direction));
-
-		}
-
-		int startindex = 0;
-		int lastindex = values.size() - 1;
-
-		// Size of a list is lastindex-startindex+1.
-
-		int[] medianindex = new int[2];
-		int medianIndexA, medianIndexB;
-
-		if ((lastindex - startindex + 1) % 2 == 1) {
-			medianIndexA = startindex + (lastindex - startindex + 1 - (lastindex - startindex + 1) % 2) / 2;
-			medianIndexB = medianIndexA;
-		}
-
-		else {
-
-			medianIndexA = startindex + (lastindex - startindex + 1) / 2 - 1;
-			medianIndexB = medianIndexA + 1;
-		}
-
-		medianindex[0] = medianIndexA;
-
-		medianindex[1] = medianIndexB;
-
-		double medianElement = 0.0;
-
-		medianElement = 0.5 * (values.get(medianindex[0]) + values.get(medianindex[1]));
-
-		return medianElement;
-
-	}
-	
-	private static <T> void nodetoList(final Node<T> node, final ArrayList<Node<T>> allnodes) {
-		allnodes.add(node);
-	}
+	/*
 
 	/******
 	 * Returns a root tree, I do this to initialize an ArrayList<Node<T>> in the
 	 * main program which I overwrite later to include all the subtrees
 	 ******/
-
+/*
 	public static <T extends RealType<T>> Node<T> makeNode(PointSampleList<T> list, int direction) {
 
 		int n = list.numDimensions();
@@ -175,6 +33,7 @@ public class KDtreejunk {
 		 * To ward against running over the dimensionality, creating some local
 		 * restrictions on the global variable direction
 		 ****/
+	/*
 		if (direction == list.numDimensions())
 			direction = 0;
 		if ((list.realMax(direction) - list.realMin(direction) + 1) <= 2)
@@ -230,7 +89,7 @@ public class KDtreejunk {
 	 * 
 	 * @throws FileNotFoundException
 	 **********/
-
+/*
 	public static <T extends RealType<T>> void distanceTransform(PointSampleList<BitType> list,
 			PointSampleList<BitType> listzerosorones, RandomAccessibleInterval<T> imgout, final Distance dist)
 					throws FileNotFoundException {
@@ -304,51 +163,12 @@ public class KDtreejunk {
 		}
 
 	}
-	
-	/********
-	 * For a Node<T>, returns a single PointSampleList by combining the Left and
-	 * Right Tree pairs into one
-	 ***********/
-
-	public static <T extends RealType<T>> PointSampleList<T> combineTrees(Node<T> Tree) {
-
-		assert Tree.LeftTree.numDimensions() == Tree.RightTree.numDimensions();
-		int n = Tree.LeftTree.numDimensions();
-
-		PointSampleList<T> singleTree = new PointSampleList<T>(n);
-		Cursor<T> treecursorA = Tree.LeftTree.cursor();
-		Cursor<T> treecursorB = Tree.RightTree.cursor();
-
-		while (treecursorA.hasNext()) {
-
-			treecursorA.fwd();
-			Point treepoint = new Point(n);
-
-			treepoint.setPosition(treecursorA);
-
-			singleTree.add(treepoint, treecursorA.get());
-
-		}
-		while (treecursorB.hasNext()) {
-
-			treecursorB.fwd();
-			Point treepoint = new Point(n);
-
-			treepoint.setPosition(treecursorB);
-
-			singleTree.add(treepoint, treecursorB.get().copy());
-
-		}
-
-		return singleTree;
-
-	}
-	
+	/*
 	/***********
 	 * Returns the node closest to the testpoint stores as a single entry in the
 	 * arrayList, done in a sort of "non-java" fashion
 	 ***********/
-
+/*
 	public static <T extends RealType<T>> void closestNode(RealLocalizable testpoint, Node<T> Trees,
 			ArrayList<Node<T>> list, double Bestdistsquared) {
 
@@ -460,5 +280,5 @@ public class KDtreejunk {
 			list.add(finalnode);
 
 	}
-
+*/
 }
