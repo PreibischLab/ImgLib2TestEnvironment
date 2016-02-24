@@ -293,6 +293,10 @@ public class MyKDtree {
 		public final double[] Position;
 
 		protected PointSampleList<T> list;
+		
+		protected PointSampleList<T> finalsearchbranch;
+		
+		protected PointSampleList<T> finalnonsearchbranch;
 
 		protected Node<T> finalnode;
 
@@ -332,6 +336,10 @@ public class MyKDtree {
 		public Node<T> getfinalnode() {
 			return finalnode;
 		}
+		
+		public PointSampleList<T> getfinalsearchbranch() {
+			return finalsearchbranch;
+		}
 
 		public double getfarBestdist() {
 			return Bestfardistsquared;
@@ -339,6 +347,9 @@ public class MyKDtree {
 
 		public Node<T> getfarfinalnode() {
 			return farfinalnode;
+		}
+		public PointSampleList<T> getfinalnonsearchbranch() {
+			return finalnonsearchbranch;
 		}
 
 		private void closestNode(final Node<T> currentBest) {
@@ -360,10 +371,7 @@ public class MyKDtree {
 				dist += (Position[d] - currentBest.nodePoint[d]) * (Position[d] - currentBest.nodePoint[d]);
 			}
 
-			if (dist < Bestdistsquared) {
-				Bestdistsquared = dist;
-				finalnode = currentBest;
-			}
+		
 
 			final double locationdiff = Position[currentBest.direction] - currentBest.nodePoint[currentBest.direction];
 			final double axisdiff = locationdiff * locationdiff;
@@ -372,14 +380,27 @@ public class MyKDtree {
 			
 			final PointSampleList<T> searchBranch = leftbranchsearch ? currentBest.LeftTree : currentBest.RightTree;
 			final PointSampleList<T> nonsearchBranch = leftbranchsearch ? currentBest.RightTree : currentBest.LeftTree;
+			if (dist < Bestdistsquared) {
+				Bestdistsquared = dist;
+				finalnode = currentBest;
+				finalsearchbranch = searchBranch;
+				finalnonsearchbranch = nonsearchBranch;
+			}
+			
 			Node<T> nearnode;
-			if ((searchBranch.realMax(otherdirection) - searchBranch.realMin(otherdirection) + 1) > 2) {
+		
 				nearnode = makeNode(searchBranch, otherdirection);
 				if (nearnode != null)
 					closestNode(nearnode);
 
-			}
+				Node<T> farnode;
+				if (axisdiff <= Bestdistsquared) {
+					farnode = makeNode(nonsearchBranch, otherdirection);
+					if (farnode != null)
+						closestNode(farnode);
+				}
 			
+		
 
 		}
 
@@ -402,22 +423,25 @@ public class MyKDtree {
 				dist += (Position[d] - currentBest.nodePoint[d]) * (Position[d] - currentBest.nodePoint[d]);
 			}
 
-			if (dist < Bestfardistsquared) {
-				Bestfardistsquared = dist;
-				farfinalnode = currentBest;
-			}
+			
 
 			final double locationdiff = Position[currentBest.direction] - currentBest.nodePoint[currentBest.direction];
 			final double axisdiff = locationdiff * locationdiff;
 			final boolean leftbranchsearch = locationdiff < 0;
 
 			// search the far branch
-
+			final PointSampleList<T> searchBranch = leftbranchsearch ? currentBest.LeftTree : currentBest.RightTree;
 			final PointSampleList<T> nonsearchBranch = leftbranchsearch ? currentBest.RightTree : currentBest.LeftTree;
 
+			if (dist < Bestfardistsquared) {
+				Bestfardistsquared = dist;
+				farfinalnode = currentBest;
+				finalnonsearchbranch = nonsearchBranch;
+				finalsearchbranch = searchBranch;
+			}
+			
 			Node<T> farnode;
-			if (axisdiff <= Bestfardistsquared
-					&& (nonsearchBranch.realMax(otherdirection) - nonsearchBranch.realMin(otherdirection) + 1) > 2) {
+			if (axisdiff <= Bestfardistsquared) {
 				farnode = makeNode(nonsearchBranch, otherdirection);
 				if (farnode != null)
 					closestNode(farnode);
@@ -594,9 +618,9 @@ public class MyKDtree {
 
 			Bestnode.search(zerooronelistcursor);
 
-			PointSampleList<BitType> singletree = combineTrees(Bestnode.getfinalnode());
+			PointSampleList<BitType> singletree = Bestnode.getfinalsearchbranch(); //combineTrees(Bestnode.getfinalnode());
 
-		
+		//System.out.println(singletree.size());
 			
 			Cursor<BitType> singlecursor = singletree.cursor();
 
@@ -737,7 +761,7 @@ public class MyKDtree {
 
 	public static void main(String[] args) throws FileNotFoundException {
 		
-		final Img<FloatType> img = ImgLib2Util.openAs32Bit(new File("src/main/resources/bridge.png"));
+		final Img<FloatType> img = ImgLib2Util.openAs32Bit(new File("src/main/resources/dt.png"));
 		final Img<BitType> bitimg = new ArrayImgFactory<BitType>().create(img, new BitType());
 		final Img<FloatType> imgout = new ArrayImgFactory<FloatType>().create(img, new FloatType());
 
@@ -749,7 +773,7 @@ public class MyKDtree {
 
 		PointSampleList<BitType> list = new PointSampleList<BitType>(bitimg.numDimensions());
 
-		IterableInterval<BitType> view = Views.interval(bitimg, new long[] { 0, 0 }, new long[] { 100, 100 });
+		IterableInterval<BitType> view = Views.interval(bitimg, new long[] { 0, 0 }, new long[] { 127, 127 });
 
 		list = getList(view);
 
