@@ -358,120 +358,29 @@ public class MyKDtree {
 
 		}
 
-		// Sorts the co-ordinates in a given direction, the central element is
-		// then
-		// always the pivot for the kDTree.
-		public ArrayList<Long> sortedCoordinates(PointSampleList<T> list, int direction) {
-
-			final Cursor<T> listCursor = list.localizingCursor();
-
-			final ArrayList<Long> values = new ArrayList<Long>((int) list.dimension(direction));
-
-			while (listCursor.hasNext()) {
-				listCursor.fwd();
-
-				values.add(listCursor.getLongPosition(direction));
-
-			}
-
-			split(values, direction);
-
-			return values;
-
-		}
-
-		/*********
-		 * Starting the methods which sort an Arraylist of co-ordinates using
-		 * Merge-Sort algorithm
-		 *********/
-
-		public void split(ArrayList<Long> values, int direction) {
-
-			if (values.size() <= 1)
-				return;
-
-			else {
-
-				// the first element belonging to the right list childB
-				final int splitIndex = (int) values.size() / 2;
-
-				Iterator<Long> iterator = values.iterator();
-
-				final ArrayList<Long> childA = new ArrayList<Long>((int) values.size() / 2);
-
-				final ArrayList<Long> childB = new ArrayList<Long>((int) (values.size() / 2 + values.size() % 2));
-
-				int xindex = 0;
-
-				while (iterator.hasNext()) {
-					iterator.next();
-
-					if (xindex < splitIndex)
-						childA.add(values.get(xindex));
-
-					else
-
-						childB.add(values.get(xindex));
-
-					xindex++;
-
-				}
-
-				split(childA, direction);
-
-				split(childB, direction);
-
-				mergeListValue(values, childA, childB);
-
-			}
-
-		}
-
-		/// ***** Returns a sorted list *********////
-		public void mergeListValue(ArrayList<Long> sortedlist, ArrayList<Long> listA, ArrayList<Long> listB) {
-
-			int i = 0, j = 0, k = 0;
-
-			while (i < listA.size() && j < listB.size()) {
-
-				if (listA.get(i).compareTo(listB.get(j)) < 0) {
-
-					sortedlist.set(k, listA.get(i));
-
-					++i;
-					++k;
-				}
-
-				else {
-
-					sortedlist.set(k, listB.get(j));
-
-					++j;
-					++k;
-
-				}
-
-			}
-
-			while (i < listA.size()) {
-				sortedlist.set(k, listA.get(i));
-				++i;
-				++k;
-
-			}
-
-			while (j < listB.size()) {
-				sortedlist.set(k, listB.get(j));
-				++j;
-				++k;
-
-			}
-
-		}
-
+	
 		public double getMedian(PointSampleList<T> sortedlist,ArrayList<Point> Xlist, ArrayList<Point> Ylist, int direction) {
 
 			double medianElement = 0;
+			
+			final ArrayList<Point> cordsort = ArrayList<Point>();
+			
+			if (direction == 0)
+				
+				cordsort = Xlist;
+			
+			else
+				
+				cordsort = Ylist;
+			
+			int medianIndexA, medianIndexB;
+			
+			if (cordsort.size()%2 ==1){
+				
+				 medianIndexA = ( cordsort.size() - 1 )/2;
+				 medianIndexB = medianIndexA;
+			}
+				
 			/*
 			long jumpsteps;
 
