@@ -380,6 +380,14 @@ public class MyKDtree {
 				 medianIndexA = ( cordsort.size() - 1 )/2;
 				 medianIndexB = medianIndexA;
 			}
+			
+			else{
+				medianIndexA = cordsort.size()/2 - 1;
+			
+				medianIndexB = medianIndexA + 1;
+			}
+			
+			medianElement = 0.5*(cordsort.get(medianIndexA)+cordsort.get(medianIndexB));
 				
 			/*
 			long jumpsteps;
