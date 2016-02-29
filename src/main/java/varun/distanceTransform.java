@@ -166,7 +166,7 @@ public class distanceTransform {
 		
 		RandomAccessibleInterval<BitType> view = Views.interval(bitimg, new long[] { 0, 0 }, new long[] { 200, 200 });
 		long startTime = System.currentTimeMillis();
-		computeDistance(view, imgout, new EucledianDistance());
+		computeDistance(bitimg, imgout, new EucledianDistance());
 
 		ImageJFunctions.show(imgout).setTitle("Eucledian_FloatType_output");
 		
