@@ -96,7 +96,7 @@ public class MyKDtree {
 
 		private final int n;
 
-		private final double medianValue;
+		
 
 		private final double[] nodePoint;
 
@@ -110,7 +110,7 @@ public class MyKDtree {
 
 		private final ArrayList<Point> newrightlist;
 
-		public Node(final double medianValue, double[] nodePoint, final int direction,
+		public Node(double[] nodePoint, final int direction,
 				final PointSampleList<T> LeftTree, final PointSampleList<T> RightTree,
 				final ArrayList<Point> newleftlist, ArrayList<Point> newrightlist) {
 			assert LeftTree.numDimensions() == RightTree.numDimensions();
@@ -118,7 +118,7 @@ public class MyKDtree {
 
 			this.nodePoint = nodePoint;
 
-			this.medianValue = medianValue;
+			
 			this.direction = direction;
 			this.LeftTree = LeftTree;
 			this.RightTree = RightTree;
@@ -134,7 +134,7 @@ public class MyKDtree {
 		}
 
 		public double getMedianValue() {
-			return medianValue;
+			return nodePoint[direction];
 
 		}
 
@@ -177,23 +177,17 @@ public class MyKDtree {
 
 		public final double[] Position;
 
-		protected PointSampleList<T> list;
+		protected final PointSampleList<T> list;
 
-		protected PointSampleList<T> finalsearchbranch;
+		protected final ArrayList<Point> Xlist;
 
-		protected PointSampleList<T> finalnonsearchbranch;
-
-		protected ArrayList<Point> Xlist;
-
-		protected ArrayList<Point> Ylist;
+		protected final ArrayList<Point> Ylist;
 
 		protected Node<T> finalnode;
 
 		protected double Bestdistsquared;
 
-		protected Node<T> farfinalnode;
-
-		protected double Bestfardistsquared;
+		
 
 		public searchNode(final PointSampleList<T> list, final ArrayList<Point> Xlist, final ArrayList<Point> Ylist) {
 
@@ -202,6 +196,7 @@ public class MyKDtree {
 			this.Xlist = Xlist;
 			this.Ylist = Ylist;
 			this.list = list;
+			
 
 		}
 
@@ -209,94 +204,126 @@ public class MyKDtree {
 			return n;
 		}
 
-		public void search(final RealLocalizable cursor, int direction) {
+		public void search(final RealLocalizable cursor, final int direction) {
 			cursor.localize(Position);
 			Bestdistsquared = Double.MAX_VALUE;
 			closestNode(list, Xlist, Ylist, direction);
 		}
+		
 
 		public double getBestdist() {
 			return Bestdistsquared;
 		}
+		
+		
 
 		public Node<T> getfinalnode() {
 			return finalnode;
 		}
-
-		private void closestNode(final PointSampleList<T> list, ArrayList<Point> Xlist, ArrayList<Point> Ylist,
-				int direction) {
-
+		
 		
 
+		private void closestNode(final PointSampleList<T> list, final ArrayList<Point> Xlist, final ArrayList<Point> Ylist,
+			final	int direction) {
+
+		
+			
 				final boolean directionchoice = direction == n - 1;
 				final int otherdirection = directionchoice ? 0 : direction + 1;
 
-				final ArrayList<Point> cordsort = directionchoice ? Ylist : Xlist;
-				final ArrayList<Point> anticordsort = directionchoice ? Xlist : Ylist;
+				
+				Node<T> currentBest;
+				
+				
+				if (list.realMax(direction) - list.realMin(direction) +1 > 2) {
+					 currentBest = makeNode(list, Xlist, Ylist, direction);
+					
+				}
+				
+				else if ( list.realMax(otherdirection) - list.realMin(otherdirection) +1 > 2) {
+				
+					 currentBest = makeNode(list, Xlist, Ylist, otherdirection);
+					
+					
+				}
+				
+				else
+					currentBest = null;
+					
+					
 
-				if (cordsort.size() > 2 && list.size() > 2) {
-					Node<T> currentBest = makeNode(list, Xlist, Ylist, direction);
-
-				//	System.out.println(" X list size: " + Xlist.size());
-				//	System.out.println(" Y list size: " + Ylist.size());
-
-					double dist = 0;
+				
+					if (currentBest != null){
+						double dist = 0;
+						
 					for (int d = 0; d < n; ++d) {
 
-						dist += (Position[d] - currentBest.nodePoint[d]) * (Position[d] - currentBest.nodePoint[d]);
+						dist += Math.pow((Position[d] - currentBest.nodePoint[d]),2);
 					}
 
-					final double locationdiff = Position[currentBest.direction]
-							- currentBest.nodePoint[currentBest.direction];
+					final double locationdiff = Position[currentBest.direction] - currentBest.nodePoint[currentBest.direction];
+					
 					final double axisdiff = locationdiff * locationdiff;
+					
 					final boolean leftbranchsearch = locationdiff < 0;
+					
+					
 
-					final PointSampleList<T> searchBranch = leftbranchsearch ? currentBest.LeftTree
-							: currentBest.RightTree;
-					final ArrayList<Point> sortedlist = leftbranchsearch ? currentBest.newleftlist
-							: currentBest.newrightlist;
-
-					final PointSampleList<T> nonsearchBranch = leftbranchsearch ? currentBest.RightTree
-							: currentBest.LeftTree;
-					final ArrayList<Point> sortedfarlist = leftbranchsearch ? currentBest.newrightlist
-							: currentBest.newleftlist;
-
-					final ArrayList<Point> newXlist, newYlist, newnonsXlist, newnonsYlist;
-
-					newXlist = directionchoice ? Xlist : sortedlist;
-
-					newYlist = directionchoice ? sortedlist : Ylist;
-
-					newnonsXlist = directionchoice ? Xlist : sortedfarlist;
-
-					newnonsYlist = directionchoice ? sortedfarlist : Ylist;
-
-					if (dist < Bestdistsquared) {
+					if (dist <= Bestdistsquared) {
+						
 						Bestdistsquared = dist;
 						finalnode = currentBest;
 
 					}
 
+					final PointSampleList<T> searchBranch = leftbranchsearch ? currentBest.LeftTree : currentBest.RightTree;
+					final ArrayList<Point> sortedlist = leftbranchsearch ? currentBest.newleftlist : currentBest.newrightlist;
+
+					final PointSampleList<T> nonsearchBranch = leftbranchsearch ? currentBest.RightTree	: currentBest.LeftTree;
+					final ArrayList<Point> sortedfarlist = leftbranchsearch ? currentBest.newrightlist : currentBest.newleftlist;
+
+					final ArrayList<Point> newXlist, newYlist, newnonsXlist, newnonsYlist;
+					
+					
+					final boolean nodedirectionchoice = currentBest.direction == n - 1;
+					
+
+				
+
+					newXlist = nodedirectionchoice ? Xlist : sortedlist;
+
+					newYlist = nodedirectionchoice ? sortedlist : Ylist;
+
+					newnonsXlist = nodedirectionchoice ? Xlist : sortedfarlist;
+
+					newnonsYlist = nodedirectionchoice ? sortedfarlist : Ylist;
+
+					
+
 					
 						if (searchBranch != null) {
 
-							closestNode(searchBranch, newXlist, newYlist, otherdirection);
+							
+							closestNode(searchBranch, newXlist, newYlist,otherdirection);
 
 						
 					}
-					if (axisdiff <= Bestdistsquared && nonsearchBranch != null) {
+						
+					
+						if (axisdiff <= Bestdistsquared && nonsearchBranch != null) {
+							
+							 closestNode(nonsearchBranch, newnonsXlist,newnonsYlist,otherdirection);
+							
+						}
 
-						 closestNode(nonsearchBranch, newnonsXlist,
-						 newnonsYlist,
-						 otherdirection);
-					}
+					
 				}
 				
 				
-				else if (cordsort.size() > 2 && list.size() > 2)
-					closestNode(list, Xlist, Ylist, otherdirection);
-			}
+		}
 			
+			
+		
 		
 
 		
@@ -312,11 +339,11 @@ public class MyKDtree {
 
 			final double[] medianPoint = new double[n];
 
-			int medianindexA = (cordsort.size() - 1) / 2;
+			int medianindexA = (cordsort.size() - 1 + cordsort.size()%2) / 2;
 
 			medianPoint[direction] = cordsort.get(medianindexA).getDoublePosition(direction);
 
-			int medianindexB = (anticordsort.size() - 1) / 2;
+			int medianindexB = (anticordsort.size() - 1 + anticordsort.size()%2) / 2;
 
 			medianPoint[otherdirection] = anticordsort.get(medianindexB).getDoublePosition(otherdirection);
 
@@ -328,14 +355,11 @@ public class MyKDtree {
 				int direction) {
 			final boolean directionchoice = direction == n - 1;
 
-			final int otherdirection = directionchoice ? 0 : direction + 1;
+			
 
 			final ArrayList<Point> XorYlist = directionchoice ? Ylist : Xlist;
 
-			if (XorYlist.size() <= 2)
-				return null;
-
-			else {
+			
 
 				double[] point = new double[n];
 
@@ -344,12 +368,12 @@ public class MyKDtree {
 				final PointSampleList<T> LeftTree = new PointSampleList<T>(n);
 				final PointSampleList<T> RightTree = new PointSampleList<T>(n);
 
-				final ArrayList<Point> newleftlist = new ArrayList<Point>(Xlist.size() / 2);
-				final ArrayList<Point> newrightlist = new ArrayList<Point>(Xlist.size() / 2 + Xlist.size() % 2);
+				final ArrayList<Point> newleftlist = new ArrayList<Point>();
+				final ArrayList<Point> newrightlist = new ArrayList<Point>();
 
 				final Cursor<T> listCursor = sortedlist.localizingCursor();
 
-				final Iterator<Point> listIterator = XorYlist.iterator();
+				final Iterator<Point> listIterator = XorYlist.listIterator();
 
 				int index = 0;
 
@@ -364,27 +388,36 @@ public class MyKDtree {
 
 					index++;
 				}
+				
+				
 
 				while (listCursor.hasNext()) {
 
 					listCursor.fwd();
 
-					Point cord = new Point(listCursor);
+					Point cord = new Point(n);
 
+					cord.setPosition(listCursor);
+					
 					if (listCursor.getDoublePosition(direction) < point[direction])
+						
+						
 						LeftTree.add(cord, listCursor.get());
-
+						
+				
+				
 					else
 
 						RightTree.add(cord, listCursor.get());
 
 				}
-
+				
+			//	System.out.println("Size :" + RightTree.size());
 			//	System.out.println("Size of right tree dir :" + RightTree.dimension(direction));
 			//	System.out.println("Size of right tree other :" + RightTree.dimension(otherdirection));
 				
 
-				Node<T> node = new Node<T>(point[direction], point, direction, LeftTree, RightTree, newleftlist,
+				Node<T> node = new Node<T>(point, direction, LeftTree, RightTree, newleftlist,
 						newrightlist);
 
 				return node;
@@ -393,7 +426,7 @@ public class MyKDtree {
 
 		}
 
-	}
+	
 
 	public static <T extends RealType<T>> ArrayList<Point> getpointList(PointSampleList<T> sortedlist) {
 		ArrayList<Point> pointlist = new ArrayList<Point>();
@@ -598,23 +631,24 @@ public class MyKDtree {
 			ArrayList<Point> Xlist, ArrayList<Point> Ylist, PointSampleList<BitType> listzerosorones,
 			RandomAccessibleInterval<T> imgout, final Distance dist) throws FileNotFoundException {
 
-		// PrintStream out = new PrintStream(new
-		// FileOutputStream("conKDtreemindist.txt"));
-		// System.setOut(out);
+	//	 PrintStream out = new PrintStream(new
+	//	 FileOutputStream("conKDtreemindist.txt"));
+	//	 System.setOut(out);
 
 		final Cursor<BitType> zerooronelistcursor = listzerosorones.localizingCursor();
 
 		final RandomAccess<T> outbound = imgout.randomAccess();
 
 		final searchNode<BitType> Bestnode = new searchNode<BitType>(list, Xlist, Ylist);
-
-		double distance = 0;
-
+		
+		
+		
 		 while (zerooronelistcursor.hasNext()) {
 
 		zerooronelistcursor.fwd();
 		double mindistance = Double.MAX_VALUE;
-
+		
+		
 		outbound.setPosition(zerooronelistcursor);
 
 		Bestnode.search(zerooronelistcursor, 0);
@@ -623,17 +657,23 @@ public class MyKDtree {
 
 		Cursor<BitType> singlecursor = singletree.cursor();
 
+		double distance = 0;
+		
 		while (singlecursor.hasNext()) {
 			singlecursor.fwd();
 			
-		//	System.out.println(singlecursor.get());
+			
 
 			distance = dist.getDistance(zerooronelistcursor, singlecursor);
 			mindistance = Math.min(distance, mindistance);
 
 		}
+		
+		System.out.println("Size of  search node :"+singletree.size());
+		
+		//System.out.println(mindistance);
 
-		System.out.println(" Searchin points number: " + singletree.size());
+
 
 		outbound.get().setReal(mindistance);
 
@@ -758,11 +798,11 @@ public class MyKDtree {
 
 		createBitimage(img, bitimg, val);
 
-		PointSampleList<FloatType> testlist = new PointSampleList<FloatType>(img.numDimensions());
+		
 
 		PointSampleList<BitType> list = new PointSampleList<BitType>(bitimg.numDimensions());
 
-		IterableInterval<BitType> view = Views.interval(bitimg, new long[] { 0, 0 }, new long[] { 10, 10 });
+		IterableInterval<BitType> view = Views.interval(bitimg, new long[] { 0, 0 }, new long[] { 200, 200 });
 
 		list = getList(bitimg);
 
@@ -775,7 +815,7 @@ public class MyKDtree {
 
 		ArrayList<Point> Xpointsort = new ArrayList<Point>((int) listonlyones.size());
 		ArrayList<Point> Ypointsort = new ArrayList<Point>((int) listonlyones.size());
-		ArrayList<Point> Xpointsortnodups = new ArrayList<Point>();
+	
 		Xpointsort = getpointList(listonlyones);
 
 		Ypointsort = getpointList(listonlyones);
@@ -796,7 +836,7 @@ public class MyKDtree {
 		 ImageJFunctions.show(imgout).setTitle("KD-Tree output");
 		long endTime = System.currentTimeMillis();
 		long totalTime = endTime - startTime;
-		// System.out.println(totalTime);
+		 System.out.println(totalTime);
 
 	}
 }
