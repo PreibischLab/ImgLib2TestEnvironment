@@ -181,7 +181,7 @@ public class MyKDtree {
 		protected final ArrayList<Point> Ylist;
 
 		protected Node<T> finalnode;
-		
+
 		protected ArrayList<Node<T>> allnodes = new ArrayList<Node<T>>();
 
 		protected double Bestdistsquared;
@@ -211,7 +211,7 @@ public class MyKDtree {
 		public double getBestdist() {
 			return Bestdistsquared;
 		}
-		
+
 		public double getBestaxisdiffdist() {
 			return Bestaxisdiffsquared;
 		}
@@ -219,14 +219,13 @@ public class MyKDtree {
 		public Node<T> getfinalnode() {
 			return finalnode;
 		}
-		
+
 		public ArrayList<Node<T>> getallnodes() {
 			return allnodes;
 		}
+
 		private void closestNode(final PointSampleList<T> list, final ArrayList<Point> Xlist,
 				final ArrayList<Point> Ylist, final int direction, double olddistance) throws FileNotFoundException {
-
-		
 
 			if (list.dimension(direction) <= 2) {
 
@@ -254,28 +253,25 @@ public class MyKDtree {
 
 				final boolean leftbranchsearch = locationdiff < 0;
 
-			
-
-				if ( dist <=Bestdistsquared && axisdiff <= Bestaxisdiffsquared) {
+				if (dist <= Bestdistsquared && axisdiff <= Bestaxisdiffsquared) {
 
 					Bestdistsquared = dist;
 					Bestaxisdiffsquared = axisdiff;
 					finalnode = currentBest;
-					
+
 				}
 
-			/*	
-				
-				if ( dist <=Bestdistsquared ) {
+				/*
+				 * 
+				 * if ( dist <=Bestdistsquared ) {
+				 * 
+				 * Bestdistsquared = dist;
+				 * 
+				 * finalnode = currentBest;
+				 * 
+				 * }
+				 */
 
-					Bestdistsquared = dist;
-				
-					finalnode = currentBest;
-					
-				}
-			*/
-				
-				
 				PointSampleList<T> searchBranch = leftbranchsearch ? currentBest.LeftTree : currentBest.RightTree;
 				final ArrayList<Point> sortedlist = leftbranchsearch ? currentBest.newleftlist
 						: currentBest.newrightlist;
@@ -287,9 +283,6 @@ public class MyKDtree {
 
 				final ArrayList<Point> newXlist, newYlist, newnonsXlist, newnonsYlist;
 
-				
-				
-				
 				final boolean nodedirectionchoice = currentBest.direction == n - 1;
 
 				newXlist = nodedirectionchoice ? Xlist : sortedlist;
@@ -300,16 +293,14 @@ public class MyKDtree {
 
 				newnonsYlist = nodedirectionchoice ? sortedfarlist : Ylist;
 
-		if (dist <= olddistance){
+				if (dist <= olddistance) {
 
 					closestNode(searchBranch, newXlist, newYlist, otherdirection, dist);
 
-
-
-					if (axisdiff <= Bestdistsquared )
+					if (axisdiff <= Bestdistsquared)
 						closestNode(nonsearchBranch, newnonsXlist, newnonsYlist, otherdirection, dist);
 
-		}	
+				}
 
 			}
 
@@ -610,7 +601,7 @@ public class MyKDtree {
 		final RandomAccess<T> outbound = imgout.randomAccess();
 
 		final searchNode<BitType> Bestnode = new searchNode<BitType>(list, Xlist, Ylist);
-		
+
 		while (zerooronelistcursor.hasNext()) {
 
 			zerooronelistcursor.fwd();
@@ -619,7 +610,7 @@ public class MyKDtree {
 			outbound.setPosition(zerooronelistcursor);
 
 			Bestnode.search(zerooronelistcursor, 0);
-			
+
 			PointSampleList<BitType> singletree = combineTrees(Bestnode.finalnode);
 
 			Cursor<BitType> singlecursor = singletree.cursor();
@@ -665,17 +656,15 @@ public class MyKDtree {
 		final Cursor<BitType> zerooronelistcursor = listzerosorones.localizingCursor();
 
 		final searchNode<BitType> Bestnode = new searchNode<BitType>(list, Xlist, Ylist);
-		
+
 		while (zerooronelistcursor.hasNext()) {
 
 			zerooronelistcursor.fwd();
 			double mindistance = Double.MAX_VALUE;
 
 			Bestnode.search(zerooronelistcursor, 0);
-			
-			PointSampleList<BitType> singletree = combineTrees(Bestnode.finalnode);
 
-			
+			PointSampleList<BitType> singletree = combineTrees(Bestnode.finalnode);
 
 			Cursor<BitType> singlecursor = singletree.cursor();
 
@@ -728,42 +717,38 @@ public class MyKDtree {
 		}
 		return distancelist;
 	}
-	
-	
+
 	public static <T extends RealType<T>> void computeDistance(IterableInterval<BitType> img,
 			RandomAccessibleInterval<T> imgout, final Distance dist) throws FileNotFoundException {
 
 		final Cursor<BitType> bound = img.cursor();
 
 		final RandomAccess<T> outbound = imgout.randomAccess();
-	//	PrintStream out = new PrintStream(new FileOutputStream("BruteForcedist.txt"));
-		//System.setOut(out);
+		// PrintStream out = new PrintStream(new
+		// FileOutputStream("BruteForcedist.txt"));
+		// System.setOut(out);
 		while (bound.hasNext()) {
 			bound.fwd();
 			outbound.setPosition(bound);
 
-		
 			if (bound.get().getInteger() == 0) {
-				final Cursor<BitType> second =img.cursor();
+				final Cursor<BitType> second = img.cursor();
 				double mindistance = Double.MAX_VALUE;
-				
 
 				double distance = 0;
 				while (second.hasNext()) {
 					if (second.next().getInteger() == 1) {
 
-						distance=dist.getDistance(bound,second);
+						distance = dist.getDistance(bound, second);
 
-				mindistance = Math.min(mindistance, distance);
-				
+						mindistance = Math.min(mindistance, distance);
+
 					}
 				}
-			
 
 				outbound.get().setReal(mindistance);
-			
-				
-				}
+
+			}
 
 			else {
 				outbound.get().setReal(0);
@@ -772,7 +757,6 @@ public class MyKDtree {
 		}
 
 	}
-
 
 	public interface Distance {
 
@@ -905,35 +889,38 @@ public class MyKDtree {
 
 		sortpointList(Xpointsort, 0); // Type points, sorted by X-coordinate
 		sortpointList(Ypointsort, 1); // Type points, sorted by Y-coordinate
-			PrintStream out = new PrintStream(new FileOutputStream("LogsmallWing.txt"));
+		PrintStream out = new PrintStream(new FileOutputStream("LogsmallWing.txt"));
 		System.setOut(out);
-		 long startTime = System.currentTimeMillis();
-		
-		/******* Concise DT is the method to obtain the distance transform via KD tree implementation   *******/
-		
-		 ConcisedistanceTransform(listonlyones, Xpointsort, Ypointsort,
-		 listonlyzeros, imgoutkd, new EucledianDistance());
-		 long endTime= System.currentTimeMillis(); 
-		 long totalTime = endTime - startTime;
-		  System.out.println("KD Tree time: "+totalTime);
-		  
-			 new ImageJ();
-			
-		  ImageJFunctions.show(imgoutkd).setTitle("KD-Tree output");
-		 
-		  long startTimesec = System.currentTimeMillis();
-		  computeDistance(bitimg, imgoutbf, new EucledianDistance());
-		  long endTimesec= System.currentTimeMillis(); 
-			 long totalTimesec = endTimesec - startTimesec;
-			  System.out.println("Brute Force time: "+totalTimesec);
-			
+		long startTime = System.currentTimeMillis();
 
-			  
-			  
-			  new ImageJ();
-			  ImageJFunctions.show(imgoutbf).setTitle("Brute Force");
-		/******** Test of KD tree in finding the nearest neighbour versus finding them via Brute Force method  ********/
-		
+		/*******
+		 * Concise DT is the method to obtain the distance transform via KD tree
+		 * implementation
+		 *******/
+
+		ConcisedistanceTransform(listonlyones, Xpointsort, Ypointsort, listonlyzeros, imgoutkd,
+				new EucledianDistance());
+		long endTime = System.currentTimeMillis();
+		long totalTime = endTime - startTime;
+		System.out.println("KD Tree time: " + totalTime);
+
+		new ImageJ();
+
+		ImageJFunctions.show(imgoutkd).setTitle("KD-Tree output");
+
+		long startTimesec = System.currentTimeMillis();
+		computeDistance(bitimg, imgoutbf, new EucledianDistance());
+		long endTimesec = System.currentTimeMillis();
+		long totalTimesec = endTimesec - startTimesec;
+		System.out.println("Brute Force time: " + totalTimesec);
+
+		new ImageJ();
+		ImageJFunctions.show(imgoutbf).setTitle("Brute Force");
+		/********
+		 * Test of KD tree in finding the nearest neighbour versus finding them
+		 * via Brute Force method
+		 ********/
+
 		ArrayList<Double> NNlist = new ArrayList<Double>();
 
 		ArrayList<Double> BFlist = new ArrayList<Double>();
@@ -943,13 +930,12 @@ public class MyKDtree {
 		BFlist = BruteForce(bitimg, new EucledianDistance());
 
 		double count = 0;
-		
+
 		for (int index = 0; index < NNlist.size(); ++index) {
 
-			if (NNlist.get(index) - BFlist.get(index) != 0){
+			if (NNlist.get(index) - BFlist.get(index) != 0) {
 				count++;
-		
-			
+
 			}
 		}
 
@@ -961,6 +947,5 @@ public class MyKDtree {
 
 		System.out.println("Sucess rate %: " + (1.0 - rate) * 100);
 
-	
 	}
 }
