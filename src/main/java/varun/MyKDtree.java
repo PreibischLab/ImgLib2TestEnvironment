@@ -199,6 +199,8 @@ public class MyKDtree {
 		protected Node<T> finalnode;
 
 		protected double Bestdistsquared;
+		
+		protected double Bestaxisdiffsquared;
 
 		public searchNode(final PointSampleList<T> list, final ArrayList<Point> Xlist, final ArrayList<Point> Ylist) {
 
@@ -217,12 +219,26 @@ public class MyKDtree {
 		public void search(final RealLocalizable cursor, final int direction) throws FileNotFoundException {
 			cursor.localize(Position);
 			Bestdistsquared = Double.MAX_VALUE;
-
-			closestNode(list, Xlist, Ylist, direction);
+			Bestaxisdiffsquared= Double.MAX_VALUE;
+			closestNode(list, Xlist, Ylist, direction, Bestdistsquared);
 		}
+		
+		public void searchbyIndex(final RealLocalizable cursor, final int direction,
+				int dirstartindex, int dirlastindex, int odirstartindex, int odirlastindex) throws FileNotFoundException {
+			cursor.localize(Position);
+			Bestdistsquared = Double.MAX_VALUE;
+			Bestaxisdiffsquared = Double.MAX_VALUE;
+			closestNodebyIndex(list, Xlist, Ylist, direction,
+					 dirstartindex,  dirlastindex,  odirstartindex,  odirlastindex);
+		}
+		
 
 		public double getBestdist() {
 			return Bestdistsquared;
+		}
+		
+		public double getBestaxisdiffdist() {
+			return Bestaxisdiffsquared;
 		}
 
 		public Node<T> getfinalnode() {
@@ -230,7 +246,7 @@ public class MyKDtree {
 		}
 
 		private void closestNode(final PointSampleList<T> list, final ArrayList<Point> Xlist,
-				final ArrayList<Point> Ylist, final int direction) throws FileNotFoundException {
+				final ArrayList<Point> Ylist, final int direction, double olddist) throws FileNotFoundException {
 
 			if (list.dimension(direction) <= 2) {
 
@@ -258,8 +274,9 @@ public class MyKDtree {
 
 				final boolean leftbranchsearch = locationdiff < 0;
 
-				if (dist <= Bestdistsquared) {
+				if (dist <= Bestdistsquared && axisdiff <= Bestaxisdiffsquared) {
 
+					Bestaxisdiffsquared = axisdiff; 
 					Bestdistsquared = dist;
 					finalnode = currentBest;
 
@@ -286,12 +303,13 @@ public class MyKDtree {
 
 				newnonsYlist = nodedirectionchoice ? sortedfarlist : Ylist;
 
-				if (axisdiff > Bestdistsquared)
-					closestNode(searchBranch, newXlist, newYlist, otherdirection);
-
+				
+					
+				closestNode(searchBranch, newXlist, newYlist, otherdirection, dist);
+				
 				if (axisdiff <= Bestdistsquared)
-					closestNode(nonsearchBranch, newnonsXlist, newnonsYlist, otherdirection);
-
+					closestNode(nonsearchBranch, newnonsXlist, newnonsYlist, otherdirection,dist);
+				
 			}
 
 		}
@@ -310,6 +328,7 @@ public class MyKDtree {
 				final boolean directionchoice = direction == n - 1;
 				final int otherdirection = directionchoice ? 0 : direction + 1;
 
+				
 				final Node<T> currentBest = makeNodebyIndex(list, Xlist, Ylist, direction,
 						 dirstartindex, dirlastindex, odirstartindex, odirlastindex);
 
@@ -334,22 +353,32 @@ public class MyKDtree {
 
 				}
 
-				int  newdirstartindex = 0, newdirlastindex = 0, newodirstartindex = 0, newodirlastindex = 0;
+				int newdirstartindex = directionchoice? odirstartindex:dirstartindex;
+				int newdirlastindex =  directionchoice? odirlastindex:dirlastindex;
+				int newodirstartindex = directionchoice? dirstartindex:odirstartindex;
+				int newodirlastindex =  directionchoice? dirlastindex:odirlastindex;
+				
+				
 				
 			final	PointSampleList<T> searchBranch = leftbranchsearch ? currentBest.LeftTree : currentBest.RightTree;
-				
+				int newsearchdirstartindex = leftbranchsearch ? newdirstartindex : (newdirlastindex-newdirstartindex)/2;
+				int newsearchdirlastindex = leftbranchsearch ? (newdirlastindex-newdirstartindex)/2:newdirlastindex; 
 
 				final PointSampleList<T> nonsearchBranch = leftbranchsearch ? currentBest.RightTree
 						: currentBest.LeftTree;
+				int newnondirstartindex = leftbranchsearch ?  (newdirlastindex-newdirstartindex)/2:newdirstartindex ;
+				int newnondirlastindex = leftbranchsearch ? newdirlastindex:(newdirlastindex-newdirstartindex)/2; 
+
+				
 				
 
 				if (axisdiff > Bestdistsquared)
 					closestNodebyIndex(searchBranch, Xlist, Ylist, otherdirection,
-							 newdirstartindex, newdirlastindex, newodirstartindex, newodirlastindex);
+							 newsearchdirstartindex, newsearchdirlastindex, newodirstartindex, newodirlastindex);
 
-				if (axisdiff <= Bestdistsquared)
-					closestNodebyIndex(nonsearchBranch, Xlist, Ylist, otherdirection,
-							 newdirstartindex, newdirlastindex, newodirstartindex, newodirlastindex);
+			//	if (axisdiff <= Bestdistsquared)
+				//	closestNodebyIndex(nonsearchBranch, Xlist, Ylist, otherdirection,
+					//		 newnondirstartindex, newnondirlastindex, newodirstartindex, newodirlastindex);
 
 			}
 
@@ -366,11 +395,11 @@ public class MyKDtree {
 			final ArrayList<Point> anticordsort = directionchoice ? Xlist : Ylist;
 
 			final double[] medianPoint = new double[n];
-			int medianindexA = dirstartindex + (dirlastindex - dirstartindex + 1) / 2;
+			int medianindexA =  (dirlastindex - dirstartindex ) / 2;
 
 			medianPoint[direction] = (cordsort.get(medianindexA).getDoublePosition(direction));
 
-			int medianindexB = odirstartindex + (odirlastindex - odirstartindex + 1) / 2;
+			int medianindexB =  (odirlastindex - odirstartindex ) / 2;
 
 			medianPoint[otherdirection] = (anticordsort.get(medianindexB).getDoublePosition(direction));
 
@@ -720,7 +749,8 @@ public class MyKDtree {
 			outbound.setPosition(zerooronelistcursor);
 
 			Bestnode.search(zerooronelistcursor, 0);
-
+			
+			
 			PointSampleList<BitType> singletree = combineTrees(Bestnode.finalnode);
 
 			Cursor<BitType> singlecursor = singletree.cursor();
@@ -774,8 +804,12 @@ public class MyKDtree {
 
 			Bestnode.search(zerooronelistcursor, 0);
 
+		
+			
 			PointSampleList<BitType> singletree = combineTrees(Bestnode.finalnode);
 
+		//	System.out.println("Size of search node :" + singletree.size());
+			
 			Cursor<BitType> singlecursor = singletree.cursor();
 
 			double distance = 0;
