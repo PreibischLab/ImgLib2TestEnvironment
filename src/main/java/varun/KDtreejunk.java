@@ -19,6 +19,147 @@ import varun.MyKDtree.Node;
 public class KDtreejunk {
 	
 	/*
+	 * 
+	 	public void searchbyIndex(final RealLocalizable cursor, final int direction,
+				int dirstartindex, int dirlastindex, int odirstartindex, int odirlastindex) throws FileNotFoundException {
+			cursor.localize(Position);
+			Bestdistsquared = Double.MAX_VALUE;
+			Bestaxisdiffsquared = Double.MAX_VALUE;
+			closestNodebyIndex(list, Xlist, Ylist, direction,
+					 dirstartindex,  dirlastindex,  odirstartindex,  odirlastindex, Bestdistsquared);
+		}
+		
+	 * 
+	 public Node<T> makeNodebyIndex(PointSampleList<T> sortedlist, ArrayList<Point> Xlist, ArrayList<Point> Ylist,
+				int direction, int dirstartindex, int dirlastindex, int odirstartindex, int odirlastindex) {
+
+			final boolean directionchoice = direction == n - 1;
+
+			final ArrayList<Point> XorYlist = directionchoice ? Ylist : Xlist;
+
+			double[] point = new double[n];
+
+			point = getMedianbyIndex(Xlist, Ylist, direction, dirstartindex, dirlastindex, odirstartindex,
+					odirlastindex);
+
+			final PointSampleList<T> LeftTree = new PointSampleList<T>(n);
+			final PointSampleList<T> RightTree = new PointSampleList<T>(n);
+			final Cursor<T> listCursor = sortedlist.localizingCursor();
+			while (listCursor.hasNext()) {
+
+				listCursor.fwd();
+
+				Point cord = new Point(n);
+
+				cord.setPosition(listCursor);
+
+				if (listCursor.getDoublePosition(direction) < point[direction])
+
+					LeftTree.add(cord, listCursor.get());
+
+				else
+
+					RightTree.add(cord, listCursor.get());
+
+			}
+
+			Node<T> node = new Node<T>(point, direction, LeftTree, RightTree);
+
+			return node;
+
+		}
+
+	private void closestNodebyIndex(final PointSampleList<T> list, final ArrayList<Point> Xlist,
+				final ArrayList<Point> Ylist, final int direction,
+				int dirstartindex, int dirlastindex, int odirstartindex, int odirlastindex, double olddist) throws FileNotFoundException {
+
+			if (list.dimension(direction)<=2)   {
+
+				return;
+			}
+
+			else  {
+
+				final boolean directionchoice = direction == n - 1;
+				final int otherdirection = directionchoice ? 0 : direction + 1;
+
+				
+				final Node<T> currentBest = makeNodebyIndex(list, Xlist, Ylist, direction,
+						 dirstartindex, dirlastindex, odirstartindex, odirlastindex);
+
+				double dist = 0;
+
+				for (int d = 0; d < n; ++d) {
+
+					dist += Math.pow((Position[d] - currentBest.nodePoint[d]), 2);
+				}
+
+				final double locationdiff = Position[currentBest.direction]
+						- currentBest.nodePoint[currentBest.direction];
+
+				final double axisdiff = locationdiff * locationdiff;
+
+				final boolean leftbranchsearch = locationdiff < 0;
+
+				if (dist <= Bestdistsquared) {
+
+					Bestdistsquared = dist;
+					finalnode = currentBest;
+
+				}
+
+				int newdirstartindex = directionchoice? odirstartindex:dirstartindex; // This index changes
+				int newdirlastindex =  directionchoice? odirlastindex:dirlastindex; // This index changes
+				int newodirstartindex = directionchoice? dirstartindex:odirstartindex; // This remains same
+				int newodirlastindex =  directionchoice? dirlastindex:odirlastindex; // This remains same
+				
+				
+				
+			final	PointSampleList<T> searchBranch = leftbranchsearch ? currentBest.LeftTree : currentBest.RightTree;
+				int newsearchdirstartindex = leftbranchsearch ? newdirstartindex : (newdirlastindex-newdirstartindex)/2;
+				int newsearchdirlastindex = leftbranchsearch ? (newdirlastindex-newdirstartindex)/2:newdirlastindex; 
+
+				final PointSampleList<T> nonsearchBranch = leftbranchsearch ? currentBest.RightTree
+						: currentBest.LeftTree;
+				int newnondirstartindex = leftbranchsearch ?  (newdirlastindex-newdirstartindex)/2:newdirstartindex ;
+				int newnondirlastindex = leftbranchsearch ? newdirlastindex:(newdirlastindex-newdirstartindex)/2; 
+
+			
+
+				if(newsearchdirlastindex > newsearchdirstartindex && newnondirlastindex > newnondirstartindex  ){
+					closestNodebyIndex(searchBranch, Xlist, Ylist, otherdirection,
+							 newsearchdirstartindex, newsearchdirlastindex, newodirstartindex, newodirlastindex, dist);
+
+		//		if (axisdiff <= Bestdistsquared)
+			//		closestNodebyIndex(nonsearchBranch, Xlist, Ylist, otherdirection,
+				//		 newnondirstartindex, newnondirlastindex, newodirstartindex, newodirlastindex, dist);
+				}
+			
+			}
+
+		}
+
+		public double[] getMedianbyIndex(ArrayList<Point> Xlist, ArrayList<Point> Ylist, int direction,
+				int dirstartindex, int dirlastindex, int odirstartindex, int odirlastindex) {
+
+			final boolean directionchoice = direction == n - 1;
+			final int otherdirection = directionchoice ? 0 : direction + 1;
+
+			final ArrayList<Point> cordsort = directionchoice ? Ylist : Xlist;
+
+			final ArrayList<Point> anticordsort = directionchoice ? Xlist : Ylist;
+
+			final double[] medianPoint = new double[n];
+			int medianindexA =  (dirlastindex - dirstartindex ) / 2;
+
+			medianPoint[direction] = (cordsort.get(medianindexA).getDoublePosition(direction));
+
+			int medianindexB =  (odirlastindex - odirstartindex ) / 2;
+
+			medianPoint[otherdirection] = (anticordsort.get(medianindexB).getDoublePosition(otherdirection));
+
+			return medianPoint;
+		}
 
 	/******
 	 * Returns a root tree, I do this to initialize an ArrayList<Node<T>> in the
