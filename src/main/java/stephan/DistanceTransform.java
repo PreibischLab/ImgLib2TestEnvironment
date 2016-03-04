@@ -111,34 +111,58 @@ public class DistanceTransform
 		}
 	}
 
-	public static < T extends RealType< T > > void distanceTransformKD( final IterableInterval< BitType > in, final RandomAccessibleInterval< T > out, final Distance distance )
+	/**
+	 * Euclidean-Distance Transform based on KD-Tree
+	 * 
+	 * @param in - binary image
+	 * @param out - distances to the closest 1 from any 0
+	 */
+	public static < T extends RealType< T > > void distanceTransformKD( final IterableInterval< BitType > in, final RandomAccessibleInterval< T > out )
 	{
+		// make an empty list
 		final RealPointSampleList< BitType > list = new RealPointSampleList< BitType >( in.numDimensions() );
-		
+
+		// cursor on the binary image
 		final Cursor< BitType > cMain = in.localizingCursor();
 
+		// for every pixel that is 1, make a new RealPoint at that location
 		while ( cMain.hasNext() )
 			if ( cMain.next().getInteger() == 1 )
 				list.add( new RealPoint( cMain ), cMain.get() );
 
+		// build the KD-Tree from the list of points that == 1
 		final KDTree< BitType > tree = new KDTree< BitType >( list );
+
+		// Instantiate a nearest neighbor search on the tree (does not modifiy the tree, just uses it)
 		final NearestNeighborSearchOnKDTree< BitType > search = new NearestNeighborSearchOnKDTree< BitType >( tree );
 
+		// randomaccess on the output
 		final RandomAccess< T > r = out.randomAccess();
+
+		// reset cursor for the input (or make a new one)
 		cMain.reset();
 
+		// for every pixel of the binary image
 		while ( cMain.hasNext() )
 		{
 			cMain.fwd();
+
+			// set the randomaccess to the same location
 			r.setPosition( cMain );
 
+			// if value == 0, look for the nearest 1-valued pixel
 			if ( cMain.get().getInteger() == 0 )
 			{
+				// search the nearest 1 to the location of the cursor (the current 0)
 				search.search( cMain );
+
+				// get the distance (the previous call could return that, this for generality that it is two calls)
 				r.get().setReal( search.getDistance() );
 			}
 			else
 			{
+				// if value == 1, no need to search because we know the distance is 0
+				// but we could search for fun, should return 0
 				r.get().setZero();
 			}
 		}
@@ -157,7 +181,7 @@ public class DistanceTransform
 		long t;
 
 		t = System.currentTimeMillis();
-		distanceTransformKD( threshold, img, new EuclideanDistance() );
+		distanceTransformKD( threshold, img );
 		System.out.println( "O(n logn): " + (System.currentTimeMillis() - t) + " ms." );
 		ImageJFunctions.show( img ).setTitle( "kd-euclidean distance" );
 
