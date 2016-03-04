@@ -1,6 +1,9 @@
 package varun;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.PrintStream;
 
 import net.imglib2.Cursor;
 import net.imglib2.Localizable;
@@ -15,6 +18,7 @@ import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.real.FloatType;
 import net.imglib2.view.Views;
+import util.ImgLib2Util;
 
 public class distanceTransform {
 
@@ -30,7 +34,7 @@ public class distanceTransform {
 			bound.fwd();
 
 			outbound.setPosition(bound);
-
+		
 			if (bound.get().compareTo(ThresholdValue) > 0) {
 
 				outbound.get().setOne();
@@ -47,7 +51,17 @@ public class distanceTransform {
 	}
 
 	
-	public static double getdistance(Localizable cursor1, Localizable cursor2){
+	public interface Distance{
+		
+		
+		double getdistance(Localizable cursor1, Localizable cursor2);
+		
+		
+	}
+	
+	public static class EucledianDistance implements Distance
+	{
+	public  double getdistance(Localizable cursor1, Localizable cursor2){
 		
 		double distance=0;
 		
@@ -65,13 +79,40 @@ public class distanceTransform {
 		
 	}
 	
+	}
+	
+	
+	public static class MannhattanDistance implements Distance
+	{
+	public  double getdistance(Localizable cursor1, Localizable cursor2){
+		
+		double distance=0;
+		
+		for (int d=0; d<cursor2.numDimensions(); ++d){
+			
+			distance += Math.abs(cursor2.getDoublePosition(d) - cursor1.getDoublePosition(d));
+		}
+		
+		
+		
+		return distance;
+		
+		
+		
+		
+	}
+	
+	}
+	
+	
 	public static <T extends RealType<T>> void computeDistance(RandomAccessibleInterval<BitType> img,
-			RandomAccessibleInterval<T> imgout) {
+			RandomAccessibleInterval<T> imgout, final Distance dist) throws FileNotFoundException {
 
 		final Cursor<BitType> bound = Views.iterable(img).cursor();
 
 		final RandomAccess<T> outbound = imgout.randomAccess();
-
+	//	PrintStream out = new PrintStream(new FileOutputStream("BruteForcedist.txt"));
+		//System.setOut(out);
 		while (bound.hasNext()) {
 			bound.fwd();
 			outbound.setPosition(bound);
@@ -86,13 +127,13 @@ public class distanceTransform {
 				while (second.hasNext()) {
 					if (second.next().getInteger() == 1) {
 
-						distance=getdistance(bound,second);
+						distance=dist.getdistance(bound,second);
 
 				mindistance = Math.min(mindistance, distance);
 				
 					}
 				}
-				//System.out.println(mindistance);
+			//	System.out.println(mindistance);
 
 				outbound.get().setReal(mindistance);
 			
@@ -107,27 +148,49 @@ public class distanceTransform {
 
 	}
 
-	public static void main(String[] args) {
-
+	public static void main(String[] args) throws FileNotFoundException {
+		
 		final Img<FloatType> img = ImgLib2Util.openAs32Bit(new File("src/main/resources/dt.png"));
 
-		ImageJFunctions.show(img).setTitle("Original_Image");
+	//	ImageJFunctions.show(img).setTitle("Original_Image");
 
-		final Img<BitType> imgout = new ArrayImgFactory<BitType>().create(img, new BitType());
+		final Img<BitType> bitimg = new ArrayImgFactory<BitType>().create(img, new BitType());
 
-		final Img<BitType> bitimgout = new ArrayImgFactory<BitType>().create(img, new BitType());
+		final Img<FloatType> imgout = new ArrayImgFactory<FloatType>().create(img, new FloatType());
 
 		FloatType val = new FloatType(200);
 
-		createBitimage(img, imgout, val);
+		
+		
+		createBitimage(img, bitimg, val);
+		
+		RandomAccessibleInterval<BitType> view = Views.interval(bitimg, new long[] { 0, 0 }, new long[] { 200, 200 });
+		long startTime = System.currentTimeMillis();
+		computeDistance(bitimg, imgout, new EucledianDistance());
 
-		computeDistance(imgout, img);
+		ImageJFunctions.show(imgout).setTitle("Eucledian_FloatType_output");
+		
+		
+		
+		long endTime   = System.currentTimeMillis();
+		long totalTime = endTime - startTime;
+		System.out.println(totalTime);
+		
+/*
+		computeDistance(imgout, bitimgout, new EucledianDistance());
 
-		ImageJFunctions.show(img).setTitle("FloatType_output");
+		ImageJFunctions.show(bitimgout).setTitle("Eucledian_BitType_output");
+		
+		
+		computeDistance(imgout, img, new MannhattanDistance());
 
-		computeDistance(imgout, bitimgout);
+		ImageJFunctions.show(img).setTitle("Mannhattan_FloatType_output");
+		
+		computeDistance(imgout, bitimgout, new MannhattanDistance());
 
-		ImageJFunctions.show(bitimgout).setTitle("BitType_output");
+		ImageJFunctions.show(bitimgout).setTitle("Mannhattan_BitType_output");
+		*/
+		
 
 	}
 

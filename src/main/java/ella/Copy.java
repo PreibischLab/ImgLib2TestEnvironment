@@ -46,7 +46,7 @@ public class Copy {
 	        {
 	            cursorImg1.fwd();
 	            cursorImg2.fwd();
-	 
+	
 	            cursorImg2.get().set( cursorImg1.get() );
 	        }
 		}
