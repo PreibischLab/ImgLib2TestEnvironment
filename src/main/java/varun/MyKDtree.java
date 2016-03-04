@@ -16,6 +16,7 @@ import net.imglib2.PointSampleList;
 import net.imglib2.Cursor;
 import net.imglib2.FinalInterval;
 import net.imglib2.IterableInterval;
+import net.imglib2.KDTree;
 import net.imglib2.KDTree.KDTreeCursor;
 import net.imglib2.KDTreeNode;
 import net.imglib2.Localizable;
@@ -32,6 +33,7 @@ import net.imglib2.Cursor;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgFactory;
 import net.imglib2.img.display.imagej.ImageJFunctions;
+import net.imglib2.neighborsearch.NearestNeighborSearchOnKDTree;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.real.FloatType;
@@ -315,7 +317,7 @@ public class MyKDtree {
 
 		}
 
-	
+
 		public double[] getMedian(ArrayList<Point> Xlist, ArrayList<Point> Ylist, int direction) {
 
 			final boolean directionchoice = direction == n - 1;
