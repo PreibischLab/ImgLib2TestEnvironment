@@ -156,7 +156,7 @@ public class Tree {
 			if (currentBest==null)
 				return;
 			
-			double dist = 0;
+			double dist = 0.0; 
 			
 			for (int d = 0; d < n; ++d) {
 				dist += Math.pow((Position[d] - currentBest.nodePoint[d]), 2);
@@ -181,7 +181,7 @@ public class Tree {
 
 			final Node<T> nonsearchBranch = leftbranchsearch ? currentBest.rightchild : currentBest.leftchild;
 
-
+			
 			
 			if (searchBranch!= null)
 
