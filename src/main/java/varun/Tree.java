@@ -40,17 +40,14 @@ public class Tree {
 
 		public Node<T> rightchild;
 
-		public Node<T> previousNode;
-
 		public Node(double[] nodePoint, final int direction, final int treeindex, final PointSampleList<T> Leftsublist,
-				final PointSampleList<T> Rightsublist, final Node<T> previousNode, final Node<T> leftchild,
-				final Node<T> rightchild) {
+				final PointSampleList<T> Rightsublist, final Node<T> leftchild, final Node<T> rightchild) {
 
 			assert Leftsublist.numDimensions() == Rightsublist.numDimensions();
 			this.n = Leftsublist.numDimensions();
 
 			this.nodePoint = nodePoint;
-			this.previousNode = previousNode;
+
 			this.treeindex = treeindex;
 			this.direction = direction;
 			this.Leftsublist = Leftsublist;
@@ -62,7 +59,7 @@ public class Tree {
 
 		public Node(final Node<T> node) {
 			this.n = node.n;
-			this.previousNode = node.previousNode;
+
 			this.nodePoint = node.nodePoint;
 			this.direction = node.direction;
 			this.Leftsublist = node.Leftsublist;
@@ -106,19 +103,13 @@ public class Tree {
 
 	}
 
-	public static class searchNode<T> {
+	public static class searchNode<T extends RealType<T>> {
 
 		private final int n;
 
 		public final double[] Position;
 
 		protected Node<T> treeRoot;
-
-		protected Node<T> finalnode;
-
-		protected double Bestdistsquared;
-
-		protected double finallocationdiff;
 
 		
 
@@ -134,96 +125,78 @@ public class Tree {
 			return n;
 		}
 
-		public void search(final RealLocalizable cursor) throws FileNotFoundException {
+		public Node<T> search(final RealLocalizable cursor) throws FileNotFoundException {
+
 			cursor.localize(Position);
-			Bestdistsquared = Double.MAX_VALUE;
 
-			closestNode(treeRoot);
+			return closestNode(treeRoot, 0);
 		}
 
-		
+		public final double sqDist(Node<T> Node) {
 
-		public double getBestdist() {
-			return Bestdistsquared;
-		}
+			double distance = 0.0;
 
-		public Node<T> getfinalnode() {
-			return finalnode;
-		}
-
-		private void closestNode(final Node<T> currentBest) throws FileNotFoundException {
-
-			if (currentBest==null)
-				return;
-			
-			double dist = 0.0; 
-			
 			for (int d = 0; d < n; ++d) {
-				dist += Math.pow((Position[d] - currentBest.nodePoint[d]), 2);
-	
+
+				distance += (Position[d] - Node.nodePoint[d]) * (Position[d] - Node.nodePoint[d]);
 			}
 
-			final double locationdiff = Position[currentBest.direction] - currentBest.nodePoint[currentBest.direction];
+			return distance;
+		}
+
+		private Node<T> closestNode(final Node<T> currentNode, final int treeindex) throws FileNotFoundException {
+
+			final double locationdiff = Position[currentNode.direction] - currentNode.nodePoint[currentNode.direction];
 
 			double axisdiff = locationdiff * locationdiff;
 
 			final boolean leftbranchsearch = locationdiff < 0;
 
-			if (dist <= Bestdistsquared ) {
+			final Node<T> searchBranch = leftbranchsearch ? currentNode.leftchild : currentNode.rightchild;
 
-				Bestdistsquared = dist;
-				finalnode = currentBest;
-				
+			final Node<T> nonsearchBranch = leftbranchsearch ? currentNode.rightchild : currentNode.leftchild;
 
+			// Goes to the Leaf Node
+			Node<T> BestNode = (searchBranch == null) ? currentNode : closestNode(searchBranch, treeindex + 1);
+			
+
+			final double dist = sqDist(currentNode);
+
+			final double bestdist = sqDist(BestNode);
+
+			if (dist <= bestdist)
+
+				BestNode = currentNode;
+
+			if (nonsearchBranch != null) {
+
+				if (axisdiff <= bestdist) {
+
+					Node<T> possibleBest = closestNode(nonsearchBranch, treeindex +1);
+
+					final double possiblebestdist = sqDist(possibleBest);
+
+					if (possiblebestdist <= bestdist)
+						BestNode = possibleBest;
+
+				}
 			}
 
-			final Node<T> searchBranch = leftbranchsearch ? currentBest.leftchild : currentBest.rightchild;
-
-			final Node<T> nonsearchBranch = leftbranchsearch ? currentBest.rightchild : currentBest.leftchild;
-
-			
-			
-			if (searchBranch!= null)
-
-				closestNode(searchBranch);
-
-			
-
-			
-			if (axisdiff<=Bestdistsquared &&  nonsearchBranch != null)
-
-				closestNode(nonsearchBranch);
-			
-	
-			
-			
-		
-			
-			
+			return BestNode;
 
 		}
-		
 
-		
-		
-		
 	}
+
+	public static <T extends RealType<T>> double getMedian(ArrayList<Point> cordsort, int direction, int n) {
+
+		final double medianPoint;
+
+		int medianindexA = (cordsort.size()-cordsort.size()%2) / 2;
 		
-	public static <T extends RealType<T>> double[] getMedian(ArrayList<Point> cordsort, ArrayList<Point> anticordsort,
-			int direction, int n) {
+		int medianindexB = (cordsort.size()-cordsort.size()%2) / 2 -(cordsort.size()+1)%2;
 
-		final boolean directionchoice = direction == n - 1;
-		final int otherdirection = directionchoice ? 0 : direction + 1;
-
-		final double[] medianPoint = new double[n];
-
-		int medianindexA = (cordsort.size()) / 2;
-
-		medianPoint[direction] = (cordsort.get(medianindexA).getDoublePosition(direction));
-
-		int medianindexB = (anticordsort.size()) / 2;
-
-		medianPoint[otherdirection] = (anticordsort.get(medianindexB).getDoublePosition(otherdirection));
+		medianPoint = (cordsort.get(medianindexA).getDoublePosition(direction)+cordsort.get(medianindexB).getDoublePosition(direction))/2;
 
 		return medianPoint;
 
@@ -249,9 +222,7 @@ public class Tree {
 
 		final ArrayList<Point> anticordsort = directionchoice ? Xpointsort : Ypointsort;
 
-		double[] point = new double[n];
-
-		point = getMedian(cordsort, anticordsort, direction, n);
+		final double point = getMedian(cordsort, direction, n);
 
 		final PointSampleList<T> Leftsublist = new PointSampleList<T>(n);
 		final PointSampleList<T> Rightsublist = new PointSampleList<T>(n);
@@ -264,7 +235,7 @@ public class Tree {
 
 			Point cord = new Point(listCursor);
 
-			if (listCursor.getDoublePosition(direction) < point[direction])
+			if (listCursor.getDoublePosition(direction) < point)
 
 				Leftsublist.add(cord, listCursor.get());
 
@@ -274,30 +245,54 @@ public class Tree {
 
 		}
 
-		
-		
-		
-		final Node<T> node = new Node<T>(point, direction, treeindex, Leftsublist, Rightsublist, null, null, null);
+		double[] pivotpoint = new double[n];
+
+		Cursor<T> rightcursor = Rightsublist.cursor();
+		rightcursor.fwd();
+
+		rightcursor.localize(pivotpoint);
+
+		final Node<T> node = new Node<T>(pivotpoint, direction, treeindex, Leftsublist, Rightsublist, null, null);
 
 		
-	
 		
-		if (node.Leftsublist.realMax(otherdirection) - node.Leftsublist.realMin(otherdirection) + 1 > 2) {
+		
+		if (node.Leftsublist.size() >=1){
 
-			
+		if (anticordsort.size()>1){
+		
 			node.leftchild = makeNode(node.Leftsublist, otherdirection, treeindex + 1);
-			
-			node.leftchild.previousNode = node;
-
 		}
-		if (node.Rightsublist.realMax(otherdirection) - node.Leftsublist.realMin(otherdirection) + 1 > 2) {
+		
+		
+		else if (anticordsort.size()<1 && cordsort.size()>1){
+			
+			node.leftchild = makeNode(node.Leftsublist, direction, treeindex + 1);
+		}
+		
+		}
+		
+		if (node.Rightsublist.size() >=1){
 
+			if (anticordsort.size()>1){
+			
 			
 			node.rightchild = makeNode(node.Rightsublist, otherdirection, treeindex + 1);
 			
-			node.rightchild.previousNode = node;
-
+			}
+			
+			else if (anticordsort.size()<1 && cordsort.size()>1){
+				node.rightchild = makeNode(node.Rightsublist, direction, treeindex + 1);
+				
+			}
+		
 		}
+		
+		
+		
+		
+        
+			
 
 		return node;
 
@@ -316,8 +311,6 @@ public class Tree {
 
 		final searchNode<BitType> Bestnode = new searchNode<BitType>(rootnode);
 
-		
-
 		while (zerolistcursor.hasNext()) {
 
 			zerolistcursor.fwd();
@@ -325,9 +318,9 @@ public class Tree {
 
 			outbound.setPosition(zerolistcursor);
 
-			Bestnode.search(zerolistcursor);
+			final Node<BitType> finalnode = Bestnode.search(zerolistcursor);
 
-			PointSampleList<BitType> singletree = combineTrees(Bestnode.getfinalnode());
+			PointSampleList<BitType> singletree = combineTrees(finalnode);
 
 			Cursor<BitType> singlecursor = singletree.cursor();
 
@@ -345,7 +338,7 @@ public class Tree {
 			outbound.get().setReal(mindistance);
 
 		}
-		
+
 		return distancelist;
 
 	}
@@ -353,51 +346,42 @@ public class Tree {
 	public static <T extends RealType<T>> PointSampleList<T> combineTrees(Node<T> Tree) {
 
 		int n;
-		
-		if (Tree.Leftsublist!=null)
-		n = Tree.Leftsublist.numDimensions();
-		else 
-		n = Tree.Rightsublist.numDimensions();
 
-		
-			
-		
+		if (Tree.Leftsublist != null)
+			n = Tree.Leftsublist.numDimensions();
+		else
+			n = Tree.Rightsublist.numDimensions();
+
 		PointSampleList<T> singleTree = new PointSampleList<T>(n);
-		
-		if (Tree.Leftsublist!=null){
-		Cursor<T> treecursorA = Tree.Leftsublist.cursor();
-		
 
-		while (treecursorA.hasNext()) {
+		if (Tree.Leftsublist != null) {
+			Cursor<T> treecursorA = Tree.Leftsublist.cursor();
 
-			treecursorA.fwd();
-			Point treepointA = new Point(treecursorA);
+			while (treecursorA.hasNext()) {
 
-			
+				treecursorA.fwd();
+				Point treepointA = new Point(treecursorA);
 
-			singleTree.add(treepointA, treecursorA.get());
+				singleTree.add(treepointA, treecursorA.get());
 
-		}
-		
-		}
-		
-		if (Tree.Rightsublist!=null){
-		
-		Cursor<T> treecursorB = Tree.Rightsublist.cursor();
-		while (treecursorB.hasNext()) {
-
-			treecursorB.fwd();
-			Point treepointB = new Point(treecursorB);
-
-			
-
-			singleTree.add(treepointB, treecursorB.get());
+			}
 
 		}
-	
+
+		if (Tree.Rightsublist != null) {
+
+			Cursor<T> treecursorB = Tree.Rightsublist.cursor();
+			while (treecursorB.hasNext()) {
+
+				treecursorB.fwd();
+				Point treepointB = new Point(treecursorB);
+
+				singleTree.add(treepointB, treecursorB.get());
+
+			}
+
 		}
-		
-		
+
 		return singleTree;
 
 	}
@@ -719,7 +703,7 @@ public class Tree {
 		createBitimage(img, bitimg, val);
 
 		PointSampleList<BitType> list = new PointSampleList<BitType>(bitimg.numDimensions());
-		IterableInterval<BitType> view = Views.interval(bitimg, new long[] { 0, 0 }, new long[] { 127, 127 });
+		IterableInterval<BitType> view = Views.interval(bitimg, new long[] { 0, 0 }, new long[] { 30, 30 });
 		list = getList(bitimg);
 
 		PointSampleList<BitType> listonlyones = new PointSampleList<BitType>(n);
@@ -731,6 +715,16 @@ public class Tree {
 
 		Node<BitType> rootnode = makeNode(listonlyones, 0, 0);
 
+		/*
+		Cursor<BitType> cursor = rootnode.leftchild.leftchild.leftchild.leftchild.rightchild.Rightsublist.cursor();
+		while(cursor.hasNext()){
+		cursor.fwd();
+		System.out.println(cursor.getDoublePosition(0));
+		System.out.println(cursor.getDoublePosition(1));
+		
+		}
+		*/
+		
 		long startTimesec = System.currentTimeMillis();
 		kdtree = ConcisedistanceTransform(rootnode, listonlyzeros, imgout, new EucledianDistance());
 		long endTimesec = System.currentTimeMillis();
