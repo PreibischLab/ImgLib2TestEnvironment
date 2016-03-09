@@ -170,7 +170,7 @@ public class DistanceTransform
 
 	public static void main( String[] args ) throws IncompatibleTypeException
 	{
-		final Img< FloatType > img = ImgLib2Util.openAs32Bit( new File( "src/main/resources/bridge.png" ) );
+		final Img< FloatType > img = ImgLib2Util.openAs32Bit( new File( "src/main/resources/test.jpg" ) );
 
 		// take the imgfactory of the img which is of FloatType and transform it into a BitType factory
 		final Img< BitType > threshold = img.factory().imgFactory( new BitType() ).create( img, new BitType() );

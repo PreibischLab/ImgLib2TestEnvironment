@@ -2,9 +2,16 @@ package varun;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Set;
 
+import javax.management.ImmutableDescriptor;
+
+import ij.ImageJ;
 import net.imglib2.Cursor;
 import net.imglib2.IterableInterval;
 import net.imglib2.Point;
@@ -44,7 +51,7 @@ public class Tree {
 				final PointSampleList<T> Rightsublist, final Node<T> leftchild, final Node<T> rightchild) {
 
 			assert Leftsublist.numDimensions() == Rightsublist.numDimensions();
-			this.n = Leftsublist.numDimensions();
+			this.n = Rightsublist.numDimensions();
 
 			this.nodePoint = nodePoint;
 
@@ -110,6 +117,10 @@ public class Tree {
 		public final double[] Position;
 
 		protected Node<T> treeRoot;
+		
+		protected Node<T> finalnode;
+
+		protected double Bestdistsquared;
 
 		public searchNode(final Node<T> treeRoot) {
 
@@ -130,13 +141,35 @@ public class Tree {
 			return closestNode(treeRoot, 0);
 		}
 
+		
+		public void anothersearch(final RealLocalizable cursor) throws FileNotFoundException {
+			cursor.localize(Position);
+			Bestdistsquared = Double.MAX_VALUE;
+
+			closestNode(treeRoot);
+		}
+		
+		public double getBestdist() {
+			return Bestdistsquared;
+		}
+
+		public Node<T> getfinalnode() {
+			return finalnode;
+		}
+		
 		public final double sqDist(Node<T> Node) {
 
 			double distance = 0.0;
 
 			for (int d = 0; d < n; ++d) {
 
-				distance += (Position[d] - Node.nodePoint[d]) * (Position[d] - Node.nodePoint[d]);
+			//	 if (d== Node.direction)
+
+				distance+= (Position[d] - Node.nodePoint[d]) * (Position[d] - Node.nodePoint[d]);
+
+			//	 else
+
+			//	 distance+=Position[d]*Position[d];
 			}
 
 			return distance;
@@ -182,6 +215,45 @@ public class Tree {
 			return BestNode;
 
 		}
+		
+		
+		
+		private void closestNode(final Node<T> currentBest) throws FileNotFoundException {
+
+			
+
+			final double dist = sqDist(currentBest);
+			
+			
+		
+			
+			final double locationdiff = Position[currentBest.direction] - currentBest.nodePoint[currentBest.direction];
+
+			double axisdiff = locationdiff * locationdiff;
+
+			final boolean leftbranchsearch = locationdiff < 0;
+
+			if (dist < Bestdistsquared) {
+
+				Bestdistsquared = dist;
+				finalnode = currentBest;
+
+			}
+
+			final Node<T> searchBranch = leftbranchsearch ? currentBest.leftchild : currentBest.rightchild;
+
+			final Node<T> nonsearchBranch = leftbranchsearch ? currentBest.rightchild : currentBest.leftchild;
+
+			if (searchBranch != null)
+
+				closestNode(searchBranch);
+
+			if (nonsearchBranch != null && axisdiff <= Bestdistsquared)
+
+				closestNode(nonsearchBranch);
+
+		}
+		
 
 	}
 
@@ -193,11 +265,18 @@ public class Tree {
 		final double[] medianPoint = new double[n];
 
 		int medianindexA = (cordsort.size()) / 2;
+		if (cordsort.size() > 2) {
+			medianPoint[direction] = cordsort.get(medianindexA).getDoublePosition(direction);
+			medianPoint[otherdirection] = cordsort.get(medianindexA).getDoublePosition(otherdirection);
 
-		medianPoint[direction] = cordsort.get(medianindexA).getDoublePosition(direction);
-		medianPoint[otherdirection] = cordsort.get(medianindexA).getDoublePosition(otherdirection);
+			//System.out.println(medianPoint[direction]);
+			//System.out.println(medianPoint[otherdirection]);
+			
+			return medianPoint;
+		}
 
-		return medianPoint;
+		else
+			return null;
 
 	}
 
@@ -214,64 +293,84 @@ public class Tree {
 
 		Ypointsort = getpointList(list);
 
+		//System.out.println("Xpoint:"+Xpointsort);
+		//System.out.println("Ypoint:"+Ypointsort);
+		
 		sortpointList(Xpointsort, 0); // Type points, sorted by X-coordinate
 		sortpointList(Ypointsort, 1); // Type points, sorted by Y-coordinate
 
+		
+		
 		final ArrayList<Point> cordsort = directionchoice ? Ypointsort : Xpointsort;
 
 		final ArrayList<Point> anticordsort = directionchoice ? Xpointsort : Ypointsort;
 
+		
+		//System.out.println("sorted points:"+cordsort);
+		
 		double[] point = new double[n];
 
 		point = getMedian(cordsort, direction, n);
+		
+		
+		
 
 		final PointSampleList<T> Leftsublist = new PointSampleList<T>(n);
 		final PointSampleList<T> Rightsublist = new PointSampleList<T>(n);
 
 		final Cursor<T> listCursor = list.localizingCursor();
+		if (point != null) {
+			while (listCursor.hasNext()) {
 
-		while (listCursor.hasNext()) {
+				listCursor.fwd();
 
-			listCursor.fwd();
+				Point cord = new Point(listCursor);
 
-			Point cord = new Point(listCursor);
+	if (listCursor.getDoublePosition(direction) < point[direction])
 
-			if (listCursor.getDoublePosition(direction) < point[direction])
+		Leftsublist.add(cord, listCursor.get());
+	
+	else
+		
+		Rightsublist.add(cord, listCursor.get());
+	
+}
 
-				Leftsublist.add(cord, listCursor.get());
 
-			else
+				double [] pivotpoint = new double [n];
+				
+				Cursor<T> cursor = Rightsublist.cursor();
+				cursor.fwd();
 
-				Rightsublist.add(cord, listCursor.get());
+					cursor.localize(pivotpoint);
 
+			
+
+			final Node<T> node = new Node<T>(pivotpoint, direction, treeindex, Leftsublist, Rightsublist, null, null);
+
+			if (node.Leftsublist.realMax(otherdirection) - node.Leftsublist.realMin(otherdirection) > 0 && node != null)
+
+				node.leftchild = makeNode(node.Leftsublist, otherdirection, treeindex + 1);
+		
+			if (node.Rightsublist.realMax(otherdirection) - node.Rightsublist.realMin(otherdirection) > 0
+					&& node != null)
+				
+				node.rightchild = makeNode(node.Rightsublist, otherdirection, treeindex + 1);
+			
+	
+			
+			return node;
 		}
 
-		final Node<T> node = new Node<T>(point, direction, treeindex, Leftsublist, Rightsublist, null, null);
+		else
 
-		if (node.Leftsublist.realMax(otherdirection) - node.Leftsublist.realMin(otherdirection) > 0)
-
-			node.leftchild = makeNode(node.Leftsublist, otherdirection, treeindex + 1);
-
-		else if (node.Leftsublist.realMax(otherdirection) - node.Leftsublist.realMin(otherdirection) == 0
-				&& node.Leftsublist.realMax(direction) - node.Leftsublist.realMin(direction) > 0)
-
-			node.leftchild = makeNode(node.Leftsublist, direction, treeindex + 1);
-
-		if (node.Rightsublist.realMax(otherdirection) - node.Rightsublist.realMin(otherdirection) > 0)
-
-			node.rightchild = makeNode(node.Rightsublist, otherdirection, treeindex + 1);
-
-		else if (node.Rightsublist.realMax(otherdirection) - node.Rightsublist.realMin(otherdirection) == 0
-				&& node.Rightsublist.realMax(direction) - node.Rightsublist.realMin(direction) > 0)
-			node.rightchild = makeNode(node.Rightsublist, direction, treeindex + 1);
-
-		return node;
+			return null;
 
 	}
 
 	public static <T extends RealType<T>> ArrayList<Double> ConcisedistanceTransform(final Node<BitType> rootnode,
 			PointSampleList<BitType> list, RandomAccessibleInterval<T> imgout, final Distance dist)
-					throws FileNotFoundException {
+			throws FileNotFoundException {
 
 		final ArrayList<Double> distancelist = new ArrayList<Double>();
 		final Cursor<BitType> zerolistcursor = list.localizingCursor();
@@ -281,6 +380,8 @@ public class Tree {
 		// This is the tree of 1's.
 
 		final searchNode<BitType> Bestnode = new searchNode<BitType>(rootnode);
+
+		zerolistcursor.reset();
 
 		while (zerolistcursor.hasNext()) {
 
@@ -307,6 +408,64 @@ public class Tree {
 
 			distancelist.add(mindistance);
 			outbound.get().setReal(mindistance);
+
+		}
+
+		return distancelist;
+
+	}
+
+	public static <T extends RealType<T>> ArrayList<Double> TestConcisedistanceTransform(final Node<BitType> rootnode,
+			PointSampleList<BitType> list, RandomAccessibleInterval<T> imgout, final Distance dist)
+			throws FileNotFoundException {
+
+		final ArrayList<Double> distancelist = new ArrayList<Double>();
+		final Cursor<BitType> listcursor = list.localizingCursor();
+
+		final RandomAccess<T> outbound = imgout.randomAccess();
+
+		// This is the tree of 1's.
+
+		final searchNode<BitType> Bestnode = new searchNode<BitType>(rootnode);
+		listcursor.reset();
+		while (listcursor.hasNext()) {
+
+			listcursor.fwd();
+			double mindistance = Double.MAX_VALUE;
+
+			outbound.setPosition(listcursor);
+
+			if (listcursor.get().getInteger() == 0) {
+
+				// System.out.println("Test point X:"+
+				// listcursor.getDoublePosition(0));
+				// System.out.println("Test point Y:"+
+				// listcursor.getDoublePosition(1));
+
+			//	final Node<BitType> finalnode = Bestnode.search(listcursor);
+
+				Bestnode.anothersearch(listcursor);
+				
+				PointSampleList<BitType> singletree = combineTrees(Bestnode.finalnode);
+
+				Cursor<BitType> singlecursor = singletree.cursor();
+
+				double distance = 0;
+
+				while (singlecursor.hasNext()) {
+					singlecursor.fwd();
+
+					distance = dist.getDistance(listcursor, singlecursor);
+					mindistance = Math.min(distance, mindistance);
+
+				}
+
+				distancelist.add(mindistance);
+				outbound.get().setReal(mindistance);
+			}
+
+			else
+				outbound.get().setReal(0);
 
 		}
 
@@ -348,6 +507,8 @@ public class Tree {
 				Point treepointB = new Point(treecursorB);
 
 				singleTree.add(treepointB, treecursorB.get());
+				// System.out.println("X:"+treecursorB.getDoublePosition(0));
+				// System.out.println("Y:"+treecursorB.getDoublePosition(1));
 
 			}
 
@@ -359,7 +520,7 @@ public class Tree {
 
 	public static <T extends RealType<T>> ArrayList<Double> BruteForce(PointSampleList<BitType> listzeros,
 			PointSampleList<BitType> listones, RandomAccessibleInterval<T> imgout, final Distance dist)
-					throws FileNotFoundException {
+			throws FileNotFoundException {
 
 		ArrayList<Double> distancelist = new ArrayList<Double>();
 
@@ -386,6 +547,43 @@ public class Tree {
 
 			outbound.get().setReal(mindistance);
 			distancelist.add(mindistance);
+
+		}
+		return distancelist;
+
+	}
+
+	public static <T extends RealType<T>> ArrayList<Double> TestBruteForce(PointSampleList<BitType> list,
+			PointSampleList<BitType> listones, RandomAccessibleInterval<T> imgout, final Distance dist)
+			throws FileNotFoundException {
+
+		ArrayList<Double> distancelist = new ArrayList<Double>();
+
+		final Cursor<BitType> bound = list.cursor();
+
+		final RandomAccess<T> outbound = imgout.randomAccess();
+
+		while (bound.hasNext()) {
+			bound.fwd();
+			outbound.setPosition(bound);
+			if (bound.get().getInteger() == 0) {
+				final Cursor<BitType> second = listones.cursor();
+				double mindistance = Double.MAX_VALUE;
+
+				double distance = 0;
+				while (second.hasNext()) {
+					second.fwd();
+
+					distance = dist.getDistance(bound, second);
+
+					mindistance = Math.min(mindistance, distance);
+
+				}
+
+				outbound.get().setReal(mindistance);
+				distancelist.add(mindistance);
+			} else
+				outbound.get().setReal(0);
 
 		}
 		return distancelist;
@@ -430,8 +628,12 @@ public class Tree {
 			mergepointListValue(pointlist, childA, childB, direction);
 
 			/********
-			 * The part below removes the duplicate entries in the sorted array
+			 * The part below removes the duplicate entries in the sorted array (keeps the point with minimum value in other direction)
 			 ********/
+			
+		
+			
+			
 			int j = 0;
 
 			for (int i = 0; i < pointlist.size(); ++i) {
@@ -658,7 +860,7 @@ public class Tree {
 
 	public static void main(String[] args) throws FileNotFoundException {
 
-		final Img<FloatType> img = ImgLib2Util.openAs32Bit(new File("src/main/resources/dt.png"));
+		final Img<FloatType> img = ImgLib2Util.openAs32Bit(new File("src/main/resources/bridge.png"));
 		final Img<BitType> bitimg = new ArrayImgFactory<BitType>().create(img, new BitType());
 		final Img<FloatType> imgout = new ArrayImgFactory<FloatType>().create(img, new FloatType());
 		final Img<FloatType> brimgout = new ArrayImgFactory<FloatType>().create(img, new FloatType());
@@ -669,63 +871,141 @@ public class Tree {
 
 		FloatType val = new FloatType(200);
 
-		// ImageJFunctions.show(img).setTitle("KD-Tree input");
-
 		createBitimage(img, bitimg, val);
 
+		// ImageJFunctions.show(bitimg).setTitle("KD-Tree input");
+
 		PointSampleList<BitType> list = new PointSampleList<BitType>(bitimg.numDimensions());
-		IterableInterval<BitType> view = Views.interval(bitimg, new long[] { 0, 0 }, new long[] { 30, 30 });
-		list = getList(bitimg);
+		for (int i = 7; i < 8; ++i) {
 
-		PointSampleList<BitType> listonlyones = new PointSampleList<BitType>(n);
+			IterableInterval<BitType> view = Views.interval(bitimg, new long[] { i, i }, new long[] { 12 + i, 12 + i });
+			list = getList(view);
 
-		PointSampleList<BitType> listonlyzeros = new PointSampleList<BitType>(n);
+			PointSampleList<BitType> listonlyones = new PointSampleList<BitType>(n);
 
-		listonlyones = getvalueList(list, 1);
-		listonlyzeros = getvalueList(list, 0);
+			PointSampleList<BitType> listonlyzeros = new PointSampleList<BitType>(n);
+			
+			listonlyones = getvalueList(list, 1);
+			listonlyzeros = getvalueList(list, 0);
 
-		Node<BitType> rootnode = makeNode(listonlyones, 0, 0);
+		ArrayList<Point>	Xpointsort = getpointList(listonlyones);
 
-		/*
-		 * Cursor<BitType> cursor =
-		 * rootnode.leftchild.leftchild.leftchild.leftchild.rightchild.
-		 * Rightsublist.cursor(); while(cursor.hasNext()){ cursor.fwd();
-		 * System.out.println(cursor.getDoublePosition(0));
-		 * System.out.println(cursor.getDoublePosition(1));
-		 * 
-		 * }
-		 */
+		ArrayList<Point>	Ypointsort = getpointList(listonlyones);
 
-		long startTimesec = System.currentTimeMillis();
-		kdtree = ConcisedistanceTransform(rootnode, listonlyzeros, imgout, new EucledianDistance());
-		long endTimesec = System.currentTimeMillis();
-		long totalTimesec = endTimesec - startTimesec;
-		System.out.println(" O(nlog^2n) : " + totalTimesec);
+			
+			
+			sortpointList(Xpointsort, 0); // Type points, sorted by X-coordinate
+			sortpointList(Ypointsort, 1); // Type points, sorted by Y-coordinate
 
-		ImageJFunctions.show(imgout).setTitle("KD-Tree output");
+			System.out.println(Xpointsort);
+			System.out.println(Ypointsort);
+			final boolean biggeraxis = Xpointsort.size()-Ypointsort.size()>0;
+			
+			final int maxdir = biggeraxis? 0:1;
+			
+			Node<BitType> rootnode = makeNode(listonlyones, maxdir, 0);
 
-		long startTime = System.currentTimeMillis();
-		bruteforce = BruteForce(listonlyzeros, listonlyones, brimgout, new EucledianDistance());
-		long endTime = System.currentTimeMillis();
-		long totalTime = endTime - startTime;
-		System.out.println(" O(n^2) : " + totalTime);
+			/*
+			 * Cursor<BitType> cursor =
+			 * rootnode.leftchild.leftchild.leftchild.leftchild.rightchild.
+			 * Rightsublist.cursor(); while(cursor.hasNext()){ cursor.fwd();
+			 * System.out.println(cursor.getDoublePosition(0));
+			 * System.out.println(cursor.getDoublePosition(1));
+			 * 
+			 * }
+			 */
+			
+			  Cursor<BitType> cursorleft = rootnode.Leftsublist.cursor();
+			  System.out.println("MedianValue: "+rootnode.getMedianValue());
+			  System.out.println("Direction: "+rootnode.getDirection());
+			  
+			  while(cursorleft.hasNext()){ cursorleft.fwd();
+			  System.out.println("X-coordinate left:"
+			  +cursorleft.getDoublePosition(0)); System.out.println(
+			  "Y-coordinate left:" +cursorleft.getDoublePosition(1));
+			  
+			 } Cursor<BitType> cursorright = rootnode.Rightsublist.cursor();
+			  
+			  while(cursorright.hasNext()){ cursorright.fwd();
+			  System.out.println("X-coordinate right:"
+			  +cursorright.getDoublePosition(0)); System.out.println(
+			  "Y-coordinate right:" +cursorright.getDoublePosition(1));
+			  
+			  }
+			
 
-		ImageJFunctions.show(brimgout).setTitle("Brute-Tree output");
+			long startTimesec = System.currentTimeMillis();
+			kdtree = TestConcisedistanceTransform(rootnode, list, imgout, new EucledianDistance());
+			long endTimesec = System.currentTimeMillis();
+			long totalTimesec = endTimesec - startTimesec;
+			System.out.println(" O(nlog^2n) : " + totalTimesec);
+			System.out.println(i);
+			// new ImageJ();
+			// ImageJFunctions.show(imgout).setTitle("KD-Tree output");
 
-		double count = 0;
+			long startTime = System.currentTimeMillis();
+			bruteforce = TestBruteForce(list, listonlyones, brimgout, new EucledianDistance());
+			long endTime = System.currentTimeMillis();
+			long totalTime = endTime - startTime;
+			System.out.println(" O(n^2) : " + totalTime);
 
-		for (int index = 0; index < kdtree.size() - 1; ++index) {
+			double count = 0;
 
-			if (kdtree.get(index) - bruteforce.get(index) != 0) {
-				count++;
+			for (int index = 0; index < kdtree.size() - 1; ++index) {
 
+				if (kdtree.get(index) - bruteforce.get(index) != 0) {
+					count++;
+
+				}
 			}
+
+			double rate = count / kdtree.size();
+
+			System.out.println("Accuracy rate %: " + (1.0 - rate) * 100);
+			/*
+			 * PrintStream out = new PrintStream(new
+			 * FileOutputStream("kdtree.txt")); System.setOut(out); for (int
+			 * index =0; index<kdtree.size(); ++index)
+			 * System.out.println(kdtree.get(index)); PrintStream outsec = new
+			 * PrintStream(new FileOutputStream("brute.txt"));
+			 * System.setOut(outsec); for (int indexsec =0;
+			 * indexsec<kdtree.size(); ++indexsec)
+			 * System.out.println(bruteforce.get(indexsec));
+			 * 
+			 */
+
+			// ImageJFunctions.show(brimgout).setTitle("Brute-Tree output");
+
+			/*
+			 * 
+			 * long startTimesec = System.currentTimeMillis(); kdtree =
+			 * ConcisedistanceTransform(rootnode, listonlyzeros, imgout, new
+			 * EucledianDistance()); long endTimesec =
+			 * System.currentTimeMillis(); long totalTimesec = endTimesec -
+			 * startTimesec; System.out.println(" O(nlog^2n) : " +
+			 * totalTimesec); //new ImageJ();
+			 * ImageJFunctions.show(imgout).setTitle("KD-Tree output");
+			 * 
+			 * long startTime = System.currentTimeMillis(); bruteforce =
+			 * BruteForce(listonlyzeros, listonlyones, brimgout, new
+			 * EucledianDistance()); long endTime = System.currentTimeMillis();
+			 * long totalTime = endTime - startTime; System.out.println(
+			 * " O(n^2) : " + totalTime);
+			 * 
+			 * ImageJFunctions.show(brimgout).setTitle("Brute-Tree output");
+			 * 
+			 * double count = 0;
+			 * 
+			 * for (int index = 0; index < kdtree.size() - 1; ++index) {
+			 * 
+			 * if (kdtree.get(index) - bruteforce.get(index) != 0) { count++;
+			 * 
+			 * } }
+			 * 
+			 * double rate = count / kdtree.size();
+			 * 
+			 * System.out.println("Accuracy rate %: " + (1.0 - rate) * 100);
+			 */
 		}
-
-		double rate = count / kdtree.size();
-
-		System.out.println("Accuracy rate %: " + (1.0 - rate) * 100);
-
 	}
-
 }
