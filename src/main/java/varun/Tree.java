@@ -5,18 +5,23 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Random;
 import java.util.Set;
 
 import javax.management.ImmutableDescriptor;
 
 import ij.ImageJ;
 import net.imglib2.Cursor;
+import net.imglib2.FinalInterval;
+import net.imglib2.Interval;
 import net.imglib2.IterableInterval;
 import net.imglib2.Point;
 import net.imglib2.PointSampleList;
 import net.imglib2.RandomAccess;
+import net.imglib2.RandomAccessible;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.RealLocalizable;
 import net.imglib2.img.Img;
@@ -317,7 +322,7 @@ public class Tree {
 
 		final PointSampleList<T> Leftsublist = new PointSampleList<T>(n);
 		final PointSampleList<T> Rightsublist = new PointSampleList<T>(n);
-
+		ArrayList<Double> findmin = new ArrayList<Double>();
 		final Cursor<T> listCursor = list.localizingCursor();
 		if (point != null) {
 			while (listCursor.hasNext()) {
@@ -325,7 +330,11 @@ public class Tree {
 				listCursor.fwd();
 
 				Point cord = new Point(listCursor);
-
+				if (cord.getDoublePosition(direction)== point[direction]){
+					findmin.add(cord.getDoublePosition(otherdirection));
+				
+				
+				}
 	if (listCursor.getDoublePosition(direction) < point[direction])
 
 		Leftsublist.add(cord, listCursor.get());
@@ -333,16 +342,22 @@ public class Tree {
 	else
 		
 		Rightsublist.add(cord, listCursor.get());
+		
+	
+	
 	
 }
+			
+				
+			
+Collections.sort(findmin);
 
 
 				double [] pivotpoint = new double [n];
 				
-				Cursor<T> cursor = Rightsublist.cursor();
-				cursor.fwd();
+				pivotpoint[direction] = point[direction];
 
-					cursor.localize(pivotpoint);
+					pivotpoint[otherdirection] = findmin.get(0);
 
 			
 
@@ -857,6 +872,37 @@ public class Tree {
 		}
 
 	}
+	public static PointSampleList< BitType > createpointsval(
+	        Interval interval, int numPoints, boolean val, int value )
+	    {
+	        // the number of dimensions
+	        int numDimensions = interval.numDimensions();
+	 
+	        // a random number generator
+	        
+	 
+	        // a list of Samples with coordinates
+	       PointSampleList< BitType > elements =
+	            new PointSampleList<BitType>( numDimensions );
+	 
+	        for ( int i = 0; i < numPoints; ++i )
+	        {
+	            Point point = new Point( numDimensions );
+	 
+	            for ( int d = 0; d < numDimensions; ++d )
+	                point.setPosition( (int) (value+interval.realMin(d)+ (int)(Math.random() * interval.realMax(d))) ,d);
+	 
+	            // add a new element with a random intensity in the range 0...1
+	            elements.add( point, new BitType( val) );
+	            
+	            System.out.println(point);
+	            System.out.println(value);
+	        }
+	 
+	        return elements;
+	
+	
+	    }
 
 	public static void main(String[] args) throws FileNotFoundException {
 
@@ -876,9 +922,38 @@ public class Tree {
 		// ImageJFunctions.show(bitimg).setTitle("KD-Tree input");
 
 		PointSampleList<BitType> list = new PointSampleList<BitType>(bitimg.numDimensions());
+
+		
+		
+		// the interval in which to create random points
+        FinalInterval interval = new FinalInterval( new long[] { 3, 3} );
+ 
+        // create an IterableInterval with value 1
+        IterableInterval< BitType > Interval = createpointsval( interval, 4, true,1 );
+        // create an IterableInterval with value 0
+        IterableInterval< BitType > Intervalsecond = createpointsval( interval, 4, false,0 );
+        
+        
+		Cursor<BitType> cursor = Intervalsecond.cursor();
+		
+        while(cursor.hasNext()){
+        	cursor.fwd();
+        	
+        	
+        	System.out.println(cursor.get());
+        	
+        }
+       
+        
+        
+        
+		
+		
+		
+		
 		for (int i = 7; i < 8; ++i) {
 
-			IterableInterval<BitType> view = Views.interval(bitimg, new long[] { i, i }, new long[] { 12 + i, 12 + i });
+			IterableInterval<BitType> view = Views.interval(bitimg, new long[] { i, i }, new long[] { 152 + i, 152 + i });
 			list = getList(view);
 
 			PointSampleList<BitType> listonlyones = new PointSampleList<BitType>(n);
@@ -897,8 +972,8 @@ public class Tree {
 			sortpointList(Xpointsort, 0); // Type points, sorted by X-coordinate
 			sortpointList(Ypointsort, 1); // Type points, sorted by Y-coordinate
 
-			System.out.println(Xpointsort);
-			System.out.println(Ypointsort);
+		//	System.out.println(Xpointsort);
+		//	System.out.println(Ypointsort);
 			final boolean biggeraxis = Xpointsort.size()-Ypointsort.size()>0;
 			
 			final int maxdir = biggeraxis? 0:1;
@@ -914,7 +989,7 @@ public class Tree {
 			 * 
 			 * }
 			 */
-			
+			/*
 			  Cursor<BitType> cursorleft = rootnode.Leftsublist.cursor();
 			  System.out.println("MedianValue: "+rootnode.getMedianValue());
 			  System.out.println("Direction: "+rootnode.getDirection());
@@ -932,7 +1007,7 @@ public class Tree {
 			  "Y-coordinate right:" +cursorright.getDoublePosition(1));
 			  
 			  }
-			
+			*/
 
 			long startTimesec = System.currentTimeMillis();
 			kdtree = TestConcisedistanceTransform(rootnode, list, imgout, new EucledianDistance());
@@ -941,7 +1016,7 @@ public class Tree {
 			System.out.println(" O(nlog^2n) : " + totalTimesec);
 			System.out.println(i);
 			// new ImageJ();
-			// ImageJFunctions.show(imgout).setTitle("KD-Tree output");
+		//	 ImageJFunctions.show(imgout).setTitle("KD-Tree output");
 
 			long startTime = System.currentTimeMillis();
 			bruteforce = TestBruteForce(list, listonlyones, brimgout, new EucledianDistance());
