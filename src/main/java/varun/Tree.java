@@ -808,7 +808,7 @@ public class Tree {
 		ArrayList<Double> bruteforce = new ArrayList<Double>();
 		ArrayList<Double> kdtree = new ArrayList<Double>();
 
-		FloatType val = new FloatType(200);
+		FloatType val = new FloatType(100);
 
 		createBitimage(img, bitimg, val);
 
