@@ -364,6 +364,55 @@ public class Tree {
 		return distancelist;
 
 	}
+	
+	
+	public static <T extends RealType<T>> ArrayList<Double> ConcisedistanceTransform(final Node<BitType> rootnode,
+			PointSampleList<BitType> list, final Distance dist)
+					throws FileNotFoundException {
+
+		final ArrayList<Double> distancelist = new ArrayList<Double>();
+		final Cursor<BitType> zerolistcursor = list.localizingCursor();
+
+		
+
+		// This is the tree of 1's.
+
+		final searchNode<BitType> Bestnode = new searchNode<BitType>(rootnode);
+
+		zerolistcursor.reset();
+
+		while (zerolistcursor.hasNext()) {
+
+			zerolistcursor.fwd();
+			double mindistance = Double.MAX_VALUE;
+
+			
+
+			Bestnode.anothersearch(zerolistcursor);
+
+			PointSampleList<BitType> singletree = combineTrees(Bestnode.finalnode);
+
+			Cursor<BitType> singlecursor = singletree.cursor();
+
+			double distance = 0;
+
+			while (singlecursor.hasNext()) {
+				singlecursor.fwd();
+
+				distance = dist.getDistance(zerolistcursor, singlecursor);
+				mindistance = Math.min(distance, mindistance);
+
+			}
+
+			distancelist.add(mindistance);
+			
+
+		}
+
+		return distancelist;
+
+	}
+
 
 	public static <T extends RealType<T>> PointSampleList<T> combineTrees(Node<T> Tree) {
 
@@ -445,6 +494,43 @@ public class Tree {
 
 	}
 
+	public static <T extends RealType<T>> ArrayList<Double> BruteForce(PointSampleList<BitType> listzeros,
+			PointSampleList<BitType> listones, final Distance dist)
+					throws FileNotFoundException {
+
+		ArrayList<Double> distancelist = new ArrayList<Double>();
+
+		final Cursor<BitType> bound = listzeros.cursor();
+
+		
+
+		while (bound.hasNext()) {
+			bound.fwd();
+			
+
+			final Cursor<BitType> second = listones.cursor();
+			double mindistance = Double.MAX_VALUE;
+
+			double distance = 0;
+			while (second.hasNext()) {
+				second.fwd();
+
+				distance = dist.getDistance(bound, second);
+
+				mindistance = Math.min(mindistance, distance);
+
+			}
+
+			
+			distancelist.add(mindistance);
+
+		}
+		return distancelist;
+
+	}
+
+	
+	
 	public static void sortpointList(ArrayList<Point> pointlist, int direction) {
 		if (pointlist.size() <= 1)
 			return;
@@ -713,7 +799,7 @@ public class Tree {
 
 	public static void main(String[] args) throws FileNotFoundException {
 
-		final Img<FloatType> img = ImgLib2Util.openAs32Bit(new File("src/main/resources/bridge.png"));
+		final Img<FloatType> img = ImgLib2Util.openAs32Bit(new File("src/main/resources/test.jpg"));
 		final Img<BitType> bitimg = new ArrayImgFactory<BitType>().create(img, new BitType());
 		final Img<FloatType> imgout = new ArrayImgFactory<FloatType>().create(img, new FloatType());
 		final Img<FloatType> brimgout = new ArrayImgFactory<FloatType>().create(img, new FloatType());
@@ -730,7 +816,7 @@ public class Tree {
 
 		PointSampleList<BitType> list = new PointSampleList<BitType>(bitimg.numDimensions());
 
-		IterableInterval<BitType> view = Views.interval(bitimg, new long[] { 100, 100 }, new long[] { 500, 500 });
+		IterableInterval<BitType> view = Views.interval(bitimg, new long[] { 0, 0 }, new long[] { 500, 500 });
 		list = getList(bitimg);
 
 		PointSampleList<BitType> listonlyones = new PointSampleList<BitType>(n);
