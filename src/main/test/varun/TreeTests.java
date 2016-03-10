@@ -30,15 +30,19 @@ import varun.Tree.Node;
  */
 public class TreeTests {
 
-	public static PointSampleList<BitType> createRandomPointSampleList(Interval interval, int numPoints, int seed, boolean val){
-		
-		// same sequence of "random" numbers
-				final Random rnd = new Random(seed);
+	
+	// Creates a point sample list with value 0 or 1 depending upon the boolean variable val (val = true sets the pixel value to 1). seed is used to create co-ordinates
+	// for the pixel values and is modifed from the main function to ensure that the BitList with 0 and 1's have different co-ordinates 
+	public static PointSampleList<BitType> createRandomPointSampleList(Interval interval, int numPoints, int seed,
+			boolean val) {
 
-				int numDimensions = interval.numDimensions();
-				
-		PointSampleList<BitType> randomlist =  new PointSampleList<BitType>(interval.numDimensions());
-		
+		// same sequence of "random" numbers
+		final Random rnd = new Random(seed);
+
+		int numDimensions = interval.numDimensions();
+
+		PointSampleList<BitType> randomlist = new PointSampleList<BitType>(interval.numDimensions());
+
 		for (int i = 0; i < numPoints; ++i) {
 			Point cord = new Point(numDimensions);
 
@@ -51,11 +55,11 @@ public class TreeTests {
 			randomlist.add(cord, new BitType(val));
 
 		}
-		
-		
+
 		return randomlist;
 	}
-	
+
+	// Creates an ArrayList of points for testing the mergesort algorithm for arraylists of points
 	public static ArrayList<Point> createRandomList(Interval interval, int numPoints) {
 
 		// same sequence of "random" numbers
@@ -81,7 +85,7 @@ public class TreeTests {
 		return randomlist;
 
 	}
-	
+
 	protected static boolean TestMergeSort(Interval interval, ArrayList<Point> randomlist) {
 
 		for (int d = 0; d < interval.numDimensions(); ++d) {
@@ -101,63 +105,50 @@ public class TreeTests {
 		return true;
 
 	}
-	
-	protected static boolean TestDistanceTransform(Interval interval, PointSampleList<BitType> listofones, PointSampleList<BitType> listofzeros) throws FileNotFoundException{
-		
-		 
-		
+
+	protected static boolean TestDistanceTransform(Interval interval, PointSampleList<BitType> listofones,
+			PointSampleList<BitType> listofzeros) throws FileNotFoundException {
+
 		final Node<BitType> rootnode = Tree.makeNode(listofones, 0, 0);
-		
-		final ArrayList<Double> kdlist = Tree.ConcisedistanceTransform(rootnode,
-				listofzeros, new EucledianDistance());
-		
-   final ArrayList<Double> brlist =		Tree.BruteForce(listofzeros,
-				listofones, new EucledianDistance());
-		
-   ArrayList<Double> diff = new ArrayList<Double>();
-   if (kdlist.size()!=brlist.size())
-	   return false;
-   
-   for (int index = 0; index<kdlist.size(); ++index){
-	   	   diff.add(kdlist.get(index)-brlist.get(index));
-	   
-	   	 
-   if (diff.get(index)!=0.0)
-		   return false;
-	   
-   }
-   
- 
-   
+
+		final ArrayList<Double> kdlist = Tree.ConcisedistanceTransform(rootnode, listofzeros, new EucledianDistance());
+
+		final ArrayList<Double> brlist = Tree.BruteForce(listofzeros, listofones, new EucledianDistance());
+
+		ArrayList<Double> diff = new ArrayList<Double>();
+		if (kdlist.size() != brlist.size())
+			return false;
+
+		for (int index = 0; index < kdlist.size(); ++index) {
+			diff.add(kdlist.get(index) - brlist.get(index));
+
+			if (diff.get(index) != 0.0)
+				return false;
+
+		}
+
 		return true;
 	}
-	
 
 	@Test
 	public void test() throws FileNotFoundException {
 
-		
-		
-		
 		final FinalInterval interval = new FinalInterval(new long[] { 1000, 1000 });
-		
+
 		final int seedones = 1029;
 
 		final int seedzeros = 8799;
-		
+
 		final int numPoints = 5000;
-		
 
 		final ArrayList<Point> randomlist = createRandomList(interval, numPoints);
-		
-		final PointSampleList<BitType> listofones = createRandomPointSampleList(interval, numPoints,seedones, true);
-		
-		final PointSampleList<BitType> listofzeros = createRandomPointSampleList(interval, numPoints,seedzeros, false);
-		
-		
+
+		final PointSampleList<BitType> listofones = createRandomPointSampleList(interval, numPoints, seedones, true);
+
+		final PointSampleList<BitType> listofzeros = createRandomPointSampleList(interval, numPoints, seedzeros, false);
 
 		assertTrue(TestMergeSort(interval, randomlist));
-		
+
 		assertTrue(TestDistanceTransform(interval, listofones, listofzeros));
 
 	}
