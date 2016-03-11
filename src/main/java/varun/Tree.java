@@ -870,3 +870,35 @@ public class Tree {
 
 	}
 }
+
+/*
+ * public void initialise() { 
+ 
+        // Calculate the maximum height the hough array needs to have 
+        houghHeight = (int) (Math.sqrt(2) * Math.max(height, width)) / 2; 
+ 
+        // Double the height of the hough array to cope with negative r values 
+        doubleHeight = 2 * houghHeight; 
+ 
+        // Create the hough array 
+        houghArray = new int[maxTheta][doubleHeight]; 
+ 
+        // Find edge points and vote in array 
+        centerX = width / 2; 
+        centerY = height / 2; 
+ 
+        // Count how many points there are 
+        numPoints = 0; 
+ 
+        // cache the values of sin and cos for faster processing 
+        sinCache = new double[maxTheta]; 
+        cosCache = sinCache.clone(); 
+        for (int t = 0; t < maxTheta; t++) { 
+            double realTheta = t * thetaStep; 
+            sinCache[t] = Math.sin(realTheta); 
+            cosCache[t] = Math.cos(realTheta); 
+        } 
+    } 
+    
+ * 
+*/

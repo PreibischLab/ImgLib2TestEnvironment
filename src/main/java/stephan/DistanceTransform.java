@@ -175,7 +175,7 @@ public class DistanceTransform
 		// take the imgfactory of the img which is of FloatType and transform it into a BitType factory
 		final Img< BitType > threshold = img.factory().imgFactory( new BitType() ).create( img, new BitType() );
 
-		Thresholding.threshold( img, threshold, new FloatType( 200 ) );
+		Thresholding.threshold( img, threshold, new FloatType( 100 ) );
 		ImageJFunctions.show( threshold ).setTitle( "threshold" );
 
 		long t;
