@@ -57,8 +57,8 @@ public class Watershedding {
 
 		final Cursor<LabelingType<Integer>> seedlabelcursor = seedLabeling.localizingCursor();
 
-		ImageJFunctions.show(inputimg).setTitle("Input image for watershedding");
-		ImageJFunctions.show(seedimg).setTitle("Seed image for watershedding");
+		//ImageJFunctions.show(inputimg).setTitle("Input image for watershedding");
+		//ImageJFunctions.show(seedimg).setTitle("Seed image for watershedding");
 
 		final RandomAccess<FloatType> seedcursor = seedimg.randomAccess();
 
@@ -414,15 +414,15 @@ public class Watershedding {
 
 	RandomAccessibleInterval<FloatType> maximg = new ArrayImgFactory<FloatType>().create(biginputimg, new FloatType());
 
-	final double[] sigma = { 0.5, 0.5 };
+	
 
 	maximg = FindandDisplayLocalMaxima(distimg, new ArrayImgFactory<FloatType>());
 
-//	ImageJFunctions.show(maximg).setTitle("Seed Image for watershed");
+	ImageJFunctions.show(maximg).setTitle("Seed Image for watershed");
 
 	InvertInensityMap(distimg, minval, maxval);
 
-//	ImageJFunctions.show(distimg).setTitle("DT image to perform watershed on");
+	ImageJFunctions.show(distimg).setTitle("DT image to perform watershed on");
 
 	OldWatersherImage(distimg, maximg, 0);
 	
