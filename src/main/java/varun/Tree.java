@@ -808,10 +808,10 @@ public class Tree {
 		ArrayList<Double> bruteforce = new ArrayList<Double>();
 		ArrayList<Double> kdtree = new ArrayList<Double>();
 
-		FloatType val = new FloatType(100);
+		FloatType val = new FloatType(200);
 
 		createBitimage(img, bitimg, val);
-
+		ImageJFunctions.show(img).setTitle("Input image");
 		ImageJFunctions.show(bitimg).setTitle("KD-Tree input");
 
 		PointSampleList<BitType> list = new PointSampleList<BitType>(bitimg.numDimensions());

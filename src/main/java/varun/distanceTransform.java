@@ -109,14 +109,14 @@ public class distanceTransform {
 			RandomAccessibleInterval<T> imgout, final Distance dist) throws FileNotFoundException {
 
 		final Cursor<BitType> bound = Views.iterable(img).cursor();
-
+		System.out.println(0);
 		final RandomAccess<T> outbound = imgout.randomAccess();
 	//	PrintStream out = new PrintStream(new FileOutputStream("BruteForcedist.txt"));
 		//System.setOut(out);
 		while (bound.hasNext()) {
 			bound.fwd();
 			outbound.setPosition(bound);
-
+			
 		
 			if (bound.get().getInteger() == 0) {
 				final Cursor<BitType> second = Views.iterable(img).cursor();
@@ -133,9 +133,11 @@ public class distanceTransform {
 				
 					}
 				}
-			//	System.out.println(mindistance);
+				//System.out.println(distance);
 
-				outbound.get().setReal(mindistance);
+			//	outbound.get().setReal(mindistance);
+				
+				outbound.get().setReal(Math.exp(-mindistance*mindistance/100));
 			
 				
 				}

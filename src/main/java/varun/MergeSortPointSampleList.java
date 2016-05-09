@@ -9,14 +9,171 @@ import net.imglib2.Cursor;
 import net.imglib2.IterableInterval;
 import net.imglib2.Point;
 import net.imglib2.PointSampleList;
+import net.imglib2.RandomAccess;
+import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.Img;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.real.FloatType;
+import net.imglib2.view.Views;
 import util.ImgLib2Util;
 
 public class MergeSortPointSampleList {
-	
+	// Returns an image sorted by pixel intensity
+		public static void MaximabySort(RandomAccessibleInterval<FloatType> img, RandomAccessibleInterval<FloatType> imgout, 
+				FloatType ThresholdValue ){
+			
+			int n = img.numDimensions();
+			final Cursor<FloatType> first = Views.iterable(img).cursor();
+
+			// A realpointsamplelist with coordinates declared and initialized.
+			PointSampleList<FloatType> parent = new PointSampleList<FloatType>(n);
+
+			while (first.hasNext()) {
+				first.fwd();
+				Point cord = new Point(n);
+				cord.setPosition(first);
+				parent.add(cord, first.get().copy());
+			}
+	        // Sort the list by pixel intensity
+			split(parent);
+			
+			final Cursor<FloatType> testCursor = parent.localizingCursor();
+			final RandomAccess<FloatType> imageCursor = imgout.randomAccess();
+
+			while (testCursor.hasNext()) {
+				testCursor.fwd();
+				if (testCursor.get().compareTo(ThresholdValue) > 0) {
+				imageCursor.setPosition(testCursor);
+				imageCursor.get().set(testCursor.get());
+				}
+			}
+		}
+		
+		// Code to do the sorting by pixel intensity
+		public static void split(PointSampleList<FloatType> list) {
+
+			int n = list.numDimensions();
+
+			if (list.size() <= 1)
+				return;
+
+			else {
+
+				// the first element belonging to the right list childB
+				final int splitIndex = (int)list.size() / 2;
+				final PointSampleList<FloatType> childA = new PointSampleList<FloatType>(n);
+				final PointSampleList<FloatType> childB = new PointSampleList<FloatType>(n);
+				final Cursor<FloatType> listCursor = list.localizingCursor();
+
+				int i = 0;
+				while (listCursor.hasNext()) {
+
+					listCursor.fwd();
+
+					Point cord = new Point(listCursor);
+
+					if ( i < splitIndex )
+					{
+						childA.add(cord, listCursor.get().copy());
+
+					} else
+
+					{
+
+						childB.add(cord, listCursor.get().copy());
+					}
+					i++;
+				}
+
+				split(childA);
+
+				split(childB);
+
+				mergeList(list, childA, childB);
+				
+			}
+
+		}
+		
+		
+		///*****       Returns a sorted list *********////
+		public static  void mergeList(PointSampleList<FloatType> list, PointSampleList<FloatType> listA,
+				PointSampleList<FloatType> listB) {
+
+			final Cursor<FloatType> cursorA = listA.localizingCursor();
+			final Cursor<FloatType> cursorB = listB.localizingCursor();
+			final Cursor<FloatType> cursor = list.localizingCursor();
+
+			cursorA.fwd();
+			cursorB.fwd();
+
+		//	System.out.println("listA : " + cursorA.get());
+		//	System.out.println("listB : " + cursorB.get());
+
+			boolean cannotMoveOn = false;
+			
+			do
+			{
+				// here is where you decide what you sort after
+				if (cursorA.get().compareTo(cursorB.get()) > 0) { // Sort by pixel intensity (increasing order)
+
+					cursor.fwd();
+					
+					cursor.get().set( cursorA.get() );
+					if ( cursorA.hasNext() )
+						cursorA.fwd();
+					else
+					{
+						cannotMoveOn = true;
+						
+						// move cursorB until the end
+						boolean stopped = false;
+						do
+						{
+							cursor.fwd();
+							cursor.get().set( cursorB.get() );
+							if ( cursorB.hasNext() )
+								cursorB.fwd();
+							else
+								stopped = true;					
+						}
+						while ( stopped == false );
+					}
+					
+				}
+
+				else
+
+				{
+
+					cursor.fwd();
+					cursor.get().set( cursorB.get() );
+					if ( cursorB.hasNext() )
+						cursorB.fwd();
+					else
+					{
+						cannotMoveOn = true;
+						
+						// move cursorA until the end
+						boolean stopped = false;
+						do
+						{
+							cursor.fwd();
+							cursor.get().set( cursorA.get() );
+							if ( cursorA.hasNext() )
+								cursorA.fwd();
+							else
+								stopped = true;					
+						}
+						while ( stopped == false );
+					}
+				}
+
+			}
+			while ( cannotMoveOn == false );
+		}
+
 	
 	public static void sortpointList(ArrayList<Point> pointlist, int direction) {
 		if (pointlist.size() <= 1)

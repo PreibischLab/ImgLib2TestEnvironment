@@ -6,13 +6,25 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 
 import net.imglib2.Cursor;
+import net.imglib2.Interval;
 import net.imglib2.Point;
 import net.imglib2.PointSampleList;
 import net.imglib2.RandomAccess;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.RealLocalizable;
+import net.imglib2.RealRandomAccess;
+import net.imglib2.algorithm.gradient.PartialDerivative;
+import net.imglib2.algorithm.neighborhood.Neighborhood;
+import net.imglib2.algorithm.neighborhood.RectangleShape;
+import net.imglib2.img.Img;
+import net.imglib2.img.ImgFactory;
+import net.imglib2.img.array.ArrayImgFactory;
+import net.imglib2.interpolation.randomaccess.NLinearInterpolatorFactory;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
+import net.imglib2.type.numeric.real.FloatType;
+import net.imglib2.util.Intervals;
+import net.imglib2.view.Views;
 import varun.MyKDtree.Distance;
 import varun.MyKDtree.Node;
 
@@ -20,6 +32,225 @@ public class KDtreejunk {
 	
 	/*
 	 * 
+	 	private static double gradientMagnitudeInDirection(double[] doublePos, double[] direction,
+			RealRandomAccess<FloatType>[] gradientAccess) {
+		double gradientmag = 0;
+		for (int d = 0; d < gradientAccess.length; ++d) {
+			gradientAccess[d].setPosition(doublePos);
+			gradientmag += gradientAccess[d].get().getRealDouble() * direction[d];
+		}
+		return gradientmag;
+	}
+	 public static void CannyEdgeexp(RandomAccessibleInterval<FloatType> inputimg,
+			RandomAccessibleInterval<FloatType> imgout, FloatType minval, FloatType maxval, double[] sigma,
+			boolean Thresholding) {
+		int n = inputimg.numDimensions();
+
+		// n+1 th dimension is to index the partial derivatives of the n
+		// dimensional image
+		final long[] dim = new long[n + 1];
+		for (int d = 0; d < n; ++d)
+			dim[d] = inputimg.dimension(d);
+		dim[n] = n;
+		final Img<FloatType> gradients = new ArrayImgFactory<FloatType>().create(dim, inputimg.randomAccess().get());
+		// RandomAccessibleInterval<FloatType> imgout = new
+		// ArrayImgFactory<FloatType>().create(inputimg, new FloatType());
+
+		final RandomAccess<FloatType> imgoutac = imgout.randomAccess();
+		final long[] position = new long[n];
+
+		final Float Minmagnitude = new Float(100);
+		// GlobalThresholding.AutomaticThresholding(Views.iterable(gradients));
+		System.out.println(Minmagnitude);
+		// Compute partial derivatives of input in all dimension. This requires
+		// a border of 1 pixel with respect to the input image
+		final Interval gradientComputationInterval = Intervals.expand(inputimg, -1);
+		for (int d = 0; d < n; ++d)
+			PartialDerivative.gradientCentralDifference(inputimg,
+					Views.interval(Views.hyperSlice(gradients, n, d), gradientComputationInterval), d);
+
+		// To compute gradient maxima
+		final Interval maximaComputationInterval = Intervals.expand(inputimg, -2);
+
+		final long[] min = new long[n];
+		final long[] max = new long[n];
+		maximaComputationInterval.max(max);
+		maximaComputationInterval.min(min);
+
+		final long[] shiftback = new long[n];
+		for (int d = 0; d < n; ++d)
+			shiftback[d] = min[d] - max[d];
+
+		final NLinearInterpolatorFactory<FloatType> interpolatorFactory = new NLinearInterpolatorFactory<FloatType>();
+		@SuppressWarnings("unchecked")
+		final RealRandomAccess<FloatType>[] gradientAccess = new RealRandomAccess[n];
+		for (int d = 0; d < n; ++d)
+			gradientAccess[d] = interpolatorFactory.create(Views.hyperSlice(gradients, n, d));
+
+		final RandomAccess<FloatType> gradranac = gradients.randomAccess();
+
+		for (int d = 0; d < n; ++d)
+			gradranac.setPosition(min[d], d);
+		gradranac.setPosition(0, n);
+
+		final double direction[] = new double[n];
+		final double doublePos[] = new double[n];
+
+		final double minMagnitudeSquared = Minmagnitude * Minmagnitude;
+		final long max0 = max[0];
+		while (true) {
+			// Get gradient direction and magnitude
+			double gradientmag = 0;
+			for (int d = 0; d < n; ++d) {
+				final double partderiv = gradranac.get().getRealDouble();
+				gradientmag += partderiv * partderiv;
+				direction[d] = partderiv;
+				gradranac.fwd(n);
+			}
+			gradranac.setPosition(0, n);
+			if (gradientmag >= minMagnitudeSquared) {
+				gradientmag = Math.sqrt(gradientmag);
+
+				for (int d = 0; d < n; ++d) {
+					direction[d] /= gradientmag;
+					doublePos[d] = gradranac.getDoublePosition(d) + direction[d];
+				}
+				final double lighterMag = gradientMagnitudeInDirection(doublePos, direction, gradientAccess);
+				if (gradientmag >= lighterMag) {
+					for (int d = 0; d < n; ++d)
+						doublePos[d] = gradranac.getDoublePosition(d) - direction[d];
+
+					final double darkerMag = gradientMagnitudeInDirection(doublePos, direction, gradientAccess);
+
+					if (gradientmag >= darkerMag) {
+						// sub-pixel localization
+						final double m = (darkerMag - lighterMag) / (2 * (darkerMag - 2 * gradientmag + lighterMag));
+						for (int d = 0; d < n; ++d) {
+							doublePos[d] = gradranac.getDoublePosition(d) + m * direction[d];
+							position[d] = Math.round(doublePos[d]);
+						}
+						imgoutac.setPosition(position);
+						imgoutac.get().setReal(gradientmag);
+					}
+				}
+			}
+
+			// move to next pixel
+			if (gradranac.getLongPosition(0) == max0) {
+				gradranac.move(shiftback[0], 0);
+				// if ( n == 1 )
+				// return edgels;
+				for (int d = 1; d < n; ++d) {
+					if (gradranac.getLongPosition(d) == max[d]) {
+						gradranac.move(shiftback[d], d);
+						// if ( d == n - 1 )
+						// return edgels;
+					} else {
+						gradranac.fwd(d);
+						break;
+					}
+				}
+			} else
+				gradranac.fwd(0);
+		}
+
+	}
+	 
+	// Find maxima only if the pixels lie along a given direction
+	public static RandomAccessibleInterval<FloatType> FindDirectionalLocalMaxima(
+			RandomAccessibleInterval<FloatType> img, ImgFactory<FloatType> imageFactory,
+			final IntensityType setintensity, double[] sigma, double[] direction, Float val) {
+		int n = direction.length;
+		RandomAccessibleInterval<FloatType> output = imageFactory.create(img, new FloatType());
+		// Construct a 5*5*5... local neighbourhood
+		int span = 2;
+		 double lambda=0;
+		 double [] tmp = new double[direction.length];
+		 
+		Interval interval = Intervals.expand(img, -span);
+
+		img = Views.interval(img, interval);
+		
+		double[] position = new double[n];
+		final Cursor<FloatType> center = Views.iterable(img).cursor();
+
+		final RectangleShape shape = new RectangleShape(span, true);
+
+		for (final Neighborhood<FloatType> localNeighborhood : shape.neighborhoods(img)) {
+			final FloatType centerValue = center.next();
+			boolean isMaximum = true;
+			final Cursor<FloatType> localcursor = localNeighborhood.localizingCursor();
+		
+			
+			while (localcursor.hasNext()) {
+				localcursor.fwd();
+				for (int d = 0; d < n; ++d){
+					if (direction[d]!=0){
+						lambda = (center.getDoublePosition(d)-localcursor.getDoublePosition(d))/direction[d];
+						break;
+					}
+					else{
+					lambda = 0;
+					}
+				}
+				
+				double sum=0;
+				for (int d = 0; d < n; ++d){
+					if (direction[d]!=0){
+					tmp[d] = (center.getDoublePosition(d)-localcursor.getDoublePosition(d))/direction[d];
+					sum+=tmp[d];
+					}
+					else if(direction[d]==0){
+						sum+=lambda;
+					}
+				}
+				if (sum!=n*lambda && centerValue.compareTo(localcursor.get()) < 0 && centerValue.get() < val){
+					System.out.println(lambda +" "+sum);
+					isMaximum = false;
+					break;
+				}
+				
+			}
+		
+			
+				if (isMaximum){
+					
+					final RandomAccess<FloatType> outbound = output.randomAccess();
+				
+					
+						outbound.setPosition(center);
+					center.localize(position);
+					switch (setintensity) {
+
+					case Original:
+						outbound.get().set(center.get());
+						break;
+
+					case Gaussian:
+						AddGaussian.addGaussian(output, position, sigma, false);
+						break;
+
+					case One:
+						outbound.get().set(1);
+						break;
+
+					default:
+						AddGaussian.addGaussian(output, position, sigma, false);
+						break;
+
+					}
+					
+
+				
+
+			}
+
+		}
+		
+		return output;
+	}
+	 	
+	 	
 	 	public void searchbyIndex(final RealLocalizable cursor, final int direction,
 				int dirstartindex, int dirlastindex, int odirstartindex, int odirlastindex) throws FileNotFoundException {
 			cursor.localize(Position);
