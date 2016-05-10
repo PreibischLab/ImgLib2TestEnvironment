@@ -1,9 +1,11 @@
 package varun;
 
 import java.io.File;
+import java.util.Iterator;
 
 import com.sun.tools.javac.util.Pair;
 
+import ij.ImageJ;
 import net.imglib2.Cursor;
 import net.imglib2.Interval;
 import net.imglib2.IterableInterval;
@@ -15,6 +17,7 @@ import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.RealPoint;
 import net.imglib2.RealPointSampleList;
 import net.imglib2.algorithm.labeling.AllConnectedComponents;
+import net.imglib2.algorithm.labeling.ConnectedComponents;
 import net.imglib2.algorithm.labeling.Watershed;
 import net.imglib2.algorithm.neighborhood.Neighborhood;
 import net.imglib2.algorithm.neighborhood.RectangleShape;
@@ -26,7 +29,9 @@ import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.labeling.LabelingType;
 import net.imglib2.labeling.NativeImgLabeling;
 import net.imglib2.neighborsearch.NearestNeighborSearchOnKDTree;
+import net.imglib2.roi.labeling.ImgLabeling;
 import net.imglib2.type.logic.BitType;
+import net.imglib2.type.numeric.integer.IntType;
 import net.imglib2.type.numeric.integer.ShortType;
 import net.imglib2.type.numeric.real.FloatType;
 import net.imglib2.util.Intervals;
@@ -37,85 +42,65 @@ import util.ImgLib2Util;
 
 public class Watershedding {
 
-	
 	@SuppressWarnings("deprecation")
 	public static void OldWatersherImage(RandomAccessibleInterval<FloatType> inputimg,
-			RandomAccessibleInterval<FloatType> seedimg, int background) {
+			NativeImgLabeling<Integer, IntType> seedLabeling) {
 
 		int n = inputimg.numDimensions();
 		long[] dimensions = new long[n];
-		long[] positionseed = new long[n];
 
 		for (int d = 0; d < n; ++d)
 			dimensions[d] = inputimg.dimension(d);
+		final NativeImgLabeling<Integer, IntType> outputLabeling = new NativeImgLabeling<Integer, IntType>(
+				new ArrayImgFactory<IntType>().create(inputimg, new IntType()));
 
-		final NativeImgLabeling<Integer, ShortType> outputLabeling = new NativeImgLabeling<Integer, ShortType>(
-				new ArrayImgFactory<ShortType>().create(inputimg, new ShortType()));
-
-		final NativeImgLabeling<Integer, ShortType> seedLabeling = new NativeImgLabeling<Integer, ShortType>(
-				new ArrayImgFactory<ShortType>().create(seedimg, new ShortType()));
-
-		final Cursor<LabelingType<Integer>> seedlabelcursor = seedLabeling.localizingCursor();
-
-		//ImageJFunctions.show(inputimg).setTitle("Input image for watershedding");
-		//ImageJFunctions.show(seedimg).setTitle("Seed image for watershedding");
-
-		final RandomAccess<FloatType> seedcursor = seedimg.randomAccess();
-
-		// Fill the seedlabel image
-
-		while (seedlabelcursor.hasNext()) {
-			LabelingType<Integer> seedl = seedlabelcursor.next();
-			seedlabelcursor.localize(positionseed);
-			seedcursor.setPosition(positionseed);
-			int seedLabel = (int) seedcursor.get().get();
-			if (seedLabel == background)
-				continue;
-			seedl.setLabel(seedLabel);
-
-		}
-
+		
 		final Watershed<FloatType, Integer> watershed = new Watershed<FloatType, Integer>();
-		watershed.process();
+		
 
 		watershed.setSeeds(seedLabeling);
 		watershed.setIntensityImage(inputimg);
 		watershed.setStructuringElement(AllConnectedComponents.getStructuringElement(2));
 		watershed.setOutputLabeling(outputLabeling);
-		watershed.getResult();
-		RandomAccessibleInterval<FloatType> outimg = new ArrayImgFactory<FloatType>().create(inputimg, new FloatType());
-		Cursor<LabelingType<Integer>> labelCursor = outputLabeling.cursor();
-		RandomAccess<FloatType> imageRA = outimg.randomAccess();
-
-		// Go through the whole image again and again for every single label,
-		// until no more label is found.
-		int currentLabel = 0;
+        watershed.getResult();
+        watershed.process();
+        ImageJFunctions.show( outputLabeling.getStorageImg() ).setTitle( "labeling storage image" );
+		
+		RandomAccess<FloatType> inputRA = inputimg.randomAccess();
+		Cursor<IntType> intCursor = outputLabeling.getStorageImg().cursor();
+		
+		int currentLabel = 1;
 		boolean anythingFound = true;
 		while (anythingFound) {
 			anythingFound = false;
-			labelCursor.reset();
-
+			intCursor.reset();
+			RandomAccessibleInterval<FloatType> outimg = new ArrayImgFactory<FloatType>().create(inputimg, new FloatType());
+			RandomAccess<FloatType> imageRA = outimg.randomAccess();
 			// Go through the whole image and add every pixel, that belongs to
 			// the currently processed label
 			int count = 0;
-			while (labelCursor.hasNext()) {
-				labelCursor.fwd();
-				imageRA.setPosition(labelCursor);
-
-				int i = (int) (imageRA.get().get());
-				if (i == currentLabel) {
-					anythingFound = true;
-					count++;
-				}
+			while (intCursor.hasNext()) {
+				intCursor.fwd();
+				
+				imageRA.setPosition(intCursor);
+				inputRA.setPosition(intCursor);
+				int i = intCursor.get().get();
+			//	System.out.println(i+" "+currentLabel);
+				 if (i == currentLabel) {
+					 imageRA.get().set(inputRA.get());
+						anythingFound = true;
+						count++;
+						
+					}
+				 
 			}
-			System.out.println("Number of input pixels in label " + currentLabel + ": " + count);
-			currentLabel++;
-			ImageJFunctions.show(outimg).setTitle("Watershed Images");
-		}
-		
-
+				System.out.println("Number of input pixels in label " + currentLabel + ": " + count);
+				currentLabel++;
+				ImageJFunctions.show(outimg).setTitle("Watershed Images");
+			
+			}
 	}
-	
+
 
 	public static enum InverseType {
 		Straight, Inverse
@@ -391,41 +376,46 @@ public class Watershedding {
 
 			return output;
 		}
-		public static void InvertInensityMap(RandomAccessibleInterval<FloatType> inputimg, FloatType minval, FloatType maxval){
-	        // Normalize the input image
-	 		Normalize.normalize(Views.iterable(inputimg), minval, maxval);
-	 		// Now invert the normalization scale to get intensity inversion
-			Normalize.normalize(Views.iterable(inputimg), maxval, minval);
+		
+		@SuppressWarnings("deprecation")
+		public static void main(String[] args) {
+		RandomAccessibleInterval<FloatType> biginputimg = ImgLib2Util
+				.openAs32Bit(new File("src/main/resources/2015-01-14_Seeds-1.tiff"));
+
+		new ImageJ();
+		new Normalize();
+		FloatType minval = new FloatType(0);
+		FloatType maxval = new FloatType(1);
+		Normalize.normalize(Views.iterable(biginputimg), minval, maxval);
+		final Img<FloatType> distimg = new ArrayImgFactory<FloatType>().create(biginputimg, new FloatType());
+
+		DistanceTransformImage(biginputimg, distimg, InverseType.Straight);
+
+		ImageJFunctions.show(distimg).setTitle("DT to perform watershed on");
+		RandomAccessibleInterval<BitType> maximgBit = new ArrayImgFactory<BitType>().create(biginputimg, new BitType());
+		final Float threshold = AutomaticThresholding(biginputimg);
+		ThresholdingBit(biginputimg, maximgBit, threshold);
+        
+		// New Labeling type
+		final ImgLabeling<Integer, IntType> seedLabeling = new ImgLabeling<Integer, IntType>(
+				new ArrayImgFactory<IntType>().create(maximgBit, new IntType()));
+		// Old Labeling type
+		final NativeImgLabeling<Integer, IntType> oldseedLabeling = new NativeImgLabeling<Integer, IntType>(
+				new ArrayImgFactory<IntType>().create(maximgBit, new IntType()));
+        //The label generator for both new and old type		
+		final Iterator<Integer> labelGenerator = AllConnectedComponents.getIntegerNames(0);
+		// Getting unique labelled image (new version)
+		ConnectedComponents.labelAllConnectedComponents(maximgBit, seedLabeling, labelGenerator,
+				ConnectedComponents.StructuringElement.EIGHT_CONNECTED);
+		// Getting unique labelled image (old version)
+		AllConnectedComponents.labelAllConnectedComponents(oldseedLabeling, maximgBit, labelGenerator, 
+				AllConnectedComponents.getStructuringElement(biginputimg.numDimensions()));
+
+		ImageJFunctions.show(maximgBit).setTitle("Bit Seed Image for watershed");
+
+        ImageJFunctions.show(seedLabeling.getIndexImg()).setTitle("New-Method");
+        ImageJFunctions.show(oldseedLabeling.getStorageImg()).setTitle("Old-Method");;
+		OldWatersherImage(distimg, oldseedLabeling);
+		
 		}
-	public static void main(String[] args) {
-	RandomAccessibleInterval<FloatType> biginputimg = ImgLib2Util
-			.openAs32Bit(new File("src/main/resources/2015-01-14_Seeds-1.tiff"));
-	
-	
-	new Normalize();
-	FloatType minval = new FloatType(0);
-	FloatType maxval = new FloatType(1);
-	Normalize.normalize(Views.iterable(biginputimg), minval, maxval);
-	final Img<FloatType> distimg = new ArrayImgFactory<FloatType>().create(biginputimg, new FloatType());
-
-	DistanceTransformImage(biginputimg, distimg, InverseType.Inverse);
-
-	ImageJFunctions.show(distimg).setTitle("DT inverted to extract seeds");
-
-	RandomAccessibleInterval<FloatType> maximg = new ArrayImgFactory<FloatType>().create(biginputimg, new FloatType());
-
-	
-
-	maximg = FindandDisplayLocalMaxima(distimg, new ArrayImgFactory<FloatType>());
-
-	ImageJFunctions.show(maximg).setTitle("Seed Image for watershed");
-
-	InvertInensityMap(distimg, minval, maxval);
-
-	ImageJFunctions.show(distimg).setTitle("DT image to perform watershed on");
-
-	OldWatersherImage(distimg, maximg, 0);
-	
-	
-	}
 }
