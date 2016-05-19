@@ -9,8 +9,6 @@ package varun;
 	import java.util.List;
 	import java.util.Random;
 
-	import com.sun.mirror.declaration.ConstructorDeclaration;
-
 	import net.imglib2.PointSampleList;
 	import net.imglib2.RealPointSampleList;
 	import net.imglib2.algorithm.kdtree.SplitHyperPlaneKDTree;

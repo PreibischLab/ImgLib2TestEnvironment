@@ -4,6 +4,7 @@ import java.io.File;
 
 import net.imglib2.img.Img;
 import net.imglib2.img.ImgFactory;
+import net.imglib2.img.array.ArrayImgFactory;
 import net.imglib2.img.cell.CellImgFactory;
 import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.type.Type;
@@ -40,6 +41,16 @@ public class Copy {
 		if ( img1.iterationOrder().equals( Views.iterable( img2 ).iterationOrder() ))
 		{
 			final Cursor< T > cursorImg1 = img1.cursor();
+			final Cursor<T> testcursor = img1.localizingCursor();
+			while(testcursor.hasNext()){
+				testcursor.fwd();
+				testcursor.getDoublePosition(0);
+				
+				
+			}
+			
+			
+			
 	        final Cursor< T > cursorImg2 = Views.iterable( img2 ).cursor();
 	        
 	        while ( cursorImg1.hasNext())
@@ -64,24 +75,35 @@ public class Copy {
 	            //cursorImg1.localize( pos );
 	            //ra2.setPosition( pos );
 
-	            ra2.get().set( cursorImg1.get() );
+	            
+	            ra2.get().set( cursorImg1.get());
+	            
+	           
+	            
 	        }
+	        
+	       
 		}
 	}
 	
 	public static void main(String[] args) {
 		Img<FloatType> img1 = ImgLib2Util.openAs32Bit(new File("src/main/resources/bridge.png"));
 		Img<FloatType> img2 = new CellImgFactory< FloatType >().create(img1, img1.firstElement());
-		
+		Img<FloatType> img3 = new ArrayImgFactory<FloatType>().create(img1, new FloatType());
+		ImageJFunctions.show(img1).setTitle("Original Image");
 		copyImg(img1, img2);
-
-		ImageJFunctions.show(  Views.zeroMin( Views.interval( img1, new long[]{ 30,  40 }, new long[]{ 100, 100 } ) ) );
 		
-		copyImg(
-				Views.zeroMin( Views.interval( img1, new long[]{ 30, 40 }, new long[]{ 100, 100 } ) ),
-				Views.zeroMin( Views.interval( img2, new long[]{ 330, 140 }, new long[]{ 400, 200 } ) ) );
+		final FloatType val = new FloatType(-150);
+		for ( FloatType type : img2 )
+		    type.add( val );
+		ImageJFunctions.show(img2).setTitle("Copy");
+	//	ImageJFunctions.show(  Views.zeroMin( Views.interval( img1, new long[]{ 30,  40 }, new long[]{ 100, 100 } ) ) );
 		
-		ImageJFunctions.show(img2);
+//		copyImg(
+	//			Views.zeroMin( Views.interval( img1, new long[]{ 30, 40 }, new long[]{ 100, 100 } ) ),
+	//			Views.zeroMin( Views.interval( img2, new long[]{ 330, 140 }, new long[]{ 400, 200 } ) ) );
+		
+	//	ImageJFunctions.show(img2);
 
 	}
 }

@@ -116,7 +116,7 @@ public class DistanceSource implements Comparable<DistanceSource> {
 				RandomAccessibleInterval<T> tImg = dt;
 				if ( i != d){
 					for (int j = 0; j < dt.dimension(i); j++){
-						tImg = Views.hyperSlice(tImg, i, j):
+						tImg = Views.hyperSlice(tImg, i, j);
 					}
 				}
 				
