@@ -6,12 +6,18 @@ import ij.ImageJ;
 import ij.ImagePlus;
 import ij.plugin.filter.Rotator;
 import net.imglib2.Cursor;
+import net.imglib2.Interval;
 import net.imglib2.RandomAccess;
 import net.imglib2.RandomAccessible;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.algorithm.binary.Thresholder;
+import net.imglib2.algorithm.fft.InverseFourierConvolution;
 import net.imglib2.algorithm.fft2.FFT;
 import net.imglib2.algorithm.fft2.FFTConvolution;
+import net.imglib2.algorithm.gauss.Gauss;
+import net.imglib2.algorithm.neighborhood.Neighborhood;
+import net.imglib2.algorithm.neighborhood.RectangleShape;
+import net.imglib2.algorithm.region.hypersphere.HyperSphere;
 import net.imglib2.algorithm.stats.Normalize;
 import net.imglib2.img.Img;
 import net.imglib2.img.ImgFactory;
@@ -25,6 +31,7 @@ import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.complex.ComplexFloatType;
 import net.imglib2.type.numeric.real.FloatType;
+import net.imglib2.util.Intervals;
 import net.imglib2.view.Views;
 import stephan.MeanFilter;
 import util.ImgLib2Util;
@@ -33,14 +40,14 @@ public class Sandbox {
 
 	public Sandbox(){ 
 		// set the file name 
-		File file = new File("../Documents/Useful/initial_worms_pics/1001-yellow.tif");
-		// File file = new File("../Documents/Useful/initial_worms_pics/1001-yellow-one.tif");
-		//File file = new File("src/main/resources/Bikesgray.jpg");
+		// File file = new File("../Documents/Useful/initial_worms_pics/1001-yellow.tif");
+		File file = new File("../Documents/Useful/initial_worms_pics/1001-yellow-one.tif");
+		// File file = new File("src/main/resources/Bikesgray.jpg");
 		
 		// get + create initial ad final images 
 		Img<FloatType> img = ImgLib2Util.openAs32Bit(file);
 		Img <FloatType> dst = img.factory().create(img, img.firstElement());
-		 
+		
 		// this part is necessary for normalization // 
 		// TODO: Generic way? 
 		FloatType minValue = new FloatType();
@@ -50,7 +57,15 @@ public class Sandbox {
 		Normalize.normalize(img, minValue, maxValue);
 		ImageJFunctions.show(img);
 		// ---------------------------------------- // 
-				
+		
+		// preprocessing
+		// gauss-smooth the picture a little bit
+		double[] sigma = new double[ img.numDimensions() ];
+		for (int d = 0; d < img.numDimensions(); ++d)
+			sigma[d] = 10; // size of the radius
+		img = Gauss.toFloat(sigma, img);
+		ImageJFunctions.show(img);
+		
 		// fill in the kernel with proper values
 		float[] kernelValues = getKernelValues(img.numDimensions()); 
 		long [] kernelDimensions = new long[img.numDimensions()];
@@ -71,7 +86,6 @@ public class Sandbox {
 			// the intensities map was wrong 
 			// ---- 
 			new FFTConvolution<FloatType>(tmp, Views.rotate(kernel, 0, d), new ArrayImgFactory<ComplexFloatType>()).convolve();
-			
 			
 			// Normalize.normalize(tmp, minValue, maxValue);
 			ImageJFunctions.show(tmp);
@@ -111,7 +125,22 @@ public class Sandbox {
 			dstCursor.get().set((float) Math.sqrt(dstCursor.get().get()));
 			
 		}
-		ImageJFunctions.show(dst);		
+		
+		ImgFactory< BitType > bitFactory = new ArrayImgFactory< BitType >();
+		Img< BitType > display = bitFactory.create( dst, new BitType() );
+		
+		FloatType tVal = new FloatType();
+		tVal.set((float)1.2);
+		display = Thresholder.threshold(dst, tVal, true, 1);
+		ImageJFunctions.show(dst);	
+		ImageJFunctions.show(display);		
+		// Sharpen image
+		// float[] kernelValuesS = new float[]{-1,-1,-1,
+		//									-1, 25,-1,
+		// 									-1,-1,-1};
+		// Img<FloatType> kernelS = ArrayImgs.floats( kernelValuesS, kernelDimensions);
+		// new FFTConvolution<FloatType>(dst, kernelS, new ArrayImgFactory<ComplexFloatType>()).convolve();
+		// ImageJFunctions.show(dst);	
 	}
 	
 	
@@ -148,6 +177,31 @@ public class Sandbox {
 		System.out.println("dimensionality is wrong");
 		System.exit(1);
 		return new float[]{};
+	}
+	
+	public static <T extends Comparable<T>, U extends RealType<U>> Img <U> 
+	findAndDisplaylocalMaxima(RandomAccessibleInterval<T> src, ImgFactory<U> imageFactory, U outputType){
+		Img <U> output = imageFactory.create(src, outputType);
+		Interval interval = Intervals.expand(src, -1);
+		src = Views.interval(src, interval);
+		final Cursor<T> center = Views.iterable(src).cursor();
+		final RectangleShape shape = new RectangleShape(1, true);
+		for (final Neighborhood<T> localNeighborhood: shape.neighborhoods(src)){
+			final T centerValue = center.next();
+			boolean isMax = true; 
+			for (final T value : localNeighborhood){
+				if (centerValue.compareTo(value) <= 0){
+					isMax = false;
+					break;
+				}
+			}
+			if (isMax){
+				HyperSphere<U> hyperSphere = new HyperSphere <U> (output, center, 1);
+				for (U value : hyperSphere)
+					value.setOne();
+			}
+		}
+		return output;
 	}
 	
 	public static void main(String[] args){
