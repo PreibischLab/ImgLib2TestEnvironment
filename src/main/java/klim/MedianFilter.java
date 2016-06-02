@@ -1,6 +1,9 @@
 package klim;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import net.imglib2.Cursor;
 import net.imglib2.FinalInterval;
@@ -14,6 +17,7 @@ import net.imglib2.algorithm.neighborhood.RectangleShape;
 import net.imglib2.algorithm.region.hypersphere.HyperSphere;
 import net.imglib2.img.Img;
 import net.imglib2.img.ImgFactory;
+import net.imglib2.img.array.ArrayImgFactory;
 import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.real.FloatType;
@@ -45,20 +49,39 @@ public class MedianFilter {
 		long[] prev = new long[n]; 
 		long[] cur = new long[n]; 
 		IterableInterval<T> histogram;
+		// the one below can be changed to LinkedList 
+		// the question is what implementation is faster
+		// ref: http://stackoverflow.com/questions/322715/when-to-use-linkedlist-over-arraylist?lq=1
+		List<T> histogramList = new ArrayList<T>(); 
+		//= new List<T>(5);
+		
+		long idx = 0;
+		
 		
 		while(cSrc.hasNext()){
+			// ?? should not the first value through an error? 
 			cSrc.localize(prev);
 			cSrc.fwd();
 			// cSrc.next(); // not sure if I need this one! 
 			cSrc.localize(cur);
 			
-			// check if the cursor moved only by one step
-			// movedByOne >= 0 - shows the direction of movement
-			// movedByOne == -1 - initial value
-			// movedByOne == -2 - moved too far
-			long movedByOne = checkDist(prev, cur);
 			
-			if (movedByOne == -2){
+			// check if the cursor moved only by one step
+			// direction >= 0 - shows the direction of movement
+			// direction == -1 - initial value
+			// direction == -2 - moved too far
+			int direction = -2;
+			long step = 0; // shows the direction of movement (+1/-1)
+			
+			long[] di = new long[2];
+			
+			// @TODO: Dirty! Clean this
+			checkDist(prev, cur, di);
+			
+			direction = (int)di[0];
+			step = di[1];
+						
+			if (direction == -2){
 				// define new boundaries of the new kernel-window
 				for (int d = 0; d < n; ++d){
 					min[d] = cSrc.getLongPosition(d) - kernel.dimension(d);
@@ -68,6 +91,14 @@ public class MedianFilter {
 			
 				// TODO: looks fine to search for a full median here
 				// and assign the value to a new image
+				// looks like this part is working correctly
+				histogramList.clear();
+				
+				for (T h : histogram) {
+					histogramList.add(h);
+				}
+				
+				Collections.sort(histogramList);
 				
 			}
 			else{
@@ -75,11 +106,52 @@ public class MedianFilter {
 				// direction is given by movedByOne
 				// TODO: drop elements -- add new elements 
 				// search for a full median 
+				// histogramList.clear();
+				
+				// so what has to be done
+				// remove old values after that add new values
+				
+				// this view points to the part that we should cut
+//				IterableInterval<T> oldHistogram = Views.hyperSlice(infSrc, direction, step > 0 ? min[direction] : max[direction]);
+//				
+//				for (T h : oldHistogram) {
+//					int key = Collections.binarySearch(histogramList, h);
+//					histogramList.remove(key);
+//					
+//					// ?! histogramList.remove(h);
+//				}
+//				
+//				min[direction] = cSrc.getLongPosition(direction) - kernel.dimension(direction) + step;
+//				max[direction] = cSrc.getLongPosition(direction) + kernel.dimension(direction) + step;
+//				
+//				
+//				
+//				histogram = Views.interval(infSrc, min, max);
+//				// histogramList.clear();
+//				for (T h : histogram) {
+//					histogramList.add(h);
+//				}
+//				Collections.sort(histogramList);
+				// create a view from the initial image
+				// not form the histogram
+				//Views.hyperSlice(histogram, direction, step > 0 ? min[direction] : max[direction]);
+				
+				
+				
+				// Collections.binarySearch(histogramList, key);
+				
 			}
 			
+			rDst.setPosition(cSrc);
+			if (!histogramList.isEmpty()){
+				rDst.get().set(histogramList.get(histogramList.size()/2));
+				// debug 
+				idx++;
+			}
 		}
 
-		
+		// System.out.println(histogramList.size());
+		System.out.println("idx = " + idx);
 	}
 	
 	// can be done using insertions 
@@ -97,32 +169,41 @@ public class MedianFilter {
 	 * @param y - current element
 	 * @param n - number of dimensions 	
 	 */
-	public static < T extends RealType<  T > > long checkDist(long[] prev, long[] cur){
+	public static < T extends RealType<  T > > void checkDist(long[] prev, long[] cur, long[] di){
 		// movedByOne >= 0 - shows the direction of movement
 		// movedByOne == -1 - initial value
 		// movedByOne == -2 - moved too far
 		long n = cur.length;
-		long movedByOne = -1;
+		di[0] = -1;
 		for (int d = 0; d < n; ++d){
-			//  moved by one ?
-			if (Math.abs(prev[d] - cur[d]) == 1){
-				// sure we have not moved by one already?
-				if (movedByOne == -1){
-					// set the direction of movement
-					movedByOne = d;
-				}
-				else{
-					movedByOne = -2;
-					break;
-				}						
+			long dist = prev[d] - cur[d];
+			
+			// didn't move
+			if (dist == 0){
+				// do nothing
 			}
 			else{
-				// we moved too far 
-				movedByOne = -2;
-				break;
+				//  moved by one ? 
+				if ((dist == 1) || (dist == -1)){
+					// sure we have not moved by one already?
+					if (di[0] == -1){
+						// set the dimension of movement
+						di[0] = d;
+						// set the direction 
+						di[1] = dist;
+					}
+					else{
+						di[0] = -2;
+						break;
+					}						
+				}
+				else{
+					// we moved too far 
+					di[0] = -2;
+					break;
+				}
 			}
 		}
-		return movedByOne;
 	}
 	
 	
@@ -199,7 +280,7 @@ public class MedianFilter {
 	public static void main(String [] args){
 		File file = new File("src/main/resources/Bikesgray.jpg");
 		final Img<FloatType> img = ImgLib2Util.openAs32Bit(file);
-		final Img<FloatType> dst = img.copy();
+		final Img<FloatType> dst = img.factory().create(img, img.firstElement());
 		
 		
 		final int n = img.numDimensions();
@@ -211,11 +292,12 @@ public class MedianFilter {
 			max[d] = 1;
 		}
 		
-		//ImageJFunctions.show(img);
+		ImageJFunctions.show(img);
 		
 		//here comes filtering part 
 		
 		medianFilter(img, dst, new FinalInterval(min, max));
+		ImageJFunctions.show(dst);
 		System.out.println("Doge!");
 	}
 	
