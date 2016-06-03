@@ -22,6 +22,8 @@ import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.real.FloatType;
 import net.imglib2.util.Intervals;
+import net.imglib2.view.IntervalView;
+import net.imglib2.view.MixedTransformView;
 import net.imglib2.view.Views;
 import util.ImgLib2Util;
 
@@ -112,26 +114,26 @@ public class MedianFilter {
 				// remove old values after that add new values
 				
 				// this view points to the part that we should cut
-//				IterableInterval<T> oldHistogram = Views.hyperSlice(infSrc, direction, step > 0 ? min[direction] : max[direction]);
-//				
-//				for (T h : oldHistogram) {
-//					int key = Collections.binarySearch(histogramList, h);
-//					histogramList.remove(key);
-//					
-//					// ?! histogramList.remove(h);
-//				}
-//				
-//				min[direction] = cSrc.getLongPosition(direction) - kernel.dimension(direction) + step;
-//				max[direction] = cSrc.getLongPosition(direction) + kernel.dimension(direction) + step;
-//				
-//				
-//				
-//				histogram = Views.interval(infSrc, min, max);
-//				// histogramList.clear();
-//				for (T h : histogram) {
-//					histogramList.add(h);
-//				}
-//				Collections.sort(histogramList);
+				// here can be the problem with the src -> outofbounds
+				IterableInterval<T> oldHistogram = Views.hyperSlice(infSrc, direction, (step > 0 ? min[direction] : max[direction]));
+				for (T h : oldHistogram) {
+					int key = Collections.binarySearch(histogramList, h);
+					histogramList.remove(key);
+					
+					// ?! histogramList.remove(h);
+				}
+				
+				min[direction] = cSrc.getLongPosition(direction) - kernel.dimension(direction) + step;
+				max[direction] = cSrc.getLongPosition(direction) + kernel.dimension(direction) + step;
+				
+				
+				
+				histogram = Views.interval(infSrc, min, max);
+				// histogramList.clear();
+				for (T h : histogram) {
+					histogramList.add(h);
+				}
+				Collections.sort(histogramList);
 				// create a view from the initial image
 				// not form the histogram
 				//Views.hyperSlice(histogram, direction, step > 0 ? min[direction] : max[direction]);
