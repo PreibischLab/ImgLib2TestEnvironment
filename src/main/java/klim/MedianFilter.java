@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import ij.io.ImageWriter;
 import net.imglib2.Cursor;
 import net.imglib2.FinalInterval;
 import net.imglib2.Interval;
@@ -57,7 +58,7 @@ public class MedianFilter {
 		long[] cur  = new long[n]; 
 		
 		// contains all elements of the kernel
-		IterableInterval<T> histogram;
+		IterableInterval<T> histogram = Views.interval(infSrc, min, max);;
 		
 		// the one below can be changed to LinkedList 
 		// the question is what implementation is faster
@@ -149,8 +150,9 @@ public class MedianFilter {
 			}
 			else{ // moved by one
 
-				RandomAccessible<T> dropSlice = Views.hyperSlice(infSrc, direction, step > 0? min[direction] : max[direction]);
-				RandomAccessible<T> addSlice  = Views.hyperSlice(infSrc, direction, step < 0? min[direction] : max[direction]);
+				RandomAccessible<T> dropSlice = Views.hyperSlice(infSrc, direction, step < 0? min[direction] : max[direction]);
+				RandomAccessible<T> addSlice  = Views.hyperSlice(infSrc, direction, step > 0? min[direction] : max[direction]);
+				
 				// @DEBUG: Passed
 //				System.out.println("DropD = " + dropSlice.numDimensions());
 //				System.out.println("AddD  = " +  addSlice.numDimensions());
@@ -198,6 +200,12 @@ public class MedianFilter {
 //				}		
 				
 				// System.out.println(histogramList.size());
+
+				System.out.println("Histogram     : ");
+				for (T h : histogram) {											
+					System.out.print(h + " ");
+				}
+				System.out.println();
 				
 				System.out.println("Histogram List: ");
 				for (T h : histogramList) {											
@@ -218,7 +226,7 @@ public class MedianFilter {
 				}
 				
 				System.out.println();
-				for (T h : histogramList) {											
+				for (T h : histogramList) {	
 					System.out.print(h + " ");
 				}
 				System.out.println();				
@@ -226,8 +234,10 @@ public class MedianFilter {
 				// System.out.println("Length before: " + histogramList.size());
 				
 				for (T h : Views.iterable(addHistogram)){
+					System.out.print(h + " ");
 					histogramList.add(h.copy());
 				}
+				System.out.println();		
 				
 				Collections.sort(histogramList);
 				// System.out.println("Length after: " + histogramList.size());
@@ -236,6 +246,7 @@ public class MedianFilter {
 				min[direction] = cSrc.getLongPosition(direction) - kernel.dimension(direction)/2 + step;
 				max[direction] = cSrc.getLongPosition(direction) + kernel.dimension(direction)/2 + step;
 				
+				histogram = Views.interval(infSrc, min, max);
 				
 //				min[direction] = cSrc.getLongPosition(direction)  + step;
 //				max[direction] = cSrc.getLongPosition(direction)  + step;
@@ -342,6 +353,7 @@ public class MedianFilter {
 		
 		medianFilter(img, dst, new FinalInterval(min, max));
 		ImageJFunctions.show(dst);
+		
 		System.out.println("Doge!");
 	}
 
