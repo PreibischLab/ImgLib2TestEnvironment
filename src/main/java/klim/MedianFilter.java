@@ -4,7 +4,11 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+
+import ij.ImageJ;
 
 import ij.io.ImageWriter;
 import net.imglib2.Cursor;
@@ -53,8 +57,8 @@ public class MedianFilter {
 			max[d] = cSrc.getLongPosition(d) + kernel.dimension(d)/2;
 		}
 		// store previous/current position of cursor
-		long[] prev = new long[n]; 
-		long[] cur  = new long[n]; 
+		long[] pPos = new long[n]; 
+		long[] cPos = new long[n]; 
 		
 		// contains all elements of the kernel
 		IterableInterval<T> histogram = Views.interval(infSrc, min, max);
@@ -62,33 +66,30 @@ public class MedianFilter {
 		// the one below can be changed to LinkedList 
 		// the question is what implementation is faster
 		// ref: http://stackoverflow.com/questions/322715/when-to-use-linkedlist-over-arraylist?lq=1
-		List<T> histogramList = new ArrayList<T>(); 
+		// List<T> histogramList = new ArrayList<T>(); 
+		List<T> histogramList = new LinkedList<T>(); 
 		
 		for (T h : histogram) {
 			histogramList.add(h.copy()); 
-		}			
-		
+		}					
 		Collections.sort(histogramList);	
 		
 		// @DEBUG: delete idx after done 
 		long idx = 1;
 		while(cSrc.hasNext()){
-			cSrc.localize(prev);
+			cSrc.localize(pPos);
 			cSrc.fwd();
-			cSrc.localize(cur);
-	
+			cSrc.localize(cPos);
+				
+			// @TODO: Dirty! Clean this
+			long[] di = new long[2];
+			checkDist(pPos, cPos, di);	
 			// check if the cursor moved only by one step
 			// direction >= 0 - shows the direction of movement
 			// direction == -1 - initial value
 			// direction == -2 - moved too far
-			int direction = -2;
-			long step = 0; // shows the direction of movement (+1/-1)
-				
-			// @TODO: Dirty! Clean this
-			long[] di = new long[2];
-			checkDist(prev, cur, di);		
-			direction = (int)di[0];
-			step = di[1];
+			int direction = (int)di[0];
+			long step = di[1]; // shows the direction of movement (+1/-1)
 			
 			// define new boundaries of the new kernel-window
 			for (int d = 0; d < n; ++d){
@@ -111,7 +112,6 @@ public class MedianFilter {
 				
 				
 				
-				// clear histogram to add new values
 				histogramList.clear();			
 				// @IMP! we need copy by value not copy by reference!
 				// @TODO: Better way to do this? 
@@ -149,38 +149,46 @@ public class MedianFilter {
 				RandomAccessibleInterval<T> dropHistogram = Views.interval(dropSlice, localMin, localMax);
 				RandomAccessibleInterval<T> addHistogram  = Views.interval(addSlice, localMin, localMax);
 				
-//				System.out.println("histogram:");
-//				for (T h : histogram) {	
-//					System.out.print(h + " ");
-//				}
-//				System.out.println();
-//				System.out.println("add      :");
-//				for (T h : Views.iterable(addHistogram)) {											
-//					System.out.print(h + " ");
-//				}
-//				System.out.println();
-//				System.out.println("del      :");
-//				for (T h : Views.iterable(dropHistogram)) {											
-//					System.out.print(h + " ");
-//				}
-//				System.out.println();
-//				System.out.println("list     :");
-//				for (T h : histogramList) {											
-//					System.out.print(h + " ");
-//				}
-//				System.out.println();
+				for (T h : Views.iterable(dropHistogram)) {		
+					int key = Collections.binarySearch(histogramList, h);
+					
+					try{
+						histogramList.remove(key);
+					}
+					catch(Exception e){
+						System.out.println("Wrong value key = " + key + " specified.");
+					}
+				} 
 				
-				for (T h : Views.iterable(dropHistogram)) {					
-					histogramList.remove(h);
-				}
-
+//				for (T h : Views.iterable(dropHistogram)) {					
+//					histogramList.remove(h);
+//				}
+				
 				
 				for (T h : Views.iterable(addHistogram)){
-					histogramList.add(h.copy());
+					int key = Collections.binarySearch(histogramList, h);
+					if (key >= 0){ // same item found
+						histogramList.add(key + 1, h.copy()); // insert after this item
+					}
+					else{
+						key = -(key + 1);
+						histogramList.add(key, h.copy());
+					}
+					//histogramList.add(h.copy());
+				} 
+				
+				for(int j = 1; j < histogramList.size(); ++j){
+					if(histogramList.get(j).compareTo(histogramList.get(j)) > 0)
+						System.out.println("Not sorted!");
 				}
+				
+				
+//				for (T h : Views.iterable(addHistogram)){
+//					histogramList.add(h.copy());
+//				}
 				//System.out.println();		
 				
-				Collections.sort(histogramList);
+//				Collections.sort(histogramList);
 				// System.out.println("Length after: " + histogramList.size());
 			
 				
@@ -192,7 +200,13 @@ public class MedianFilter {
 				
 				// Collections.binarySearch(histogramList, key);
 				
-				if (histogramList.size() > kernel.dimension(0)*kernel.dimension(1)) {
+
+				long totalDimensions = 1;
+				for (int j = 0; j < kernel.numDimensions(); j++) {
+					totalDimensions *= kernel.dimension(j);
+				}
+				
+				if (histogramList.size() > totalDimensions) { // 2D case
 					System.out.println("HistogramList:" + histogramList.size()  + " > " + kernel.dimension(0)*kernel.dimension(1) );
 					System.out.println("Something went wrong: too many elements in HistogramList");
 					
@@ -212,7 +226,8 @@ public class MedianFilter {
 					return; 
 				}
 				
-				if (histogramList.size() <  kernel.dimension(0)*kernel.dimension(1)) {
+				
+				if (histogramList.size() <  totalDimensions) {
 					System.out.println("Beep");
 					return;
 				}
@@ -237,18 +252,15 @@ public class MedianFilter {
 	}
 	
 	/**
-	 * This one checks if we are only one step away from the previous pixel
-	 * @param x - previous element
-	 * @param y - current element
-	 * @param n - number of dimensions 	
+	old version
 	 */
-	public static < T extends RealType<  T > > void checkDist2(long[] prev, long[] cur, long[] di){
-		long n = cur.length; // number of dimensions
+	public static void checkDist2(long[] pPos, long[] cPos, long[] di){
+		long n = cPos.length; // number of dimensions
 		di[0] = -1;
 		di[1] = 0;
 		for (int d = 0; d < n; ++d){
-			long dist = cur[d] - prev[d]; // dist > 0 if we moved forward, dist < 0 otherwise
-			//long dist = prev[d] - cur[d];
+			long dist = cPos[d] - pPos[d]; // dist > 0 if we moved forward, dist < 0 otherwise
+			//long dist = pPos[d] - cPos[d];
 			// didn't move
 			if (dist == 0){
 				// do nothing
@@ -278,40 +290,25 @@ public class MedianFilter {
 	}
 	
 	/**
-	 * This one checks if we are only one step away from the previous pixel
+	 * This one checks if the cursor moved only by one pixel away
 	 * @param pPos - position of the previous element
 	 * @param cPos - position of the current element
-	 * @param res - [0]: directions of movement; [1]: step size
+	 * @param res - [0]: direction of movement (d); [1]: step
 	 */
-	public static < T extends RealType<  T > > void checkDist(long[] pPos, long[] cPos, long[] res){
+	public static void checkDist(long[] pPos, long[] cPos, long[] res){
 		long n = cPos.length; // number of dimensions
 		res[0] = -1;
 		res[1] = 0;
 		for (int d = 0; d < n; ++d){
-			long dist = cPos[d] - pPos[d]; // dist > 0 if we moved forward, dist < 0 otherwise
-			// didn't move
-			if (dist == 0){
-				// do nothing
-			}
-			else{
-				//  moved by one ? 
-				if ((dist == 1) || (dist == -1)){
-					// sure we have not moved by one already?
-					if (res[0] == -1){
-						// set the dimension of movement
-						res[0] = d;
-						// set the direction 
-						res[1] = dist;
-					}
-					else{
-						res[0] = -2;
-						break;
-					}						
-				}
-				else{
-					// we moved too far 
+			long dist = cPos[d] - pPos[d]; // dist > 0 if we moved forward, dist < 0 otherwise	
+			if (dist != 0){ // ?moved
+				if((Math.abs(dist) != 1) || (res[0] != -1)){ //?too far or ?more thatn once
 					res[0] = -2;
 					break;
+				}
+				else{
+					res[0] = d; 	// set the direction of movement
+					res[1] = dist;  // set the step 
 				}
 			}
 		}
@@ -319,10 +316,15 @@ public class MedianFilter {
 		
 	
 	
+	
+	
 	public static void main(String [] args){
+		new ImageJ(); // to have a menu!
+		
 		//File file = new File("src/main/resources/Bikesgray.jpg");
-		//File file = new File("src/main/resources/salt-and-pepper.tif");
-		File file = new File("src/main/resources/inputMedian.png");
+		// File file = new File("src/main/resources/salt-and-pepper.tif");
+		File file = new File("src/main/resources/test3D.tif");
+		//File file = new File("src/main/resources/inputMedian.png");
 		// File file = new File("../Documents/Useful/initial_worms_pics/1001-yellow-one.tif");
 		final Img<FloatType> img = ImgLib2Util.openAs32Bit(file);
 		final Img<FloatType> dst = img.factory().create(img, img.firstElement());
@@ -342,14 +344,17 @@ public class MedianFilter {
 		ImageJFunctions.show(img);
 		
 		// define the size of the filter
-		int zz = 2;
+		int zz = 7;
 		// run multiple tests
-		for (int jj = zz; jj <= zz; jj++) {	
+		for (int jj = 1; jj <= zz; jj++) {	
+
 			for (int d = 0; d < n; d++) {
 				min[d] = -jj;
 				max[d] = jj;
 			}
+			long inT  = System.nanoTime();
 			medianFilter(img, dst, new FinalInterval(min, max));
+			System.out.println("Time for jj = " + jj + " : "+ TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - inT)/1000);
 			ImageJFunctions.show(dst);
 		}
 		
