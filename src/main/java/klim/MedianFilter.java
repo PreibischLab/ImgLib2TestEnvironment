@@ -37,11 +37,15 @@ import util.ImgLib2Util;
 public class MedianFilter {
 	
 	
+	private static final boolean debug = true;
+	
+	
 	// TODO: write description 
 	/*
 	 * 
 	 * */
-	public static /*correct type declaration */< T extends RealType<  T > > void medianFilter(
+	// TODO:  /*correct type declaration */
+	public static < T extends RealType<  T > & Comparable<T> > void medianFilter(
 			final RandomAccessibleInterval< T > src, final RandomAccessibleInterval< T > dst, final Interval kernel){
 
 		final RandomAccessible<T> infSrc = Views.extendMirrorSingle(src);
@@ -62,16 +66,11 @@ public class MedianFilter {
 		
 		// contains all elements of the kernel
 		IterableInterval<T> histogram = Views.interval(infSrc, min, max);
-
-		// the one below can be changed to LinkedList 
-		// the question is what implementation is faster
-		// ref: http://stackoverflow.com/questions/322715/when-to-use-linkedlist-over-arraylist?lq=1
 		// List<T> histogramList = new ArrayList<T>(); 
 		List<T> histogramList = new LinkedList<T>(); 
 		
-		for (T h : histogram) {
-			histogramList.add(h.copy()); 
-		}					
+		for (T h : histogram)
+			histogramList.add(h.copy()); 					
 		Collections.sort(histogramList);	
 		
 		// @DEBUG: delete idx after done 
@@ -82,14 +81,10 @@ public class MedianFilter {
 			cSrc.localize(cPos);
 				
 			// @TODO: Dirty! Clean this
-			long[] di = new long[2];
-			checkDist(pPos, cPos, di);	
-			// check if the cursor moved only by one step
-			// direction >= 0 - shows the direction of movement
-			// direction == -1 - initial value
-			// direction == -2 - moved too far
-			int direction = (int)di[0];
-			long step = di[1]; // shows the direction of movement (+1/-1)
+			long[] tmp = new long[2];
+			checkDist(pPos, cPos, tmp);	 // check if the cursor moved only by one step
+			int direction = (int)tmp[0]; // -2 - too far; -1 - init value; >=0 - dimension for movement
+			long step = tmp[1]; // shows the direction of movement (+1/-1)
 			
 			// define new boundaries of the new kernel-window
 			for (int d = 0; d < n; ++d){
@@ -100,194 +95,111 @@ public class MedianFilter {
 			// adjust the histogram window
 			histogram = Views.interval(infSrc, min, max);
 						
-			if (direction == -2){ // moved too far
-				
-				
-//				System.out.println("NEW LINE:");
-//				for (int d = 0; d < n; ++d){
-//					System.out.print("d[" + d + "]: ");
-//					System.out.print("(" + min[d] + ", " + cSrc.getLongPosition(d) + ", " + max[d] + ") ");
-//				}
-//				System.out.println();
-				
-				
-				
+			if (direction == -2){ // moved too far				
 				histogramList.clear();			
 				// @IMP! we need copy by value not copy by reference!
-				// @TODO: Better way to do this? 
-				for (T h : histogram) {
-					histogramList.add(h.copy()); 
-				}			
-				// this should be the only sorting that is performed
-				Collections.sort(histogramList);
-		
+				// TODO: Better way to do this? 
+				for (T h : histogram) 
+					histogramList.add(h.copy()); 			
+				Collections.sort(histogramList);	
 			}
 			else{ // moved by one
-		
-//				for (int d = 0; d < n; ++d){
-//					System.out.print("d[" + d + "]: ");
-//					System.out.print("(" + min[d] + ", " + cSrc.getLongPosition(d) + ", " + max[d] + ") ");
-//				}
-//				System.out.println();
-				
-				// @TODO: check that the assignment is correct
 				RandomAccessible<T> dropSlice = Views.hyperSlice(infSrc, direction, step < 0 ? max[direction] : min[direction]);
-				RandomAccessible<T> addSlice  = Views.hyperSlice(infSrc, direction, step < 0 ? min[direction] : max[direction]);
-				
+				RandomAccessible<T> addSlice  = Views.hyperSlice(infSrc, direction, step < 0 ? min[direction] : max[direction]);				
 				// drop one dimension
 				long[] localMin  = new long[n - 1];
 				long[] localMax  = new long[n - 1];
 				
 				for (int i = 0; i < n; ++i){
 					if (i != direction){
-						localMin[i >= direction ? i - 1 : i] = min[i];
-						localMax[i >= direction ? i - 1 : i] = max[i];
+						localMin[i > direction ? i - 1 : i] = min[i];
+						localMax[i > direction ? i - 1 : i] = max[i];
 					}
 
 				}
 
 				RandomAccessibleInterval<T> dropHistogram = Views.interval(dropSlice, localMin, localMax);
 				RandomAccessibleInterval<T> addHistogram  = Views.interval(addSlice, localMin, localMax);
-				
-				for (T h : Views.iterable(dropHistogram)) {		
-					int key = Collections.binarySearch(histogramList, h);
-					
-					try{
-						histogramList.remove(key);
-					}
-					catch(Exception e){
-						System.out.println("Wrong value key = " + key + " specified.");
-					}
-				} 
-				
-//				for (T h : Views.iterable(dropHistogram)) {					
-//					histogramList.remove(h);
-//				}
-				
-				
-				for (T h : Views.iterable(addHistogram)){
-					int key = Collections.binarySearch(histogramList, h);
-					if (key >= 0){ // same item found
-						histogramList.add(key + 1, h.copy()); // insert after this item
-					}
-					else{
-						key = -(key + 1);
-						histogramList.add(key, h.copy());
-					}
-					//histogramList.add(h.copy());
-				} 
-				
-				for(int j = 1; j < histogramList.size(); ++j){
-					if(histogramList.get(j).compareTo(histogramList.get(j)) > 0)
-						System.out.println("Not sorted!");
-				}
-				
-				
-//				for (T h : Views.iterable(addHistogram)){
-//					histogramList.add(h.copy());
-//				}
-				//System.out.println();		
-				
-//				Collections.sort(histogramList);
-				// System.out.println("Length after: " + histogramList.size());
-			
-				
-//				System.out.println("(" + min[direction] + ", " + cSrc.getLongPosition(direction) + ", " + max[direction] + ")");
-				// System.out.println();
-				
-				// histogram = Views.interval(infSrc, min, max);	
-				
-				
-				// Collections.binarySearch(histogramList, key);
-				
 
-				long totalDimensions = 1;
-				for (int j = 0; j < kernel.numDimensions(); j++) {
-					totalDimensions *= kernel.dimension(j);
-				}
-				
-				if (histogramList.size() > totalDimensions) { // 2D case
-					System.out.println("HistogramList:" + histogramList.size()  + " > " + kernel.dimension(0)*kernel.dimension(1) );
-					System.out.println("Something went wrong: too many elements in HistogramList");
-					
-//					for (T h : histogramList) {	
-//						System.out.print(h + " ");
-//					}
-//					System.out.println();
-//					for (T h : Views.iterable(addHistogram)) {											
-//						System.out.print(h + " ");
-//					}
-//					System.out.println();
-//					for (T h : Views.iterable(dropHistogram)) {											
-//						System.out.print(h + " ");
-//					}
-//					System.out.println();				
-					
-					return; 
-				}
-				
-				
-				if (histogramList.size() <  totalDimensions) {
-					System.out.println("Beep");
-					return;
-				}
-				
+				dropElements(dropHistogram, histogramList);
+				addElements(addHistogram, histogramList);
+
+				if (debug)
+					if (!isSizeCorrect(histogramList, kernel))
+						return;
 			}
-			
+
 			// get the median value 
 			rDst.setPosition(cSrc);
-			if (!histogramList.isEmpty()){
+			try{
 				rDst.get().set(histogramList.get(histogramList.size()/2));
-				// debug 
 				idx++;
-			}	
-			else{
-				// catch errors
-				// System.out.println("Something went wrong");
+			}
+			catch(Exception e){
+				System.out.println("histogramList.size() is wrong");
+				return;
 			}
 		}
 
-		// System.out.println(histogramList.size());
 		System.out.println("idx = " + idx);
 	}
 	
 	/**
-	old version
+	 *  adds every element from histogram contained in list
 	 */
-	public static void checkDist2(long[] pPos, long[] cPos, long[] di){
-		long n = cPos.length; // number of dimensions
-		di[0] = -1;
-		di[1] = 0;
-		for (int d = 0; d < n; ++d){
-			long dist = cPos[d] - pPos[d]; // dist > 0 if we moved forward, dist < 0 otherwise
-			//long dist = pPos[d] - cPos[d];
-			// didn't move
-			if (dist == 0){
-				// do nothing
+	public static <T extends RealType<T> & Comparable<T>> void addElements(RandomAccessibleInterval<T> histogram, List<T> list){
+		for (T h : Views.iterable(histogram)){
+			int key = Collections.binarySearch(list, h);
+			if (key >= 0){ // same item found
+				list.add(key + 1, h.copy()); // insert after this item
 			}
 			else{
-				//  moved by one ? 
-				if ((dist == 1) || (dist == -1)){
-					// sure we have not moved by one already?
-					if (di[0] == -1){
-						// set the dimension of movement
-						di[0] = d;
-						// set the direction 
-						di[1] = dist;
-					}
-					else{
-						di[0] = -2;
-						break;
-					}						
-				}
-				else{
-					// we moved too far 
-					di[0] = -2;
-					break;
-				}
+				key = -(key + 1);
+				list.add(key, h.copy());
 			}
-		}
+		} 	
 	}
+	
+	/**
+	 *  removes every element from histogram contained in list
+	 */
+	public static <T extends RealType<T> & Comparable<T>> void dropElements(RandomAccessibleInterval<T> histogram, List<T> list){
+		for (T h : Views.iterable(histogram)) {		
+			int key = Collections.binarySearch(list, h);					
+			try{
+				list.remove(key);
+			}
+			catch(Exception e){
+				System.out.println("Wrong value key = " + key + " specified.");
+			}
+		}	
+	}
+	
+	
+	/**
+	 *  checks if the size of the histogram is correct
+	 */
+	public static <T extends RealType<T>> boolean isSizeCorrect(List<T> h, final Interval k){
+		boolean res = true; 
+		long totalDimensions = 1;
+		for (int j = 0; j < k.numDimensions(); j++) {
+			totalDimensions *= k.dimension(j);
+		}
+
+		if (h.size() > totalDimensions) { // 2D case
+			System.out.println("HistogramList:" + h.size()  + " > " + totalDimensions );
+			System.out.println("Something went wrong: too many elements in HistogramList");
+			res = false; 
+		}
+
+		if (h.size() <  totalDimensions) {
+			System.out.println("HistogramList:" + h.size()  + " > " + totalDimensions );
+			System.out.println("Something went wrong: too few elements in HistogramList");
+			res = false; 
+		}
+		return res;
+	}
+	
 	
 	/**
 	 * This one checks if the cursor moved only by one pixel away
@@ -313,18 +225,14 @@ public class MedianFilter {
 			}
 		}
 	}
-		
-	
-	
-	
 	
 	public static void main(String [] args){
 		new ImageJ(); // to have a menu!
 		
 		//File file = new File("src/main/resources/Bikesgray.jpg");
-		// File file = new File("src/main/resources/salt-and-pepper.tif");
-		File file = new File("src/main/resources/test3D.tif");
-		//File file = new File("src/main/resources/inputMedian.png");
+		File file = new File("src/main/resources/salt-and-pepper.tif");
+		// File file = new File("src/main/resources/test3D.tif");
+		// File file = new File("src/main/resources/inputMedian.png");
 		// File file = new File("../Documents/Useful/initial_worms_pics/1001-yellow-one.tif");
 		final Img<FloatType> img = ImgLib2Util.openAs32Bit(file);
 		final Img<FloatType> dst = img.factory().create(img, img.firstElement());
@@ -344,9 +252,9 @@ public class MedianFilter {
 		ImageJFunctions.show(img);
 		
 		// define the size of the filter
-		int zz = 7;
+		int zz = 1;
 		// run multiple tests
-		for (int jj = 1; jj <= zz; jj++) {	
+		for (int jj = zz; jj <= zz; jj++) {	
 
 			for (int d = 0; d < n; d++) {
 				min[d] = -jj;
