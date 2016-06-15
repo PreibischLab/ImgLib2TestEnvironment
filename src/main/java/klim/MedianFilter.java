@@ -2,35 +2,23 @@ package klim;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import ij.ImageJ;
 
-import ij.io.ImageWriter;
 import net.imglib2.Cursor;
-import net.imglib2.FinalInterval;
 import net.imglib2.Interval;
 import net.imglib2.IterableInterval;
 import net.imglib2.RandomAccess;
 import net.imglib2.RandomAccessible;
 import net.imglib2.RandomAccessibleInterval;
-import net.imglib2.algorithm.neighborhood.Neighborhood;
-import net.imglib2.algorithm.neighborhood.RectangleShape;
-import net.imglib2.algorithm.region.hypersphere.HyperSphere;
 import net.imglib2.algorithm.stats.Normalize;
 import net.imglib2.img.Img;
-import net.imglib2.img.ImgFactory;
-import net.imglib2.img.array.ArrayImgFactory;
 import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.real.FloatType;
-import net.imglib2.util.Intervals;
-import net.imglib2.view.IntervalView;
-import net.imglib2.view.MixedTransformView;
 import net.imglib2.view.Views;
 import util.ImgLib2Util;
 
@@ -65,8 +53,8 @@ public class MedianFilter {
 		final int[] kernelHalfDim = new int[n]; 
 		for (int d = 0; d < n; ++d){
 			// check that the dimension of the kernel is correct
-			if ( kernelDim[d]%2 == 0)	
-				throw new RuntimeException("kernelDim[d] should be odd for each d. For d = " + d +  " kernelDim[d] = " + kernelDim[d] + ".");
+			if ( kernelDim[d]%2 == 0 || kernelDim[d] < 3)	
+				throw new RuntimeException("kernelDim[d] should be odd and (>= 3) for each d. For d = " + d +  " kernelDim[d] = " + kernelDim[d] + ".");
 			kernelHalfDim[d] = kernelDim[d]/2; // store dim/2
 		}
 
@@ -150,18 +138,18 @@ public class MedianFilter {
 	/**
 	 *  add every element from histogram to the list
 	 */
-	public final static <T extends RealType<T> & Comparable<T>> void addElements(RandomAccessibleInterval<T> histogram, List<T> list){
+	public final static <T extends RealType<T> & Comparable<T>> void addElements(final RandomAccessibleInterval<T> histogram, final List<T> list){
 
-		List<T> histogramArray = new ArrayList<T>(); 
-		List<T> returnArray = new ArrayList<T>(); 
+		final List<T> histogramArray = new ArrayList<T>(); 
+		final List<T> returnArray = new ArrayList<T>(); 
 
 		addAll(Views.iterable(histogram), histogramArray);
 
 		int i = 0; // histogramArray index
 		int j = 0; // list index
 
-		int histogramArraySize = histogramArray.size();
-		int listSize = list.size();
+		final int histogramArraySize = histogramArray.size();
+		final int listSize = list.size();
 
 		while((i != histogramArraySize)  && (j != listSize)){
 			if (histogramArray.get(i).compareTo(list.get(j)) > 0)
@@ -194,7 +182,7 @@ public class MedianFilter {
 	 *  remove elements from the list
 	 */
 	public final static <T extends RealType<T> & Comparable<T>> void removeElements(final RandomAccessibleInterval<T> histogram, final List<T> list){		
-		List<T> histogramArray = new ArrayList<T>(); 
+		final List<T> histogramArray = new ArrayList<T>(); 
 		addAll(Views.iterable(histogram), histogramArray);
 
 		int i = 0; // histogramArray index
@@ -242,7 +230,7 @@ public class MedianFilter {
 	}
 
 	public static void main(String [] args){
-		new ImageJ(); // to have a menu!
+		// new ImageJ(); // to have a menu!
 
 		// File file = new File("src/main/resources/Bikesgray.jpg");
 		File file = new File("src/main/resources/salt-and-pepper.tif");
@@ -268,7 +256,7 @@ public class MedianFilter {
 		//ImageJFunctions.show(img);
 
 		// define the size of the filter
-		int zz = 2;
+		int zz = 1;
 		// run multiple tests
 		for (int jj = zz; jj <= zz; jj += 2) {	
 
