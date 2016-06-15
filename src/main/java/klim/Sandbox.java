@@ -6,13 +6,13 @@ import ij.ImageJ;
 import ij.ImagePlus;
 import ij.plugin.filter.Rotator;
 import net.imglib2.Cursor;
+import net.imglib2.FinalInterval;
 import net.imglib2.Interval;
 import net.imglib2.RandomAccess;
 import net.imglib2.RandomAccessible;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.algorithm.binary.Thresholder;
 import net.imglib2.algorithm.fft.InverseFourierConvolution;
-import net.imglib2.algorithm.fft2.FFT;
 import net.imglib2.algorithm.fft2.FFTConvolution;
 import net.imglib2.algorithm.gauss.Gauss;
 import net.imglib2.algorithm.neighborhood.Neighborhood;
@@ -37,11 +37,13 @@ import stephan.MeanFilter;
 import util.ImgLib2Util;
 
 public class Sandbox {
+	
+	private static final boolean filterType = false;
 
 	public Sandbox(){ 
 		// set the file name 
-		// File file = new File("../Documents/Useful/initial_worms_pics/1001-yellow.tif");
 		File file = new File("../Documents/Useful/initial_worms_pics/1001-yellow-one.tif");
+		// File file = new File("../Documents/Useful/initial_worms_pics/1001-yellow-one-1.tif");
 		// File file = new File("src/main/resources/Bikesgray.jpg");
 		
 		// get + create initial ad final images 
@@ -59,11 +61,28 @@ public class Sandbox {
 		// ---------------------------------------- // 
 		
 		// preprocessing
-		// gauss-smooth the picture a little bit
-		double[] sigma = new double[ img.numDimensions() ];
-		for (int d = 0; d < img.numDimensions(); ++d)
-			sigma[d] = 10; // size of the radius
-		img = Gauss.toFloat(sigma, img);
+		
+		if (filterType){
+			// gauss-smooth the picture a little bit
+			double[] sigma = new double[ img.numDimensions() ];
+			for (int d = 0; d < img.numDimensions(); ++d)
+				sigma[d] = 10; // size of the radius
+			 img = Gauss.toFloat(sigma, img);			
+		}
+		else{
+			final int n = img.numDimensions();
+			final long[] min = new long[n];
+			final long[] max = new long[n];
+	
+			long medianSize = 1;
+			for (int d = 0; d < n; d++) {
+				min[d] = -medianSize;
+				max[d] = medianSize;
+			}
+			int mD = 3;
+			MedianFilter.medianFilter(img, dst, new int[]{mD, mD, mD});
+		}
+		
 		ImageJFunctions.show(img);
 		
 		// fill in the kernel with proper values
@@ -79,11 +98,6 @@ public class Sandbox {
 		// apply Sobel filter # of dimensions times
 		for (int d = 0; d < img.numDimensions(); d++) {
 			tmp = img.copy();
-			// TODO: Check that the rotation is done correctly
-			// TODO: Rotation is definitely wrong 
-			// TODO: Maybe not the rotation but noise
-			// TODO: Everything is fine 
-			// the intensities map was wrong 
 			// ---- 
 			new FFTConvolution<FloatType>(tmp, Views.rotate(kernel, 0, d), new ArrayImgFactory<ComplexFloatType>()).convolve();
 			
@@ -130,7 +144,11 @@ public class Sandbox {
 		Img< BitType > display = bitFactory.create( dst, new BitType() );
 		
 		FloatType tVal = new FloatType();
-		tVal.set((float)1.2);
+		if (filterType){
+			tVal.set((float)0.8); // 
+		}
+		else
+			tVal.set((float)7.8); // 
 		display = Thresholder.threshold(dst, tVal, true, 1);
 		ImageJFunctions.show(dst);	
 		ImageJFunctions.show(display);		
