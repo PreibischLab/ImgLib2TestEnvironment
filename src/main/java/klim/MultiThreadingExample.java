@@ -73,9 +73,10 @@ public class MultiThreadingExample
 		
 		// how many threads (usually a parameter)
 		final int numThreads = Runtime.getRuntime().availableProcessors();
+		System.out.println(numThreads);
 
 		// task dependent, sometimes it is obvious, sometimes you simply split the image up
-		final int numTasks = numThreads * 3;
+		final int numTasks = numThreads;
 		
 		// in this case, we split up into many parts (from pixel "i" to pixel "j") for multithreading, each one is one task
 		final Vector< ImagePortion > tasks = divideIntoPortions( iterable.size(), numTasks );
@@ -122,6 +123,8 @@ public class MultiThreadingExample
 					
 					// and we jump to our starting position
 					c.jumpFwd( task.getStartPosition() );
+					
+					System.out.println(task.toString());
 					
 					// we iterate only as long as our ImagePortion says
 					for ( long j = 0; j < task.getLoopSize(); ++j )

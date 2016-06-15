@@ -4,10 +4,15 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Vector;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import ij.ImageJ;
-
+import klim.MultiThreadingExample.ImagePortion;
 import net.imglib2.Cursor;
 import net.imglib2.Interval;
 import net.imglib2.IterableInterval;
@@ -41,14 +46,10 @@ public class MedianFilter {
 			final RandomAccessible< T > infSrc, final Interval srcInterval, final RandomAccessibleInterval< T > dst, final int[] kernelDim){
 
 		final RandomAccessibleInterval<T> src = Views.interval(infSrc, srcInterval);
-		final Cursor<T> cSrc = Views.iterable(src).localizingCursor();
-		final RandomAccess<T> rDst = dst.randomAccess();
+		// final Cursor<T> cSrc = Views.iterable(src).localizingCursor();
+		// final RandomAccess<T> rDst = dst.randomAccess();
 
 		final int n = src.numDimensions();
-
-		// store kernel boundaries
-		final long[] min = new long[n];
-		final long[] max = new long[n];
 
 		final int[] kernelHalfDim = new int[n]; 
 		for (int d = 0; d < n; ++d){
@@ -57,63 +58,116 @@ public class MedianFilter {
 				throw new RuntimeException("kernelDim[d] should be odd and (>= 3) for each d. For d = " + d +  " kernelDim[d] = " + kernelDim[d] + ".");
 			kernelHalfDim[d] = kernelDim[d]/2; // store dim/2
 		}
+		
+		// @Parallel : 
+		final int numThreads =  1; // Runtime.getRuntime().availableProcessors(); 
+		final int numTasks = 1; // numThreads*12;
+		final Vector<ImagePortion> tasks = MultiThreadingExample.divideIntoPortions(Views.iterable(src).size(), numTasks);
+		final ExecutorService taskExecutor = Executors.newFixedThreadPool( numThreads );
+		// sosi suka!
+		final ArrayList< Callable<Void> > taskList = new ArrayList< Callable< Void > >(); 
+		int taskId = 0;
+		
+		
+		// @IMP! 
+		// shift the cursor! 
+		// @Parallel :
+		for (final ImagePortion task : tasks){
+			// @Parallel :
+			final int nextId = taskId++;
+			taskList.add(new Callable<Void>(){
+				@Override
+				public Void call() throws Exception{
+					// @Parallel : these should be local for each Thread
+					final Cursor<T> cSrc = Views.iterable(src).localizingCursor();
+					final RandomAccess<T> rDst = dst.randomAccess();
+					
+					cSrc.jumpFwd(task.getStartPosition());
+						
+					// store kernel boundaries
+					final long[] min = new long[n];
+					final long[] max = new long[n];
 
-		// store previous/current position of cursor
-		final long[] pPos = new long[n]; 
-		final long[] cPos = new long[n]; 
-		cSrc.localize(cPos);
-		updateKernelMinMax(min, max, cPos, kernelHalfDim, n);
+					// store previous/current position of cursor
+					final long[] pPos = new long[n]; 
+					final long[] cPos = new long[n]; 
+					cSrc.localize(cPos);
+					
+					// task.toString();
+					// System.out.println(task.toString());
+					
+					updateKernelMinMax(min, max, cPos, kernelHalfDim, n);
 
-		// contains all elements of the kernel
-		IterableInterval<T> histogram = Views.interval(infSrc, min, max);
-		List<T> histogramList = new ArrayList<T>(); 
-		addAll(histogram, histogramList);
+					// contains all elements of the kernel
+					IterableInterval<T> histogram = Views.interval(infSrc, min, max);
+					List<T> histogramList = new ArrayList<T>(); 
+					addAll(histogram, histogramList);
 
-		final long[] localMin  = new long[n - 1];
-		final long[] localMax  = new long[n - 1];
+					final long[] localMin  = new long[n - 1];
+					final long[] localMax  = new long[n - 1];
 
-		while(cSrc.hasNext()){
-			cSrc.localize(pPos);
-			cSrc.fwd();
-			cSrc.localize(cPos);
+					//while(cSrc.hasNext()){
+					for(long j = 0; j < task.getLoopSize(); ++j){
+						if(cSrc.hasNext()){ // this check looks necessary but not sure 
+							cSrc.localize(pPos);
+							cSrc.fwd();
+							cSrc.localize(cPos);
 
-			final long checkDist = checkDist(pPos, cPos, n);	 // check if the cursor moved only by one step						
-			if (checkDist == 0){ // moved too far
-				// define new boundaries of the new kernel-window
-				updateKernelMinMax(min, max, cPos, kernelHalfDim, n);
-				// adjust the histogram window
-				histogram = Views.interval(infSrc, min, max);
-				histogramList.clear();					
-				addAll(histogram, histogramList);
-			}
-			else{ // moved by one
-				final int dim = (int)Math.abs(checkDist) - 1; 	 //
-				final long step = (long) Math.signum(checkDist); // shows the direction of movement (+1/-1)
+							final long checkDist = checkDist(pPos, cPos, n);	 // check if the cursor moved only by one step						
+							if (checkDist == 0){ // moved too far
+								// define new boundaries of the new kernel-window
+								updateKernelMinMax(min, max, cPos, kernelHalfDim, n);
+								// adjust the histogram window
+								histogram = Views.interval(infSrc, min, max);
+								histogramList.clear();					
+								addAll(histogram, histogramList);
+							}
+							else{ // moved by one
+								final int dim = (int)Math.abs(checkDist) - 1; 	 //
+								final long step = (long) Math.signum(checkDist); // shows the direction of movement (+1/-1)
 
-				min[ dim ] += step;
-				max[ dim ] += step;
+								min[ dim ] += step;
+								max[ dim ] += step;
 
-				final RandomAccessible<T> removeSlice = Views.hyperSlice(infSrc, dim, step < 0 ? max[dim] + 1: min[dim] - 1);
-				final RandomAccessible<T> addSlice  = Views.hyperSlice(infSrc, dim, step < 0 ? min[dim] : max[dim]);		
+								final RandomAccessible<T> removeSlice = Views.hyperSlice(infSrc, dim, step < 0 ? max[dim] + 1: min[dim] - 1);
+								final RandomAccessible<T> addSlice  = Views.hyperSlice(infSrc, dim, step < 0 ? min[dim] : max[dim]);		
 
-				// remove one dimension
-				for (int i = 0; i < n; ++i)
-					if (i != dim){
-						localMin[i > dim ? i - 1 : i] = min[i];
-						localMax[i > dim ? i - 1 : i] = max[i];
+								// remove one dimension
+								for (int i = 0; i < n; ++i)
+									if (i != dim){
+										localMin[i > dim ? i - 1 : i] = min[i];
+										localMax[i > dim ? i - 1 : i] = max[i];
+									}
+
+								final RandomAccessibleInterval<T> removeHistogram = Views.interval(removeSlice, localMin, localMax);
+								final RandomAccessibleInterval<T> addHistogram  = Views.interval(addSlice, localMin, localMax);
+
+								removeElements(removeHistogram, histogramList);
+								addElements(addHistogram, histogramList);
+							}
+
+							// get/set the median value 
+							rDst.setPosition(cSrc);
+							rDst.get().set(histogramList.get(histogramList.size()/2));
+						}
 					}
-
-				final RandomAccessibleInterval<T> removeHistogram = Views.interval(removeSlice, localMin, localMax);
-				final RandomAccessibleInterval<T> addHistogram  = Views.interval(addSlice, localMin, localMax);
-
-				removeElements(removeHistogram, histogramList);
-				addElements(addHistogram, histogramList);
-			}
-
-			// get/set the median value 
-			rDst.setPosition(cSrc);
-			rDst.get().set(histogramList.get(histogramList.size()/2));
+					return null; // @TODO: correct?! 
+				}
+			});
 		}
+		
+		try
+		{
+			// invokeAll() returns when all tasks are complete
+			// the Future contains the result of each individual task as defined in the Callable< float[] > 
+			 final List< Future<Void> > futures = taskExecutor.invokeAll( taskList );
+		}
+		catch( final Exception e ){
+			System.out.println( "Failed to compute min/max: " + e );
+			e.printStackTrace();
+		}
+		taskExecutor.shutdown();
+		
 	}
 
 	/**
@@ -233,11 +287,11 @@ public class MedianFilter {
 		// new ImageJ(); // to have a menu!
 
 		// File file = new File("src/main/resources/Bikesgray.jpg");
-		File file = new File("src/main/resources/salt-and-pepper.tif");
+		// File file = new File("src/main/resources/salt-and-pepper.tif");
 		//File file = new File("src/main/resources/noisyWoman.png");
 		// File file = new File("src/main/resources/test3D.tif");
 		// File file = new File("src/main/resources/inputMedian.png");
-		// File file = new File("../Documents/Useful/initial_worms_pics/1001-yellow-one-1.tif");
+		File file = new File("../Documents/Useful/initial_worms_pics/1001-yellow-one.tif");
 		final Img<FloatType> img = ImgLib2Util.openAs32Bit(file);
 		final Img<FloatType> dst = img.factory().create(img, img.firstElement());
 
@@ -256,7 +310,7 @@ public class MedianFilter {
 		//ImageJFunctions.show(img);
 
 		// define the size of the filter
-		int zz = 1;
+		int zz = 5;
 		// run multiple tests
 		for (int jj = zz; jj <= zz; jj += 2) {	
 
@@ -267,7 +321,7 @@ public class MedianFilter {
 			long inT  = System.nanoTime();
 			//final RandomAccessible< T > infSrc, final Interval srcInterval, final RandomAccessibleInterval< T > dst, final int[] kernelDim);
 			//medianFilter(img, dst, new FinalInterval(min, max));
-			medianFilter(img, dst, new int[]{jj, jj});
+			medianFilter(img, dst, new int[]{jj, jj, jj});
 			System.out.println("kernel = " + jj + "x" + jj + " : "+ TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - inT)/1000.0);
 			ImageJFunctions.show(dst);
 		}
