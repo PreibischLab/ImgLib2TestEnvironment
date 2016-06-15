@@ -38,6 +38,7 @@ public class MedianFilter {
 	
 	
 	private static final boolean debug = true;
+	private static final boolean typeList = false;
 	
 	public static < T extends RealType<  T > & Comparable<T> > void medianFilter(
 			final RandomAccessibleInterval< T > src, final RandomAccessibleInterval< T > dst, final int[] kernelDim )
@@ -55,7 +56,6 @@ public class MedianFilter {
 
 		final RandomAccessibleInterval<T> src = Views.interval(infSrc, srcInterval);
 		final Cursor<T> cSrc = Views.iterable(src).localizingCursor();
-		//cSrc.jumpFwd(steps);
 		final RandomAccess<T> rDst = dst.randomAccess();
 		
 		final int n = src.numDimensions();
@@ -69,16 +69,6 @@ public class MedianFilter {
 				throw new RuntimeException("kernel not odd");
 			kernelHalfDim[d] = kernelDim[d]/2; // store dim/2
 		}
-		
-		
-//		for (int d = 0; d < n; ++d){
-//			if ( kernelDim[d]%2 == 0 )
-//				throw new RuntimeException("kernel not odd");
-//	
-//			min[d] = cSrc.getLongPosition(d) - kernelDim[d]/2; // store dim/2
-//			max[d] = cSrc.getLongPosition(d) + kernelDim[d]/2;
-//		}
-		
 
 		// store previous/current position of cursor
 		final long[] pPos = new long[n]; 
@@ -89,13 +79,10 @@ public class MedianFilter {
 		// contains all elements of the kernel
 		IterableInterval<T> histogram = Views.interval(infSrc, min, max);
 		// List<T> histogramList = new ArrayList<T>(); 
-		List<T> histogramList = new LinkedList<T>(); 
+		// List<T> histogramList = new LinkedList<T>(); 
 		
+		List<T> histogramList  = typeList ? new LinkedList<T>() : new ArrayList<T>(); 	
 		addAll(histogram, histogramList);
-		
-//		for (T h : histogram)
-//			histogramList.add(h.copy()); 					
-//		Collections.sort(histogramList);	
 
 		final long[] localMin  = new long[n - 1];
 		final long[] localMax  = new long[n - 1];
@@ -108,49 +95,22 @@ public class MedianFilter {
 			cSrc.localize(cPos);
 
 			final long checkDist = checkDist(pPos, cPos, n);	 // check if the cursor moved only by one step
-			
-			// define new boundaries of the new kernel-window
-			// this one is necessary for each of the if cases
-//			for (int d = 0; d < n; ++d){
-//				if ( kernelDim[d]%2 == 0 )
-//					throw new RuntimeException("kernel not odd");
-//				min[d] = cSrc.getLongPosition(d) - kernelDim[d]/2;
-//				max[d] = cSrc.getLongPosition(d) + kernelDim[d]/2;
-//			}
-			
-			updateKernelMinMax(min, max, cPos, kernelHalfDim, n);
-			
-			// adjust the histogram window
-			histogram = Views.interval(infSrc, min, max);
+			 // System.out.println("x: " + min[0] + " "  + cSrc.getLongPosition(0)  + " " + max[0] + " " + "y: " + min[1] + " " + cSrc.getLongPosition(1) + " " + max[1] );
 						
 			if (checkDist == 0){ // moved too far
-
-
-				histogramList.clear();	
-				
+				// define new boundaries of the new kernel-window
+				updateKernelMinMax(min, max, cPos, kernelHalfDim, n);
+				// adjust the histogram window
+				histogram = Views.interval(infSrc, min, max);
+				histogramList.clear();					
 				addAll(histogram, histogramList);
-				
-//				for (T h : histogram) 
-//					histogramList.add(h.copy()); 			
-//				Collections.sort(histogramList);	
-			
-				
-				
-				
-				
-				// System.out.println("idx: " + idx);
 			}
 			else{ // moved by one
 				final int dim = (int)Math.abs(checkDist) - 1; 	 //
 				final long step = (long) Math.signum(checkDist); // shows the direction of movement (+1/-1)
-				
-				// System.out.println(dim + " " + step);
-				
-//				min[ dim ] += step;
-//				max[ dim ] += step;
-				
-				// the position looks fine
-				// System.out.println("x: " + min[0] + " "  + cSrc.getLongPosition(0)  + " " + max[0] + " " + "y: " + min[1] + " " + cSrc.getLongPosition(1) + " " + max[1] );
+	
+				min[ dim ] += step;
+				max[ dim ] += step;
 				
 				final RandomAccessible<T> dropSlice = Views.hyperSlice(infSrc, dim, step < 0 ? max[dim] + 1: min[dim] - 1);
 				final RandomAccessible<T> addSlice  = Views.hyperSlice(infSrc, dim, step < 0 ? min[dim] : max[dim]);		
@@ -163,34 +123,18 @@ public class MedianFilter {
 					}
 
 				}
-
 				
 				final RandomAccessibleInterval<T> dropHistogram = Views.interval(dropSlice, localMin, localMax);
 				final RandomAccessibleInterval<T> addHistogram  = Views.interval(addSlice, localMin, localMax);
 				
-				if(idx == 512){
-
-					System.out.print(idx + ": ");
-					for (T h : histogram){
-						System.out.print(h + " ");
-					}
-					System.out.println();
-
-					System.out.print("drop:");
-					for (T h : Views.iterable(dropHistogram)){
-						System.out.print(h + " ");
-					}
-					System.out.println();
-
-					System.out.print("add :");
-					for (T h : Views.iterable(addHistogram)){
-						System.out.print(h + " ");
-					}
-					System.out.println();
+				if (typeList){
+					dropElements(dropHistogram, histogramList);
+					addElements(addHistogram, histogramList);
 				}
-				
-				dropElements(dropHistogram, histogramList, idx);
-				addElements(addHistogram, histogramList);
+				else{
+					dropElements2(dropHistogram, histogramList);
+					addElements2(addHistogram, histogramList);
+				}
 
 				if (debug)
 					if (!isSizeCorrect(histogramList, kernelDim))
@@ -212,9 +156,11 @@ public class MedianFilter {
 		System.out.println("idx = " + idx);
 	}
 	
-	
-	public final static <T extends RealType<T> & Comparable<T>> void addAll(IterableInterval<T> histogram, List<T> list){
-		for (T h : histogram) 
+	/**
+	 * copy elements from the histogram to list 
+	 * */
+	public final static <T extends RealType<T> & Comparable<T>> void addAll(final IterableInterval<T> histogram, final List<T> list){
+		for (final T h : histogram) 
 			list.add(h.copy()); 			
 		Collections.sort(list);	
 	}
@@ -246,18 +192,54 @@ public class MedianFilter {
 	}
 	
 	/**
+	 *  2nd implementation
+	 *  adds every element from histogram contained in list
+	 */
+	public final static <T extends RealType<T> & Comparable<T>> void addElements2(RandomAccessibleInterval<T> histogram, List<T> list){
+		
+		List<T> histogramArray = new ArrayList<T>(); 
+		List<T> returnArray = new ArrayList<T>(); 
+
+		addAll(Views.iterable(histogram), histogramArray);
+
+		int i = 0; // histogramArray index
+		int j = 0; // list index
+
+		int histogramArraySize = histogramArray.size();
+		int listSize = list.size();
+
+		while((i != histogramArraySize)  && (j != listSize)){
+			if (histogramArray.get(i).compareTo(list.get(j)) > 0){
+				returnArray.add(list.get(j++));
+			} 
+			else{
+				if (histogramArray.get(i).compareTo(list.get(j)) < 0){
+					returnArray.add(histogramArray.get(i++));
+				}
+				else{ // equality case
+					returnArray.add(list.get(j++));
+					returnArray.add(histogramArray.get(i++));
+				}
+			}
+
+			// flush the rest
+			if (i == histogramArraySize)
+				while(j < listSize)
+					returnArray.add(list.get(j++));
+			if (j == listSize)
+				while(i < histogramArraySize)
+					returnArray.add(histogramArray.get(i++));		
+		}
+
+		list.clear();	
+		for(final T h : returnArray) 
+			list.add(h.copy());
+	}
+	
+	/**
 	 *  removes every element from histogram contained in list
 	 */
-	public final static <T extends RealType<T> & Comparable<T>> void dropElements(final RandomAccessibleInterval<T> histogram, final List<T> list, long idx){
-		// same as above
-		
-		if(idx == 512){
-			System.out.println("This is the output from the function");
-			for (T h : list){
-				System.out.print(h + " ");
-			}
-		}
-		
+	public final static <T extends RealType<T> & Comparable<T>> void dropElements(final RandomAccessibleInterval<T> histogram, final List<T> list){
 		for (T h : Views.iterable(histogram)) {		
 			int key = Collections.binarySearch(list, h);					
 			try{
@@ -268,6 +250,26 @@ public class MedianFilter {
 			}
 		}	
 	}
+	
+	public final static <T extends RealType<T> & Comparable<T>> void dropElements2(final RandomAccessibleInterval<T> histogram, final List<T> list){
+		
+		List<T> histogramArray = new ArrayList<T>(); 
+		addAll(Views.iterable(histogram), histogramArray);
+	
+		int i = 0; // histogramArray index
+		int j = 0; // list index
+		
+		int histogramArraySize = histogramArray.size();
+		while(i != histogramArraySize){ // iterate while we do not go through all elements in histogram
+			if (histogramArray.get(i).compareTo(list.get(j)) == 0){
+				list.remove(j);
+				i++; 
+			}
+			else
+				j++; 
+		}			
+	}
+	
 	
 	
 	/**
@@ -326,11 +328,12 @@ public class MedianFilter {
 	public static void main(String [] args){
 		new ImageJ(); // to have a menu!
 		
-		//File file = new File("src/main/resources/Bikesgray.jpg");
-		//File file = new File("src/main/resources/salt-and-pepper.tif");
+		// File file = new File("src/main/resources/Bikesgray.jpg");
+		File file = new File("src/main/resources/salt-and-pepper.tif");
+		//File file = new File("src/main/resources/noisyWoman.png");
 		// File file = new File("src/main/resources/test3D.tif");
 		// File file = new File("src/main/resources/inputMedian.png");
-		File file = new File("../Documents/Useful/initial_worms_pics/1001-yellow-one-1.tif");
+		// File file = new File("../Documents/Useful/initial_worms_pics/1001-yellow-one-1.tif");
 		final Img<FloatType> img = ImgLib2Util.openAs32Bit(file);
 		final Img<FloatType> dst = img.factory().create(img, img.firstElement());
 		
@@ -346,12 +349,12 @@ public class MedianFilter {
 		maxValue.set(255);		
 		Normalize.normalize(img, minValue, maxValue);
 		
-		ImageJFunctions.show(img);
+		//ImageJFunctions.show(img);
 		
 		// define the size of the filter
-		int zz = 9;
+		int zz = 3;
 		// run multiple tests
-		for (int jj = 3; jj <= zz; jj += 2) {	
+		for (int jj = zz; jj <= zz; jj += 2) {	
 
 			for (int d = 0; d < n; d++) {
 				min[d] = -jj;
@@ -361,7 +364,7 @@ public class MedianFilter {
 			//final RandomAccessible< T > infSrc, final Interval srcInterval, final RandomAccessibleInterval< T > dst, final int[] kernelDim);
 			//medianFilter(img, dst, new FinalInterval(min, max));
 			medianFilter(img, dst, new int[]{jj, jj});
-			System.out.println("Time for jj = " + jj + " : "+ TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - inT)/1000);
+			System.out.println("kernel = " + jj + "x" + jj + " : "+ TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - inT)/1000.0);
 			ImageJFunctions.show(dst);
 		}
 		
@@ -370,6 +373,6 @@ public class MedianFilter {
 		
 		
 		
-		System.out.println("Doge!");
+		// System.out.println("Doge!");
 	}	
 }
