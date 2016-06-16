@@ -8,11 +8,9 @@ import java.util.Vector;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import ij.ImageJ;
-import klim.MultiThreadingExample.ImagePortion;
 import net.imglib2.Cursor;
 import net.imglib2.Interval;
 import net.imglib2.IterableInterval;
@@ -28,27 +26,81 @@ import net.imglib2.view.Views;
 import util.ImgLib2Util;
 
 public class MedianFilter {
+	
+	public static class ImagePortion
+	{
+		public ImagePortion( final long startPosition, long loopSize )
+		{
+			this.startPosition = startPosition;
+			this.loopSize = loopSize;
+		}
+		
+		public long getStartPosition() { return startPosition; }
+		public long getLoopSize() { return loopSize; }
+		
+		protected long startPosition;
+		protected long loopSize;
+		
+		@Override
+		public String toString() { return "Portion [" + getStartPosition() + " ... " + ( getStartPosition() + getLoopSize() - 1 ) + " ]"; }
+	}
+	
+	public static final Vector<ImagePortion> divideIntoPortions( final long imageSize, final int numPortions )
+	{
+		final long threadChunkSize = imageSize / numPortions;
+		final long threadChunkMod = imageSize % numPortions;
+		
+		final Vector<ImagePortion> portions = new Vector<ImagePortion>();
+		
+		for ( int portionID = 0; portionID < numPortions; ++portionID )
+		{
+			// move to the starting position of the current thread
+			final long startPosition = portionID * threadChunkSize;
 
+			// the last thread may has to run longer if the number of pixels cannot be divided by the number of threads
+			final long loopSize;
+			if ( portionID == numPortions - 1 )
+				loopSize = threadChunkSize + threadChunkMod;
+			else
+				loopSize = threadChunkSize;
+			
+			portions.add( new ImagePortion( startPosition, loopSize ) );
+		}
+		
+		return portions;
+	}
+
+	/**
+	 * call median filter with mirror single extension strategy
+	 * */
+	public static < T extends RealType<  T > & Comparable<T> > void medianFilter(
+			final RandomAccessibleInterval< T > src, final RandomAccessibleInterval< T > dst, final int[] kernelDim, final int numThreads, final int numTasks){
+		medianFilter(Views.extendMirrorSingle(src), src, dst, kernelDim, numThreads, numTasks);
+	}
+
+	/**
+	 * call median filter with the predefined # of threads and # of tasks
+	 * */
 	public static < T extends RealType<  T > & Comparable<T> > void medianFilter(
 			final RandomAccessibleInterval< T > src, final RandomAccessibleInterval< T > dst, final int[] kernelDim )
 	{
-		medianFilter(Views.extendMirrorSingle(src), src, dst, kernelDim);
+		// set the parameters automatically 
+		final int numThreads = Runtime.getRuntime().availableProcessors(); 
+		final int numTasks = numThreads*6;
+		medianFilter(Views.extendMirrorSingle(src), src, dst, kernelDim, numThreads, numTasks);
 	}
-
+	
 	/** 
 	 * Apply median filter to the whole image
 	 * @param infSrc -- extended image
-	 * @param SrcInterval -- interval for the input
+	 * @param srcInterval -- interval for the input
 	 * @param dst -- output image
 	 * @param kernelDim -- the size of the kernel in each dimension (should be *odd*) 
 	 * */
 	public static < T extends RealType<  T > & Comparable<T> > void medianFilter(
-			final RandomAccessible< T > infSrc, final Interval srcInterval, final RandomAccessibleInterval< T > dst, final int[] kernelDim){
+			final RandomAccessible< T > infSrc, final Interval srcInterval, final RandomAccessibleInterval< T > dst, final int[] kernelDim, final int numThreads, final int numTasks){
 
 		final RandomAccessibleInterval<T> src = Views.interval(infSrc, srcInterval);
-		// final Cursor<T> cSrc = Views.iterable(src).localizingCursor();
-		// final RandomAccess<T> rDst = dst.randomAccess();
-
 		final int n = src.numDimensions();
 
 		final int[] kernelHalfDim = new int[n]; 
@@ -60,23 +112,16 @@ public class MedianFilter {
 		}
 		
 		// @Parallel : 
-		final int numThreads =  1; // Runtime.getRuntime().availableProcessors(); 
-		final int numTasks = 1; // numThreads*12;
-		final Vector<ImagePortion> tasks = MultiThreadingExample.divideIntoPortions(Views.iterable(src).size(), numTasks);
+		final Vector<ImagePortion> tasks = divideIntoPortions(Views.iterable(src).size(), numTasks);
 		final ExecutorService taskExecutor = Executors.newFixedThreadPool( numThreads );
-		// sosi suka!
 		final ArrayList< Callable<Void> > taskList = new ArrayList< Callable< Void > >(); 
-		int taskId = 0;
-		
-		
-		// @IMP! 
-		// shift the cursor! 
+	
 		// @Parallel :
 		for (final ImagePortion task : tasks){
 			// @Parallel :
-			final int nextId = taskId++;
 			taskList.add(new Callable<Void>(){
-				@Override
+				// @TODO: is it reasonable to make a function for that
+				@Override				
 				public Void call() throws Exception{
 					// @Parallel : these should be local for each Thread
 					final Cursor<T> cSrc = Views.iterable(src).localizingCursor();
@@ -93,9 +138,6 @@ public class MedianFilter {
 					final long[] cPos = new long[n]; 
 					cSrc.localize(cPos);
 					
-					// task.toString();
-					// System.out.println(task.toString());
-					
 					updateKernelMinMax(min, max, cPos, kernelHalfDim, n);
 
 					// contains all elements of the kernel
@@ -106,9 +148,8 @@ public class MedianFilter {
 					final long[] localMin  = new long[n - 1];
 					final long[] localMax  = new long[n - 1];
 
-					//while(cSrc.hasNext()){
 					for(long j = 0; j < task.getLoopSize(); ++j){
-						if(cSrc.hasNext()){ // this check looks necessary but not sure 
+						if(cSrc.hasNext()){ // prevents possible problems in the last task
 							cSrc.localize(pPos);
 							cSrc.fwd();
 							cSrc.localize(cPos);
@@ -159,15 +200,14 @@ public class MedianFilter {
 		try
 		{
 			// invokeAll() returns when all tasks are complete
-			// the Future contains the result of each individual task as defined in the Callable< float[] > 
-			 final List< Future<Void> > futures = taskExecutor.invokeAll( taskList );
+			// synchronization point
+			 taskExecutor.invokeAll(taskList);
 		}
-		catch( final Exception e ){
-			System.out.println( "Failed to compute min/max: " + e );
+		catch(final Exception e){
+			System.out.println( "Failed to invoke all tasks" + e );
 			e.printStackTrace();
 		}
-		taskExecutor.shutdown();
-		
+		taskExecutor.shutdown();	
 	}
 
 	/**
@@ -226,7 +266,7 @@ public class MedianFilter {
 					returnArray.add(histogramArray.get(i++));		
 		}
 
-		// is this copying cheaper than shifting elements in the ArrayList
+		// @TODO: is this copying cheaper than shifting elements in the ArrayList?
 		list.clear();	
 		for(final T h : returnArray) 
 			list.add(h.copy());
@@ -253,13 +293,11 @@ public class MedianFilter {
 		}			
 	}	
 
-
-
 	/**
-	 * This one checks if the cursor moved only by one pixel away
+	 * check if the cursor moved only by one pixel away
 	 * @param pPos - position of the previous element
 	 * @param cPos - position of the current element
-	 * @param n - num of dimensions
+	 * @param n - # of dimensions
 	 * @return d+1 in which it moved, or zero if jumped to far
 	 */
 	public static long checkDist(final long[] pPos, final long[] cPos, final int n){
@@ -287,11 +325,11 @@ public class MedianFilter {
 		// new ImageJ(); // to have a menu!
 
 		// File file = new File("src/main/resources/Bikesgray.jpg");
-		// File file = new File("src/main/resources/salt-and-pepper.tif");
+		File file = new File("src/main/resources/salt-and-pepper.tif");
 		//File file = new File("src/main/resources/noisyWoman.png");
 		// File file = new File("src/main/resources/test3D.tif");
 		// File file = new File("src/main/resources/inputMedian.png");
-		File file = new File("../Documents/Useful/initial_worms_pics/1001-yellow-one.tif");
+		// File file = new File("../Documents/Useful/initial_worms_pics/1001-yellow-one.tif");
 		final Img<FloatType> img = ImgLib2Util.openAs32Bit(file);
 		final Img<FloatType> dst = img.factory().create(img, img.firstElement());
 
@@ -310,7 +348,7 @@ public class MedianFilter {
 		//ImageJFunctions.show(img);
 
 		// define the size of the filter
-		int zz = 5;
+		int zz = 3;
 		// run multiple tests
 		for (int jj = zz; jj <= zz; jj += 2) {	
 
@@ -321,7 +359,7 @@ public class MedianFilter {
 			long inT  = System.nanoTime();
 			//final RandomAccessible< T > infSrc, final Interval srcInterval, final RandomAccessibleInterval< T > dst, final int[] kernelDim);
 			//medianFilter(img, dst, new FinalInterval(min, max));
-			medianFilter(img, dst, new int[]{jj, jj, jj});
+			medianFilter(img, dst, new int[]{jj, jj});
 			System.out.println("kernel = " + jj + "x" + jj + " : "+ TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - inT)/1000.0);
 			ImageJFunctions.show(dst);
 		}

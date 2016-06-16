@@ -42,8 +42,8 @@ public class Sandbox {
 
 	public Sandbox(){ 
 		// set the file name 
-		File file = new File("../Documents/Useful/initial_worms_pics/1001-yellow-one.tif");
-		// File file = new File("../Documents/Useful/initial_worms_pics/1001-yellow-one-1.tif");
+		// File file = new File("../Documents/Useful/initial_worms_pics/1001-yellow-one.tif");
+		File file = new File("../Documents/Useful/initial_worms_pics/1001-yellow-one-1.tif");
 		// File file = new File("src/main/resources/Bikesgray.jpg");
 		
 		// get + create initial ad final images 
@@ -80,7 +80,7 @@ public class Sandbox {
 				max[d] = medianSize;
 			}
 			int mD = 3;
-			MedianFilter.medianFilter(img, dst, new int[]{mD, mD, mD});
+			MedianFilter.medianFilter(img, dst, new int[]{mD, mD});
 		}
 		
 		ImageJFunctions.show(img);
@@ -146,12 +146,22 @@ public class Sandbox {
 		FloatType tVal = new FloatType();
 		if (filterType){
 			tVal.set((float)0.8); // 
+		
+			
 		}
-		else
-			tVal.set((float)7.8); // 
-		display = Thresholder.threshold(dst, tVal, true, 1);
-		ImageJFunctions.show(dst);	
-		ImageJFunctions.show(display);		
+		else{
+			for(int i = 20; i < 40; i+= 2){
+				tVal.set((float)(7.8 + i)); // 
+				display = Thresholder.threshold(dst, tVal, true, 1);
+				// ImageJFunctions.show(dst);	
+				ImageJFunctions.show(display);	
+			}
+
+		}
+		// display = Thresholder.threshold(dst, tVal, true, 1);
+		// ImageJFunctions.show(dst);	
+		// ImageJFunctions.show(display);		
+		
 		// Sharpen image
 		// float[] kernelValuesS = new float[]{-1,-1,-1,
 		//									-1, 25,-1,
@@ -170,8 +180,12 @@ public class Sandbox {
 	// it is not crucial
 	float[] getKernelValues(int dim){
 		if (dim == 2){
+			
 			float[] kernel = new float[]{
-					1,2,1, 0,0,0, -1,-2,-1};
+					0, 1, 2, -1, 0, 1, -2, 1, 0};
+			
+//			float[] kernel = new float[]{
+//					1,2,1, 0,0,0, -1,-2,-1};
 			for (int i = 0; i < kernel.length; ++i) {
 				kernel[i] /= 4;
 			}
