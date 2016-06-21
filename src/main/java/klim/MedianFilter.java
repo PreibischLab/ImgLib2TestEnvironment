@@ -25,7 +25,106 @@ import net.imglib2.type.numeric.real.FloatType;
 import net.imglib2.view.Views;
 import util.ImgLib2Util;
 
-public class MedianFilter {
+public class MedianFilter
+{
+	public static class MedianThread< T extends RealType< T > & Comparable< T > > implements Callable<Void>
+	{
+		final ImagePortion task;
+		final RandomAccessibleInterval<T> src;
+		final RandomAccessible< T > infSrc;
+		final int[] kernelHalfDim;
+		final RandomAccessibleInterval< T > dst;
+		final int n;
+
+		public MedianThread( final ImagePortion task, final RandomAccessible< T > infSrc, final RandomAccessibleInterval<T> src, final RandomAccessibleInterval< T > dst, final int[] kernelHalfDim )
+		{
+			this.task = task;
+			this.src = src;
+			this.infSrc = infSrc;
+			this.dst = dst;
+			this.kernelHalfDim = kernelHalfDim;
+			this.n = src.numDimensions();
+		}
+	
+		@Override				
+		public Void call() throws Exception{
+			// @Parallel : these should be local for each Thread
+			final Cursor<T> cSrc = Views.iterable(src).localizingCursor();
+			final RandomAccess<T> rDst = dst.randomAccess();
+			
+			cSrc.jumpFwd(task.getStartPosition());
+				
+			// store kernel boundaries
+			final long[] min = new long[n];
+			final long[] max = new long[n];
+
+			// store previous/current position of cursor
+			final long[] pPos = new long[n]; 
+			final long[] cPos = new long[n]; 
+			cSrc.localize(cPos);
+			
+			updateKernelMinMax(min, max, cPos, kernelHalfDim, n);
+
+			// contains all elements of the kernel
+			IterableInterval<T> histogram = Views.interval(infSrc, min, max);
+			List<T> histogramList = new ArrayList<T>(); 
+			addAll(histogram, histogramList);
+
+			final long[] localMin  = new long[n - 1];
+			final long[] localMax  = new long[n - 1];
+
+			for(long j = 0; j < task.getLoopSize(); ++j){
+				if(cSrc.hasNext()){ // prevents possible problems in the last task
+					cSrc.localize(pPos);
+					cSrc.fwd();
+					cSrc.localize(cPos);
+
+					final long checkDist = checkDist(pPos, cPos, n);	 // check if the cursor moved only by one step						
+					if (checkDist == 0){ // moved too far
+						// define new boundaries of the new kernel-window
+						updateKernelMinMax(min, max, cPos, kernelHalfDim, n);
+						// adjust the histogram window
+						histogram = Views.interval(infSrc, min, max);
+						histogramList.clear();					
+						addAll(histogram, histogramList);
+					}
+					else{ // moved by one
+						final int dim = (int)Math.abs(checkDist) - 1; 	 //
+						final long step = (long) Math.signum(checkDist); // shows the direction of movement (+1/-1)
+
+						min[ dim ] += step;
+						max[ dim ] += step;
+
+						final RandomAccessible<T> removeSlice = Views.hyperSlice(infSrc, dim, step < 0 ? max[dim] + 1: min[dim] - 1);
+						final RandomAccessible<T> addSlice  = Views.hyperSlice(infSrc, dim, step < 0 ? min[dim] : max[dim]);		
+
+						// remove one dimension
+						updateLocalMinMax( n, dim, localMin, localMax, min, max );
+
+						final RandomAccessibleInterval<T> removeHistogram = Views.interval(removeSlice, localMin, localMax);
+						final RandomAccessibleInterval<T> addHistogram  = Views.interval(addSlice, localMin, localMax);
+
+						removeElements(removeHistogram, histogramList);
+						addElements(addHistogram, histogramList);
+					}
+
+					// get/set the median value 
+					rDst.setPosition(cSrc);
+					rDst.get().set(histogramList.get(histogramList.size()/2));
+				}
+			}
+			return null; 
+		}
+	}
+	
+	private static final void updateLocalMinMax( final int n, final int dim, final long[] localMin, final long[] localMax, final long[] min, final long[] max )
+	{
+		for (int i = 0; i < n; ++i)
+			if (i != dim){
+				localMin[i > dim ? i - 1 : i] = min[i];
+				localMax[i > dim ? i - 1 : i] = max[i];
+			}		
+	}
 	
 	public static class ImagePortion
 	{
@@ -112,90 +211,12 @@ public class MedianFilter {
 		}
 		
 		// @Parallel : 
-		final Vector<ImagePortion> tasks = divideIntoPortions(Views.iterable(src).size(), numTasks);
 		final ExecutorService taskExecutor = Executors.newFixedThreadPool( numThreads );
 		final ArrayList< Callable<Void> > taskList = new ArrayList< Callable< Void > >(); 
 	
 		// @Parallel :
-		for (final ImagePortion task : tasks){
-			// @Parallel :
-			taskList.add(new Callable<Void>(){
-				// @TODO: is it reasonable to make a function for that
-				@Override				
-				public Void call() throws Exception{
-					// @Parallel : these should be local for each Thread
-					final Cursor<T> cSrc = Views.iterable(src).localizingCursor();
-					final RandomAccess<T> rDst = dst.randomAccess();
-					
-					cSrc.jumpFwd(task.getStartPosition());
-						
-					// store kernel boundaries
-					final long[] min = new long[n];
-					final long[] max = new long[n];
-
-					// store previous/current position of cursor
-					final long[] pPos = new long[n]; 
-					final long[] cPos = new long[n]; 
-					cSrc.localize(cPos);
-					
-					updateKernelMinMax(min, max, cPos, kernelHalfDim, n);
-
-					// contains all elements of the kernel
-					IterableInterval<T> histogram = Views.interval(infSrc, min, max);
-					List<T> histogramList = new ArrayList<T>(); 
-					addAll(histogram, histogramList);
-
-					final long[] localMin  = new long[n - 1];
-					final long[] localMax  = new long[n - 1];
-
-					for(long j = 0; j < task.getLoopSize(); ++j){
-						if(cSrc.hasNext()){ // prevents possible problems in the last task
-							cSrc.localize(pPos);
-							cSrc.fwd();
-							cSrc.localize(cPos);
-
-							final long checkDist = checkDist(pPos, cPos, n);	 // check if the cursor moved only by one step						
-							if (checkDist == 0){ // moved too far
-								// define new boundaries of the new kernel-window
-								updateKernelMinMax(min, max, cPos, kernelHalfDim, n);
-								// adjust the histogram window
-								histogram = Views.interval(infSrc, min, max);
-								histogramList.clear();					
-								addAll(histogram, histogramList);
-							}
-							else{ // moved by one
-								final int dim = (int)Math.abs(checkDist) - 1; 	 //
-								final long step = (long) Math.signum(checkDist); // shows the direction of movement (+1/-1)
-
-								min[ dim ] += step;
-								max[ dim ] += step;
-
-								final RandomAccessible<T> removeSlice = Views.hyperSlice(infSrc, dim, step < 0 ? max[dim] + 1: min[dim] - 1);
-								final RandomAccessible<T> addSlice  = Views.hyperSlice(infSrc, dim, step < 0 ? min[dim] : max[dim]);		
-
-								// remove one dimension
-								for (int i = 0; i < n; ++i)
-									if (i != dim){
-										localMin[i > dim ? i - 1 : i] = min[i];
-										localMax[i > dim ? i - 1 : i] = max[i];
-									}
-
-								final RandomAccessibleInterval<T> removeHistogram = Views.interval(removeSlice, localMin, localMax);
-								final RandomAccessibleInterval<T> addHistogram  = Views.interval(addSlice, localMin, localMax);
-
-								removeElements(removeHistogram, histogramList);
-								addElements(addHistogram, histogramList);
-							}
-
-							// get/set the median value 
-							rDst.setPosition(cSrc);
-							rDst.get().set(histogramList.get(histogramList.size()/2));
-						}
-					}
-					return null; // @TODO: correct?! 
-				}
-			});
-		}
+		for (final ImagePortion task : divideIntoPortions(Views.iterable(src).size(), numTasks) )
+			taskList.add(new MedianThread< T >( task, infSrc, src, dst, kernelHalfDim ));
 		
 		try
 		{
@@ -266,7 +287,6 @@ public class MedianFilter {
 					returnArray.add(histogramArray.get(i++));		
 		}
 
-		// @TODO: is this copying cheaper than shifting elements in the ArrayList?
 		list.clear();	
 		for(final T h : returnArray) 
 			list.add(h.copy());
@@ -347,6 +367,8 @@ public class MedianFilter {
 
 		//ImageJFunctions.show(img);
 
+		// while ( min != null )
+		// {
 		// define the size of the filter
 		int zz = 3;
 		// run multiple tests
@@ -361,9 +383,9 @@ public class MedianFilter {
 			//medianFilter(img, dst, new FinalInterval(min, max));
 			medianFilter(img, dst, new int[]{jj, jj});
 			System.out.println("kernel = " + jj + "x" + jj + " : "+ TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - inT)/1000.0);
-			ImageJFunctions.show(dst);
+			//ImageJFunctions.show(dst);
+		// }
 		}
-
 
 		//here comes filtering part 
 
