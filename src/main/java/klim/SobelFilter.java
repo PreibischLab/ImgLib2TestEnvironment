@@ -1,8 +1,12 @@
 package klim;
 
 import java.io.File;
+import java.util.Iterator;
+
+import com.sun.tools.internal.xjc.reader.gbind.ConnectedComponent;
 
 import ij.ImageJ;
+import ij.ImagePlus;
 import net.imglib2.Cursor;
 import net.imglib2.Interval;
 import net.imglib2.RandomAccess;
@@ -11,6 +15,8 @@ import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.algorithm.binary.Thresholder;
 import net.imglib2.algorithm.fft2.FFTConvolution;
 import net.imglib2.algorithm.gauss.Gauss;
+import net.imglib2.algorithm.labeling.AllConnectedComponents;
+import net.imglib2.algorithm.labeling.ConnectedComponents;
 import net.imglib2.algorithm.stats.Normalize;
 import net.imglib2.img.Img;
 import net.imglib2.img.ImgFactory;
@@ -18,9 +24,12 @@ import net.imglib2.img.array.ArrayImgFactory;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.img.cell.CellImgFactory;
 import net.imglib2.img.display.imagej.ImageJFunctions;
+import net.imglib2.labeling.NativeImgLabeling;
+import net.imglib2.roi.labeling.ImgLabeling;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.complex.ComplexFloatType;
+import net.imglib2.type.numeric.integer.IntType;
 import net.imglib2.type.numeric.real.FloatType;
 import net.imglib2.view.Views;
 import util.ImgLib2Util;
@@ -102,8 +111,79 @@ public class SobelFilter {
 		return new float[]{};
 	}
 	
+	public static  < T extends RealType< T >> void applyMedianFilter(RandomAccessibleInterval<T> img, RandomAccessibleInterval<T> img2){
+		final int n = img.numDimensions();
+		final int[] mD = new int[n];
+		// here we consider symmetric kernel
+		for (int d = 0; d < n; ++d)
+			mD[d] = 3;
+		MedianFilter.medianFilter(img, img2, mD);
+	}
+	
+	public static Img <FloatType> applyGaussianFilter(Img <FloatType> img){
+		double[] sigma = new double[ img.numDimensions() ];
+		for (int d = 0; d < img.numDimensions(); ++d)
+			sigma[d] = 4; // size of the radius
+		return Gauss.toFloat(sigma, img);
+	}
+	
+	public static Img<FloatType> setKernel(int n ){
+		int kType = 0; // defines the direction of the sobel filter
+		// fill in the kernel with proper values
+		float[] kernelValues = getKernelValues(n, kType); 
+		long [] kernelDimensions = new long[n];
+
+		for (int d = 0; d < n; d++) 
+			kernelDimensions[d] = 3; // the value is always set to 3 = size of the stencil
+
+
+		// @TODO: think which directions you need for a 3D case 
+
+		// convert kernel to image 
+		Img<FloatType> kernel = ArrayImgs.floats( kernelValues, kernelDimensions);
+		return kernel;
+	}
+	
+	public static void applySobelFilter(Img <FloatType> img, Img <FloatType> img2, Img<FloatType> kernel){
+		Img<FloatType> tmp = img.factory().create(img, new FloatType());
+		// apply Sobel filter # of dimensions times
+		for (int d = 0; d < img.numDimensions(); d++) {
+			tmp = img.copy();
+			// convlove with each kernel
+			new FFTConvolution<FloatType>(tmp, Views.rotate(kernel, 0, d), new ArrayImgFactory<ComplexFloatType>()).convolve();
+
+			// here we copy data to the destination image
+			Cursor<FloatType> tmpCursor = tmp.cursor();
+			RandomAccess<FloatType> dstRandomAccess = img2.randomAccess();
+
+			while (tmpCursor.hasNext()){
+				tmpCursor.fwd();
+				dstRandomAccess.setPosition(tmpCursor);
+				FloatType val = tmpCursor.get();
+				//System.out.println(val);
+				val.mul(val);
+				//System.out.println(val);
+				dstRandomAccess.get().add(val);
+			}
+
+		}
+		
+		Cursor<FloatType> dstCursor = img2.cursor();
+		while (dstCursor.hasNext()){
+			dstCursor.fwd();	
+			dstCursor.get().set((float) Math.sqrt(dstCursor.get().get() < 1e-6 ? 0 : dstCursor.get().get()));
+			// dstCursor.get().set((float) Math.sqrt(dstCursor.get().get()));
+			
+		}
+		FloatType minValue = new FloatType();
+		FloatType maxValue = new FloatType();
+		minValue.set(0);
+		maxValue.set(255);		
+		Normalize.normalize(img2, minValue, maxValue);
+	}
+	
 	public static void main(String[] args){
-		// new ImageJ();
+		new ImageJ();
 		File file = new File("../Documents/Useful/initial_worms_pics/1001-yellow-one-1.tif");
 		 Img<FloatType> img = ImgLib2Util.openAs32Bit(file);		
 		// temporary pic for calculations 
@@ -119,80 +199,18 @@ public class SobelFilter {
 		minValue.set(0);
 		maxValue.set(255);		
 		Normalize.normalize(img, minValue, maxValue);
-		
-		double[] sigma = new double[ img.numDimensions() ];
-		for (int d = 0; d < img.numDimensions(); ++d)
-			sigma[d] = 4; // size of the radius
-		img = Gauss.toFloat(sigma, img);	
-		
 		final int n = img.numDimensions();
-		final int[] mD = new int[n];
-		// here we consider symmetric kernel
-		for (int d = 0; d < n; ++d)
-			mD[d] = 3;
-		MedianFilter.medianFilter(img, img2, mD);
-		
-		
-		for (int kType = 0; kType <= 0; ++kType){
-
-			// fill in the kernel with proper values
-			float[] kernelValues = getKernelValues(img.numDimensions(), kType); 
-			long [] kernelDimensions = new long[img.numDimensions()];
-
-			for (int d = 0; d < img.numDimensions(); d++) 
-				kernelDimensions[d] = 3; // the value is always set to 3 = size of the stencil
-
-
-			// @TODO: think which directions you need for a 3D case 
-
-			// convert kernel to image 
-			Img<FloatType> kernel = ArrayImgs.floats( kernelValues, kernelDimensions);
-			Img<FloatType> tmp = img.factory().create(img, new FloatType());	
-
-
-			// apply Sobel filter # of dimensions times
-			for (int d = 0; d < img.numDimensions(); d++) {
-				tmp = img.copy();
-				// convlove with each kernel
-				new FFTConvolution<FloatType>(tmp, Views.rotate(kernel, 0, d), new ArrayImgFactory<ComplexFloatType>()).convolve();
-
-				// Normalize.normalize(tmp, minValue, maxValue);
-				// ImageJFunctions.show(tmp);
-
-				// ImagePlus imgTmp = ImageJFunctions.show(tmp);
-				// imgTmp.setDisplayRange(0, 255);
-				// imgTmp.updateAndDraw();
-				// enough to see the axis gradient
-
-				// here we copy data to the destination image
-				Cursor<FloatType> tmpCursor = tmp.cursor();
-				RandomAccess<FloatType> dstRandomAccess = img2.randomAccess();
-
-				while (tmpCursor.hasNext()){
-					tmpCursor.fwd();
-					dstRandomAccess.setPosition(tmpCursor);
-					FloatType val = tmpCursor.get();
-					//System.out.println(val);
-					val.mul(val);
-					//System.out.println(val);
-					dstRandomAccess.get().add(val);
-				}
-
-			}
-		}
-		
-		Cursor<FloatType> dstCursor = img2.cursor();
-		while (dstCursor.hasNext()){
-			dstCursor.fwd();	
-			dstCursor.get().set((float) Math.sqrt(dstCursor.get().get() < 1e-6 ? 0 : dstCursor.get().get()));
-			// dstCursor.get().set((float) Math.sqrt(dstCursor.get().get()));
 			
-		}
+		img = applyGaussianFilter(img);	
+		applyMedianFilter(img, img2);
+		Img<FloatType> kernel = setKernel(n);
+		applySobelFilter(img, img2, kernel);
 		
-		Normalize.normalize(img2, minValue, maxValue);
+		// check this thing below 
+		
 		FloatType tVal = new FloatType();
 		// tVal.set((float) 120);
-		for (float thresholdVal = 55; thresholdVal <= 60; thresholdVal += 1){
+		for (float thresholdVal = 50; thresholdVal <= 50; thresholdVal += 1){
 			tVal.set((float) thresholdVal);
 			BitType minV = new BitType();
 			minV.setZero();
@@ -202,6 +220,12 @@ public class SobelFilter {
 			Normalize.normalize(dst, minV, maxV);
 			ImageJFunctions.show(dst);
 		}
+
+		final ImgLabeling<Integer, IntType> seedLabeling = new ImgLabeling<Integer, IntType>(new ArrayImgFactory<IntType>().create(dst, new IntType()));
+		final Iterator<Integer> labelGenerator = AllConnectedComponents.getIntegerNames(65);
+		ConnectedComponents.labelAllConnectedComponents(dst, seedLabeling, labelGenerator, ConnectedComponents.StructuringElement.EIGHT_CONNECTED);
+		ImageJFunctions.show(seedLabeling.getIndexImg());
+		
 		System.out.println("DONE!");
 	}
 }

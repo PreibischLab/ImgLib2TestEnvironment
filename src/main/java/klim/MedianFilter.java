@@ -345,14 +345,15 @@ public class MedianFilter
 		// new ImageJ(); // to have a menu!
 
 		// File file = new File("src/main/resources/Bikesgray.jpg");
-		File file = new File("src/main/resources/salt-and-pepper.tif");
+		// File file = new File("src/main/resources/salt-and-pepper.tif");
 		//File file = new File("src/main/resources/noisyWoman.png");
 		// File file = new File("src/main/resources/test3D.tif");
 		// File file = new File("src/main/resources/inputMedian.png");
 		// File file = new File("../Documents/Useful/initial_worms_pics/1001-yellow-one.tif");
+		File file = new File("../Documents/Useful/initial_worms_pics/1001-yellow-one-1.tif");
 		final Img<FloatType> img = ImgLib2Util.openAs32Bit(file);
 		final Img<FloatType> dst = img.factory().create(img, img.firstElement());
-
+		
 
 		final int n = img.numDimensions();
 		final long[] min = new long[n];
@@ -383,7 +384,7 @@ public class MedianFilter
 			//medianFilter(img, dst, new FinalInterval(min, max));
 			medianFilter(img, dst, new int[]{jj, jj});
 			System.out.println("kernel = " + jj + "x" + jj + " : "+ TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - inT)/1000.0);
-			//ImageJFunctions.show(dst);
+			ImageJFunctions.show(dst);
 		// }
 		}
 
