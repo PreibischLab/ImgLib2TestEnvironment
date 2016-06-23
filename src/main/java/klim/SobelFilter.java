@@ -200,7 +200,8 @@ public class SobelFilter {
 		maxValue.set(255);		
 		Normalize.normalize(img, minValue, maxValue);
 		final int n = img.numDimensions();
-			
+		ImageJFunctions.show(img);	
+		
 		img = applyGaussianFilter(img);	
 		applyMedianFilter(img, img2);
 		Img<FloatType> kernel = setKernel(n);
