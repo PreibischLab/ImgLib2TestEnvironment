@@ -27,38 +27,17 @@ import net.imglib2.view.Views;
 
 public class BoundingBox {
 	
-	// stores properties of the object
-	public static final class objectProperties{
-		public final int Label;
-		public final double maxExtent;
-		public final int Area;
-		public final double[] startPoint;
-		public final double[] endPoint;
-
-		protected objectProperties(final int Label, final double maxExtent, final int Area, final double[] startPoint, final double[] endPoint) {
-			this.Label = Label;
-			this.maxExtent = maxExtent;
-			this.Area = Area;
-			this.startPoint = startPoint;
-			this.endPoint = endPoint;
-
-		}
-	}
-	
 	// returns labeling for each connected component 
-	public static ImgLabeling<Integer, IntType> setLabeling(RandomAccessibleInterval<BitType> bitImg) {
-		final ImgLabeling<Integer, IntType> labeling = new ImgLabeling<Integer, IntType>(new ArrayImgFactory<IntType>().create(bitImg, new IntType())); 
+	public static void setLabeling(RandomAccessibleInterval<BitType> bitImg, ImgLabeling<Integer, IntType> labeling) {
 		final Iterator<Integer> labelIterator = AllConnectedComponents.getIntegerNames(0);
 		ConnectedComponents.labelAllConnectedComponents(bitImg, labeling, labelIterator, ConnectedComponents.StructuringElement.EIGHT_CONNECTED );		
-		return labeling;
 	}
 	
 	// divide the objects in the image into separate chunks
 	// this one will be used further to get rid of 'noisy' objects 
 	public static <T extends RealType<T>> void setPointSampleList(final ImgLabeling<Integer, IntType> labeling, final RandomAccessible<T> img, PointSampleList<T> worm){
-		// PointSampleList<IntType> pointSampleList = new PointSampleList<IntType>(0);
 		// this one bellow is the final list you'll need 
-		ArrayList<PointSampleList<T>> arrayPSL = new ArrayList<>();
+		ArrayList<PointSampleList<T>> objectsList = new ArrayList<>();
 		
 		Cursor<IntType> cursor = Views.iterable(labeling.getIndexImg()).cursor();
 		RandomAccess <T> randomAccess = img.randomAccess();
@@ -69,47 +48,34 @@ public class BoundingBox {
 		while(cursor.hasNext()){
 			cursor.fwd();
 			int curElement = cursor.get().get();
-
-			// check for all possible errors
+			// increase the size of the objects list
 			if (curElement >= curMax){
-				// increase the size of the ArrayList
 				while(curElement >= curMax){
-					arrayPSL.add(new PointSampleList<T>(img.numDimensions()));
-					curMax += 1; 
+					objectsList.add(new PointSampleList<T>(img.numDimensions()));
+					++curMax; 
 				}
 			}
-
-
-			// System.out.println(arrayPSL.size());
 			randomAccess.setPosition(cursor);
-			Point point = new Point(randomAccess);
-			//arrayPSL.get(curElement).add(point, cursor.get().copy());
-			arrayPSL.get(curElement).add(point, randomAccess.get().copy());
+			objectsList.get(curElement).add(new Point(randomAccess), randomAccess.get()); // .copy here ?
 		}
 		
-		// search for idx of a worm 
+		// search for worm index 
+		// taking into account that worm is the largest object
 		int idx = 0; 
 		long maxSize = 0;
 		// skip background i == 0 
-		for (int i = 1; i < arrayPSL.size(); ++i){
-			if (arrayPSL.get(i).size() > maxSize){
-				maxSize = arrayPSL.get(i).size();
+		for (int i = 1; i < objectsList.size(); ++i){
+			if (objectsList.get(i).size() > maxSize){
+				maxSize = objectsList.get(i).size();
 				idx = i;
-			}
-				
+			}			
 		}		
 
 		// copy the output
-		Cursor<T> it = arrayPSL.get(idx).cursor(); // copy the outputs
-		System.out.println(it.numDimensions());
-		
-		long [] pos = new long[img.numDimensions()];
+		Cursor<T> it = objectsList.get(idx).cursor(); // copy worm
 		while(it.hasNext()){
 			it.fwd();
-			// it.localize(pos);
-			// Point point = new Point(it);	
 			worm.add(new Point(it), it.get());
-		}
-		
+		}	
 	}
 }
