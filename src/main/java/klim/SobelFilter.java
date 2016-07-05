@@ -45,6 +45,7 @@ import net.imglib2.type.numeric.real.FloatType;
 import net.imglib2.view.RandomAccessiblePair;
 import net.imglib2.view.Views;
 import stephan.DistanceTransform;
+import stephan.Thresholding;
 import util.ImgLib2Util;
 
 public class SobelFilter {
@@ -353,13 +354,10 @@ public class SobelFilter {
 
 		applySobelFilter(filterImg, edgeTmpImg, kernel, minValue, maxValue, new ArrayImgFactory<T>());
 		if (debug)
-			ImageJFunctions.show(filterImg).setTitle("DEBUG: filterImg: in function");
-
-		// check this thing below 
-		// TODO: this is an ugly way to overcome this difficulty
-		// TODO: rewrite this thing later
-		Img< BitType > thresholdImgLocal = Thresholder.threshold((Img<T>)edgeTmpImg, tVal, true, 1);	
-		copy( thresholdImgLocal, thresholdImg );	
+			ImageJFunctions.show(filterImg).setTitle("DEBUG: filterImg: in function");	
+		
+		Thresholding.threshold(edgeTmpImg, thresholdImg, tVal);
+		
 		if (debug)
 			ImageJFunctions.show(thresholdImg).setTitle("DEBUG: thresholdImg: in function");
 		copyBitToFloat(Views.iterable(thresholdImg), edgeTmpImg);
@@ -377,16 +375,15 @@ public class SobelFilter {
 		if (debug)
 			ImageJFunctions.show(labeling.getIndexImg()).setTitle("DEBUG: labeling: in function");
 
-		Cursor<IntType> cursor = Views.iterable(labeling.getIndexImg()).cursor();
-
 		PointSampleList<T> worm = new PointSampleList<T>(initialImg.numDimensions());
 		BoundingBox.setPointSampleList(labeling, (RandomAccessible<T>)initialImg, worm);
-		thresholdImgLocal = Thresholder.threshold((Img<T>)edgeImg, tVal, true, 1);
+		Thresholding.threshold(edgeImg, thresholdImg, tVal);
+		
 		if (debug)
 			ImageJFunctions.show(thresholdImg).setTitle("DEBUG: thresholdImg: in function");
 
-
-		distanceTransformKDTree(worm, thresholdImgLocal, (RandomAccessibleInterval<FloatType>)distanceImg);
+		distanceTransformKDTree(worm, thresholdImg, (RandomAccessibleInterval<FloatType>)distanceImg);
+		Normalize.normalize(distanceImg, minValue, maxValue);
 		if (debug)
 			ImageJFunctions.show(distanceImg).setTitle("DEBUG: distanceImg: in function");	
 	}
@@ -415,105 +412,6 @@ public class SobelFilter {
 		ImageJFunctions.show(edgeImg).setTitle("edgeImg");
 		ImageJFunctions.show(thresholdImg).setTitle("thresholdImg");
 		ImageJFunctions.show(distanceImg).setTitle("distanceImg");
-
-
-		// TODO: Uncomment the one below to get everything back
-
-		//
-		//		file = new File("../Documents/Useful/initial_worms_pics/1003-red-one-2.tif");
-		//		Img<FloatType> img8 = ImgLib2Util.openAs32Bit(file);		
-		//		// temporary pic for calculations 
-		//		ImageJFunctions.show(img8).setTitle("straignt worm");	
-		//
-		//		/*
-		//		 * Here comes the same part as for the deformed worm
-		//		 * you should change the way the straight worm looks
-		//		 * */
-		//
-		//		Img< FloatType > img9 = imgFactory.create( img8, new FloatType() );
-		//
-		//		// threshold output image 
-		//		// ImgFactory< BitType > bitFactory = new ArrayImgFactory< BitType >();
-		//		Img< BitType > dst1 = bitFactory.create( img8, new BitType() );
-		//
-		//		minValue = new FloatType();
-		//		maxValue = new FloatType();
-		//		minValue.set(0);
-		//		maxValue.set(255);		
-		//		Normalize.normalize(img8, minValue, maxValue);
-		//		// final int n = img.numDimensions();
-		//		ImageJFunctions.show(img8);	
-		//
-		//		img8 = applyGaussianFilter(img8);	
-		//		applyMedianFilter(img8, img9);
-		//		// Img<FloatType> kernel = setKernel(n);
-		//		applySobelFilter(img8, img9, kernel);
-		//		// ImageJFunctions.show(img8);
-		//		// ImageJFunctions.show(img9);
-		//		// check this thing below 
-		//
-		//		tVal = new FloatType();
-		//		tVal.set((float) 120.0);
-		//		minV = new BitType();
-		//		minV.setZero();
-		//		maxV = new BitType();
-		//		maxV.setOne();
-		//		dst1 = Thresholder.threshold(img9, tVal, true, 1);
-		//		ImageJFunctions.show(dst1);
-		//
-		//		// plain with distance transform here 
-		//
-		//		// @TODO: make a function for this part 
-		//		// -------------------------------------
-		//		// -------------------------------------
-		//
-		//		Img< FloatType > img10 = imgFactory.create( img8, new FloatType() ); 
-		//		Img< FloatType > img11 = imgFactory.create( img8, new FloatType() );
-		//		Img< BitType > img12 = bitFactory.create( img8, new BitType() );
-		//		Img< FloatType > img13 = imgFactory.create( img8, new FloatType() );
-		//		Img< BitType > img14 = bitFactory.create( img8, new BitType() );
-		//
-		//		final Cursor< BitType > first1 = dst1.localizingCursor();
-		//		final RandomAccess< FloatType > second1 = img10.randomAccess();
-		//
-		//		while(first1.hasNext()){
-		//			first1.fwd();
-		//			second1.setPosition(first1);
-		//			second1.get().set(first1.get().getRealFloat()*255);
-		//		}
-		//
-		//		applySobelFilter(img10, img11, kernel);
-		//		ImageJFunctions.show(img11).setTitle("img11");
-		//		// -------------------------------------
-		//		// -------------------------------------
-		//		// @END_TODO ---------------------------
-		//
-		//		final ImgLabeling<Integer, IntType> labeling1 = new ImgLabeling<Integer, IntType>(new ArrayImgFactory<IntType>().create(dst1, new IntType())); 
-		//		BoundingBox.setLabeling(dst1, labeling1);
-		//		// ImageJFunctions.show(labeling.getIndexImg());	
-		//		Cursor<IntType> cursor1 = Views.iterable(labeling1.getIndexImg()).cursor();
-		//
-		//		PointSampleList<T> worm1 = new PointSampleList<T>(img8.numDimensions());
-		//		BoundingBox.setPointSampleList(labeling1, (RandomAccessible<T>)img8, worm1);
-		//
-		//
-		//		img12 = Thresholder.threshold(img11, tVal, true, 1);
-		//
-		//		// @TODO: make a function for this part 
-		//		// ------------------------------------ 
-		//		// ------------------------------------
-		//
-		//
-		//		distanceTransformKDTree(worm1, img12, img13);
-		//
-		//
-		//		// img7 = Thresholder.threshold(img6, new FloatType((float)70.0), true, 1);
-		//
-		//		ImageJFunctions.show(img13).setTitle("I hope this looks fine");
-
-		// ---------------------
-		// ---------------------
-		// ---------------------
 
 		System.out.println("DONE!");
 	}
