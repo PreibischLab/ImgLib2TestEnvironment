@@ -3,6 +3,8 @@ package klim;
 import java.io.File;
 import java.util.Iterator;
 
+import javax.swing.text.View;
+
 import ij.ImageJ;
 import ij.ImagePlus;
 import net.imglib2.Cursor;
@@ -322,12 +324,13 @@ public class SobelFilter {
 		applyGaussianFilter(initialImg, filterImg);	
 		Img<T> kernel = (Img<T>) setKernel(n);
 		applySobelFilter(filterImg, edgeImg, kernel, minValue, maxValue);
+		ImageJFunctions.show(filterImg).setTitle("filterImg: in function");
 
 		// check this thing below 
 		// TODO: looks like this assignment is not working 
-		thresholdImg = Thresholder.threshold((Img<T>)edgeImg, tVal, true, 1).copy();
-		ImageJFunctions.show(thresholdImg);
-//		// ImageJFunctions.show(dst); 
+		// .copy() doesn't help! 
+		thresholdImg = Thresholder.threshold((Img<T>)edgeImg, tVal, true, 1);
+		ImageJFunctions.show(thresholdImg).setTitle("thresholdImg: in function");
 //
 //		// @TODO: make a function for this part 
 //		// -------------------------------------
