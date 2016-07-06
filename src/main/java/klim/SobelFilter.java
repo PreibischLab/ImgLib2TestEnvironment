@@ -17,9 +17,7 @@ import net.imglib2.RandomAccess;
 import net.imglib2.RandomAccessible;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.RealPointSampleList;
-import net.imglib2.algorithm.binary.Thresholder;
 import net.imglib2.algorithm.fft2.FFTConvolution;
-import net.imglib2.algorithm.gauss.Gauss;
 import net.imglib2.algorithm.gauss3.Gauss3;
 import net.imglib2.algorithm.labeling.AllConnectedComponents;
 import net.imglib2.algorithm.labeling.ConnectedComponents;
@@ -32,7 +30,6 @@ import net.imglib2.img.array.ArrayImgFactory;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.img.cell.CellImgFactory;
 import net.imglib2.img.display.imagej.ImageJFunctions;
-import net.imglib2.labeling.NativeImgLabeling;
 import net.imglib2.neighborsearch.NearestNeighborSearchOnKDTree;
 import net.imglib2.roi.labeling.ImgLabeling;
 import net.imglib2.roi.labeling.LabelingType;
@@ -44,8 +41,6 @@ import net.imglib2.type.numeric.integer.IntType;
 import net.imglib2.type.numeric.real.FloatType;
 import net.imglib2.view.RandomAccessiblePair;
 import net.imglib2.view.Views;
-import stephan.DistanceTransform;
-import stephan.Thresholding;
 import util.ImgLib2Util;
 
 public class SobelFilter {
