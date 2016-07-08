@@ -284,7 +284,7 @@ public class SobelFilter {
 
 	}
 
-	public static <T extends RealType<T>> void distanceTransformKDTree(PointSampleList<T> worm, final RandomAccessibleInterval< BitType > in, final RandomAccessibleInterval< FloatType > out){
+	public static <T extends RealType<T>> void distanceTransformKDTree(PointSampleList<T> worm, final RandomAccessibleInterval< BitType > in, final RandomAccessibleInterval< FloatType > out, PointSampleList<BitType> wormOutline){
 
 		final PointSampleList< BitType > oneList = new PointSampleList< BitType >( in.numDimensions() );
 		Cursor<T> wormCursor = worm.cursor(); 
@@ -323,6 +323,8 @@ public class SobelFilter {
 			// TODO: check this one: adjust the brightness of the boundary, if necessary
 			if(rIn.get().getInteger() == 1){
 				rOut.get().set(80);
+				// TODO: this is the additional parameter! necessary for tail detection
+				wormOutline.add(new Point(wormCursor), new BitType(true));
 			}
 
 		}
@@ -334,7 +336,8 @@ public class SobelFilter {
 	public static <T extends RealType<T> & NativeType<T>, U extends RealType<U>> void processWorm(RandomAccessibleInterval<T> initialImg, RandomAccessibleInterval<T> filterImg, RandomAccessibleInterval<T> edgeImg, RandomAccessibleInterval<BitType> thresholdImg, Img <T> distanceImg,
 			T minValue, T maxValue,
 			T tVal,
-			U minVal, U maxVal
+			U minVal, U maxVal,
+			PointSampleList<BitType> wormOutline
 			) throws IncompatibleTypeException{		
 
 		Normalize.normalize(Views.iterable(initialImg), minValue, maxValue);
@@ -377,7 +380,8 @@ public class SobelFilter {
 		if (debug)
 			ImageJFunctions.show(thresholdImg).setTitle("DEBUG: thresholdImg: in function");
 
-		distanceTransformKDTree(worm, thresholdImg, (RandomAccessibleInterval<FloatType>)distanceImg);
+		// PointSampleList<BitType> wormOutline = new PointSampleList<BitType>(initialImg.numDimensions());
+		distanceTransformKDTree(worm, thresholdImg, (RandomAccessibleInterval<FloatType>)distanceImg, wormOutline);
 		Normalize.normalize(distanceImg, minValue, maxValue);
 		if (debug)
 			ImageJFunctions.show(distanceImg).setTitle("DEBUG: distanceImg: in function");	
@@ -387,6 +391,7 @@ public class SobelFilter {
 	public static <T extends RealType<T>>void main(String[] args) throws IncompatibleTypeException{
 		new ImageJ();
 		File file = new File("../Documents/Useful/initial_worms_pics/1001-yellow-one-1.tif");
+		// File file = new File("../Documents/Useful/initial_worms_pics/1001-red-one-1.tif");
 		// File file = new File("../Documents/Useful/initial_worms_pics/1001-yellow-one.tif");
 
 		Img<FloatType> initialImg = ImgLib2Util.openAs32Bit(file);	
@@ -398,9 +403,10 @@ public class SobelFilter {
 		Img< FloatType > edgeImg = imgFactory.create( initialImg, new FloatType() );
 		Img< FloatType > distanceImg = imgFactory.create( initialImg, new FloatType() );
 
+		PointSampleList<BitType> wormOutline = new PointSampleList<BitType>(initialImg.numDimensions());
 		processWorm(initialImg, filterImg, edgeImg, thresholdImg, distanceImg,
 				new FloatType((float) 0), new FloatType((float) 255), new FloatType((float) 52),
-				new BitType(false), new BitType(true));
+				new BitType(false), new BitType(true), wormOutline);
 
 		ImageJFunctions.show(initialImg).setTitle("initialImg");
 		ImageJFunctions.show(filterImg).setTitle("filterImg");
@@ -408,6 +414,10 @@ public class SobelFilter {
 		ImageJFunctions.show(thresholdImg).setTitle("thresholdImg");
 		ImageJFunctions.show(distanceImg).setTitle("distanceImg");
 
+		
+		// wormOutline.
+		
+		
 		System.out.println("DONE!");
 	}
 }
