@@ -24,7 +24,7 @@ import util.ImgLib2Util;
 
 public class CentralCurveDetection {
 
-	private static final boolean showImage = true;
+	private static final boolean showImage = false;
 	
 	// detects the start and end points
 	public static <T extends RealType<T>> void detectEnds(PointSampleList<T> endPoints, T intensity){
@@ -51,6 +51,7 @@ public class CentralCurveDetection {
 		
 		// treat 1D- 2D- 3D- movement cases differently	
 		if (numMoves == 1){
+			// looks correct for 1D: 2D: 3D: cases
 			for(int d = 0; d < n; ++d){
 				minmax[d] = cPos[d] + dir[d] + (dir[d] == 0 ? -1 : 0);
 				minmax[d + cPos.length] = cPos[d] + dir[d] + (dir[d] == 0 ? 1 : 0);
@@ -58,11 +59,33 @@ public class CentralCurveDetection {
 		}
 
 		if (numMoves == 2){
-			// debugging shows that formula is correct for 2D 
-			// but I do not believe it 
 			for(int d = 0; d < n; ++d){
-				minmax[d] = cPos[d] + dir[d] + (dir[d] > 0 ? -1 : 0);
-				minmax[d + cPos.length] = cPos[d] + dir[d] + (dir[d] < 0 ? 1 : 0);
+				// TODO: rewrite this loop in the if else fashion
+				long addMin = 0;
+				long addMax = 0;
+				if (dir[d] > 0){
+					addMin = dir[d] - 1;
+					addMax = dir[d] + 0;
+				}
+				else{
+					if(dir[d] == 0){
+						addMin = dir[d] - 1;
+						addMax = dir[d] + 1;
+					}
+					else{
+						// dir[d] < 0
+						addMin = dir[d] - 0;
+						addMax = dir[d] + 1;
+					}
+				}
+				
+				minmax[d] = cPos[d] + addMin;   
+				minmax[d + cPos.length] = cPos[d] + addMax; 
+				
+				// OLD VERSION WORKS ONLY FOR 2D
+				// minmax[d] = cPos[d] + dir[d] + (dir[d] > 0 ? -1 : 0); // 1 instead of 0 ? 
+				// minmax[d + cPos.length] = cPos[d] + dir[d] + (dir[d] < 0 ? 1 : 0); // -1 instead of 0?
+				
 			}
 		}
 		
@@ -308,13 +331,14 @@ public class CentralCurveDetection {
 			ImageJFunctions.show(debugPic).setTitle("Every rem Point!");
 		
 		
-		// debug 		
-//		final long[] pPos = new long[]{6, 6};
-//		final long [] cPos = new long[]{7, 7}; 
-//		final long [] minmax = new long[4];
-//		
-//		detectDirection(pPos, cPos, minmax, 2);
-//		printArray(minmax);
+		// debug 	
+		int dim = 3;
+		final long[] pPos = new long[]{2, 2, 2};
+		final long [] cPos = new long[]{1, 3, 2}; 
+		final long [] minmax = new long[2*dim];
+		
+		detectDirection(pPos, cPos, minmax, dim);
+		printArray(minmax);
 		
 		
 		
