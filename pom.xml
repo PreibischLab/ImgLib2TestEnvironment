@@ -35,6 +35,27 @@
 			<groupId>net.imglib2</groupId>
 			<artifactId>imglib2-algorithm</artifactId>
 		</dependency>
+		 <dependency>
+    <groupId>io.scif</groupId>
+    <artifactId>scifio</artifactId>
+  </dependency>
+  <dependency>
+    <groupId>io.scif</groupId>
+    <artifactId>scifio-bf-compat</artifactId>
+    <scope>runtime</scope>
+  </dependency>
+  <!-- The formats-bsd component adds support for open formats. -->
+  <dependency>
+    <groupId>ome</groupId>
+    <artifactId>formats-bsd</artifactId>
+    <scope>runtime</scope>
+  </dependency>
+  <!-- The formats-gpl component adds support for proprietary formats. -->
+  <dependency>
+    <groupId>ome</groupId>
+    <artifactId>formats-gpl</artifactId>
+    <scope>runtime</scope>
+  </dependency>
 	</dependencies>
 
 	<repositories>
