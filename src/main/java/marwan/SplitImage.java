@@ -1,5 +1,6 @@
 package marwan;
 
+import java.util.ArrayList;
 import java.util.Vector;
 
 import ij.ImageJ;
@@ -22,7 +23,7 @@ public class SplitImage {
 		// We will split the image in 4 columns 2 rows
 		final int columns = 4;
 		final int rows = 2;
-		Vector<RandomAccessibleInterval<FloatType>> views = Helper.splitImage(image, columns, rows);
+		ArrayList<RandomAccessibleInterval<FloatType>> views = Helper.splitImage(image, columns, rows);
 		for(RandomAccessibleInterval<FloatType> view:views)
 			ImageJFunctions.show(view);
 	}

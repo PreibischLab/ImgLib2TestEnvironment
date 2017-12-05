@@ -1,5 +1,6 @@
 package marwan;
 
+import java.util.ArrayList;
 import java.util.Vector;
 
 import net.imglib2.Cursor;
@@ -11,7 +12,8 @@ import net.imglib2.view.Views;
 public class Helper {
 
 	public static Boolean log ;
-	public static Vector<RandomAccessibleInterval<FloatType>> splitImage(RandomAccessibleInterval<FloatType> input,
+	public static int count;
+	public static ArrayList<RandomAccessibleInterval<FloatType>> splitImage(RandomAccessibleInterval<FloatType> input,
 			int columns, int rows) {
 
 		// TODO make it dynamic with 3d
@@ -30,7 +32,7 @@ public class Helper {
 		// TODO overlap
 		// double overlap = 0.02;
 		
-		Vector<RandomAccessibleInterval<FloatType>> views = new Vector<RandomAccessibleInterval<FloatType>>();
+		ArrayList<RandomAccessibleInterval<FloatType>> views = new ArrayList<RandomAccessibleInterval<FloatType>>();
 		for (int i = 0; i < rows; i++) {
 			for (int j = 0; j < columns; j++) {
 				RandomAccessibleInterval<FloatType> view = Views.interval(input, new long[] { j * width, i * height },
