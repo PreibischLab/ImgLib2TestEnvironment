@@ -6,6 +6,7 @@ import java.util.Vector;
 import ij.ImageJ;
 import io.scif.img.ImgIOException;
 import io.scif.img.ImgOpener;
+import net.imglib2.FinalInterval;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.Img;
 import net.imglib2.img.display.imagej.ImageJFunctions;
@@ -23,9 +24,11 @@ public class SplitImage {
 		// We will split the image in 4 columns 2 rows
 		final int columns = 4;
 		final int rows = 2;
-		ArrayList<RandomAccessibleInterval<FloatType>> views = Helper.splitImage(image, columns, rows);
-		for(RandomAccessibleInterval<FloatType> view:views)
-			ImageJFunctions.show(view);
+		Helper.sigma = 0;
+		FinalInterval interval = Helper.getFinalInterval(image);
+		ArrayList<Portion> portions = Helper.splitImage(image,interval, columns, rows);
+		for(Portion portion:portions)
+			ImageJFunctions.show(portion.getView());
 	}
 
 	
