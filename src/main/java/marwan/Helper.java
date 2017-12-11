@@ -5,13 +5,16 @@ import java.awt.Point;
 import java.awt.Rectangle;
 import java.util.ArrayList;
 
+import marwan.Helper.Task;
 import net.imglib2.Cursor;
 import net.imglib2.FinalInterval;
 import net.imglib2.RandomAccessible;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.Img;
+import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.type.numeric.real.FloatType;
 import net.imglib2.view.Views;
+import varun.FilterInterface.shape;
 
 public class Helper {
 
@@ -22,8 +25,8 @@ public class Helper {
 	public static Boolean log;
 	public static int count, sigma;
 
-	public static ArrayList<Portion> splitImage(RandomAccessible<FloatType> input, FinalInterval interval, int columns,
-			int rows) {
+	public static ArrayList<Portion> splitImageEnBlocs(RandomAccessible<FloatType> input, FinalInterval interval,
+			int columns, int rows) {
 
 		// TODO make it dynamic with 3d
 		// input.numDimensions();
@@ -82,6 +85,7 @@ public class Helper {
 		long[] dimensions = new long[image.numDimensions()];
 		for (int d = 0; d < image.numDimensions(); ++d) {
 			dimensions[d] = image.dimension(d);
+			System.out.println(d + " - " + image.dimension(d));
 		}
 
 		return dimensions;
@@ -109,7 +113,7 @@ public class Helper {
 		return view;
 	}
 
-	public static FinalInterval getFinalInterval(Img<FloatType> image) {
+	public static FinalInterval getFinalInterval(RandomAccessibleInterval<FloatType> image) {
 		long[] min = new long[image.numDimensions()];
 		long[] max = new long[image.numDimensions()];
 		for (int d = 0; d < image.numDimensions(); ++d) {
@@ -120,4 +124,34 @@ public class Helper {
 		// TODO Auto-generated method stub
 		return interval;
 	}
+
+	public static void splitImage(RandomAccessibleInterval<FloatType> input, ArrayList<Portion> result, int dim,
+			int slice) {
+		if (input.numDimensions() > 2) {
+			for (int j = 0; j < input.dimension(input.numDimensions() - 1); j++) {
+				splitImage(Views.hyperSlice(input, input.numDimensions() - 1, j), result, input.numDimensions() - 1,j);
+			}
+		} else {
+			result.add(new Portion(input, new Rectangle(), dim, slice));
+		}
+	}
+	
+	
+	public static ArrayList<myTask> createThreadTasks(ArrayList<Portion> portions, Img<FloatType> resultImage, Task type) {
+
+		ArrayList<myTask> taskList = new ArrayList<myTask>();
+		switch (type) {
+		case Gaus:
+			for (Portion portion : portions) {
+				myTask task = new myTask(portion, resultImage, Task.Gaus);
+				taskList.add(task);
+			}
+			break;
+
+		default:
+			break;
+		}
+		return taskList;
+	}
+
 }

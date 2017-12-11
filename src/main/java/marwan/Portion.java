@@ -9,6 +9,18 @@ public class Portion extends Object {
 
 	private RandomAccessibleInterval<FloatType> view;
 	private Rectangle shape;
+	private int slice;
+	private int dimenssion;
+	
+	
+
+	public Portion(RandomAccessibleInterval<FloatType> view, Rectangle shape,int dimenssion, int slice) {
+		super();
+		this.view = view;
+		this.shape = shape;
+		this.slice = slice;
+		this.dimenssion = dimenssion;
+	}
 	public Portion(RandomAccessibleInterval<FloatType> view, Rectangle shape) {
 		super();
 		this.view = view;
@@ -27,7 +39,18 @@ public class Portion extends Object {
 		this.shape = shape;
 	}
 	
-	
+	public int getSlice() {
+		return slice;
+	}
+	public void setSlice(int slice) {
+		this.slice = slice;
+	}
+	public int getDimenssion() {
+		return dimenssion;
+	}
+	public void setDimenssion(int dimenssion) {
+		this.dimenssion = dimenssion;
+	}
 	
 }
 

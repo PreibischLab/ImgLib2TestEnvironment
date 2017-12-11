@@ -7,33 +7,38 @@ import net.imglib2.exception.IncompatibleTypeException;
 import net.imglib2.img.Img;
 import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.type.numeric.real.FloatType;
+import net.imglib2.view.Views;
 
 public class myTask extends Thread {
 
 	private Portion currentPortion;
 	private RandomAccessibleInterval<FloatType> targetView;
 	private int num;
-//	,sigma;
-	private Task type ;
-	
-	
+	private Task type;
 
 	public myTask(Portion portion, Img<FloatType> resultImage, Task type) {
 		super();
 		this.num = Helper.count++;
 		this.currentPortion = portion;
-		this.targetView= resultImage;
+		this.targetView = resultImage;
 		this.type = type;
 	}
+
 	@Override
 	public void run() {
-		System.out.println("Thread"+num+" started.");
+		System.out.println("Thread" + num + " started.");
 		switch (this.type) {
 		case Gaus:
 			try {
-	Gauss3.gauss(Helper.sigma, this.currentPortion.getView(),Helper.targetPositon(targetView,currentPortion.getShape()));
-	
-			
+				if (this.currentPortion.getDimenssion() >0) {
+					Gauss3.gauss(Helper.sigma, Views.extendMirrorSingle(this.currentPortion.getView()),
+							Views.hyperSlice(targetView, this.currentPortion.getDimenssion(),
+									this.currentPortion.getSlice()));
+				} else {
+					Gauss3.gauss(Helper.sigma, Views.extendMirrorSingle(this.currentPortion.getView()),
+							targetView);
+				}
+
 			} catch (IncompatibleTypeException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -43,8 +48,7 @@ public class myTask extends Thread {
 		default:
 			break;
 		}
-	
-		System.out.println("Thread"+num+" finished.");
-		if(Helper.log) ImageJFunctions.show(targetView).setTitle("target "+num);;
+
+		System.out.println("Thread" + num + " finished.");
 	}
 }

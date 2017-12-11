@@ -26,7 +26,7 @@ public class SplitImage {
 		final int rows = 2;
 		Helper.sigma = 0;
 		FinalInterval interval = Helper.getFinalInterval(image);
-		ArrayList<Portion> portions = Helper.splitImage(image,interval, columns, rows);
+		ArrayList<Portion> portions = Helper.splitImageEnBlocs(image,interval, columns, rows);
 		for(Portion portion:portions)
 			ImageJFunctions.show(portion.getView());
 	}

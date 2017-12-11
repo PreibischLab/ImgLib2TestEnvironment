@@ -9,6 +9,8 @@ import io.scif.img.ImgOpener;
 import marwan.Helper.Task;
 import net.imglib2.FinalInterval;
 import net.imglib2.RandomAccessible;
+import net.imglib2.RandomAccessibleInterval;
+import net.imglib2.algorithm.gauss3.Gauss3;
 import net.imglib2.exception.IncompatibleTypeException;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
@@ -22,77 +24,26 @@ public class MultithreadingConvolution {
 		Helper.count = 0;
 		Helper.sigma = 8;
 		Helper.log = false;
-		final int columns = 10;
-		final int rows = 10;
-		
-		
-		String string = "src/main/resources/DrosophilaWing.tif";
+
+		String string = "src/main/resources/mri-stack.tif";
+//		String string = "src/main/resources/DrosophilaWing.tif";
 		Img<FloatType> image = new ImgOpener().openImg(string, new FloatType());
+	
 
 		Img<FloatType> resultImage = ArrayImgs.floats(Helper.getDimensions(image));
-		RandomAccessible<FloatType> infiniteImg = Views.extendMirrorSingle(image);
 
-	
-		FinalInterval interval = Helper.getFinalInterval(image);
 		ImageJFunctions.show(image).setTitle("Origin");
-		ImageJFunctions.show(Views.interval(infiniteImg, interval)).setTitle("Extented Image");
 
 		ImageJFunctions.show(resultImage).setTitle("final Initial");
+		
+		ArrayList<Portion> portions = new ArrayList<Portion>();
+		Helper.splitImage(image, portions,-1,0);
 
-	
-		ArrayList<Portion> portions = Helper.splitImage(infiniteImg,interval, columns, rows);
-		final ArrayList<myTask> taskList = createThreadTasks(portions, resultImage,Task.Gaus);
+		final ArrayList<myTask> taskList = Helper.createThreadTasks(portions, resultImage, Task.Gaus);
 		for (myTask task : taskList)
 			task.run();
 
-
-ImageJFunctions.show(resultImage).setTitle("final");
-	}
-
-
-	ArrayList<myTask> createThreadTasks(ArrayList<Portion> portions,Img<FloatType> resultImage, Task type) {
-		
-		ArrayList<myTask> taskList = new ArrayList<myTask>();
-		switch (type) {
-		case Gaus:
-			for (Portion portion : portions) {
-				myTask task = new myTask(portion,resultImage,Task.Gaus);
-				taskList.add(task);
-			}
-			break;
-
-		default:
-			break;
-		}
-		return taskList;
-	}
-
-	ArrayList<Callable<float[]>> createThreadTasks(Img<FloatType> image, Img<FloatType> resultImage, int numTasks,
-			int stepSize) {
-		ArrayList<Callable<float[]>> taskList = new ArrayList<Callable<float[]>>();
-		for (int i = 0; i < numTasks; i++) {
-
-			int startPosition = i * stepSize;
-			Callable<float[]> callable = new Callable<float[]>() {
-
-				@Override
-				public float[] call() throws Exception {
-					float[] result = traitment(image, resultImage, numTasks, stepSize);
-					return result;
-				}
-
-			};
-			taskList.add(callable);
-
-		}
-		return taskList;
-
-	}
-
-	protected float[] traitment(Img<FloatType> image, Img<FloatType> resultImage, int numTask, int stepSize) {
-		float min = Helper.computeMiLocation(image, numTask * stepSize, (numTask + 1) * stepSize);
-		return new float[] { min };
-
+		ImageJFunctions.show(resultImage).setTitle("final");
 	}
 
 	public static void main(String[] args) throws ImgIOException, InterruptedException, IncompatibleTypeException {
